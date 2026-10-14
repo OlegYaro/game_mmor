@@ -17,7 +17,10 @@ public sealed record WorldGenRequest(ulong Seed, int Size, WorldGenParamsDef Par
     /// <summary>Largest supported map side.</summary>
     public const int MaxSize = 2048;
 
-    /// <summary>Map sizes offered to players (FR-WORLD-02; MVP uses 512).</summary>
+    /// <summary>
+    /// Standard map sizes (FR-WORLD-02). Players get 1024 and 2048 (the default, P-07); 512 stays valid for tests and
+    /// <c>--size</c>.
+    /// </summary>
     public static IReadOnlyList<int> StandardSizes { get; } = [512, 1024, 2048];
 
     /// <summary>Throws when the request cannot be generated.</summary>
@@ -60,7 +63,10 @@ public static class WorldGenerator
     /// <remarks>
     /// v1 is the first generator that ships (M1) and already includes the placement steps 5–9: the terrain-only
     /// development state was never released or committed, and no save holds a world from it (M0 saves carry
-    /// <see cref="Save.SaveFormat.NoWorldGenVersion"/>), so adding the placement steps did not need a bump.
+    /// <see cref="Save.SaveFormat.NoWorldGenVersion"/>), so adding the placement steps did not need a bump. The same holds
+    /// for the M1.1 rescale of <c>data/worldgen</c> to the 32×16 grid (P-07), which changed every world: v1 was not
+    /// released yet, and a development save made before it fails to load with <see cref="Sim.WorldGenMismatchException"/>
+    /// (its stored map hash no longer matches the regenerated world), which is the intended outcome.
     /// </remarks>
     public const int Version = 1;
 

@@ -6,8 +6,11 @@ namespace Core.Tests.WorldGen;
 /// <summary>Checks of the placement steps (ADR 0006 steps 5–8) that must hold on every generated world.</summary>
 internal static class WorldInvariants
 {
-    /// <summary>The fixed FR-WORLD-09 distance, independent of the data (which must not go below it).</summary>
-    public const int EvilMinStartDistance = 120;
+    /// <summary>
+    /// The fixed FR-WORLD-09 distance, independent of the data (which must not go below it): 120 tiles of the former
+    /// 64×32 grid, 240 tiles of the 32×16 grid (P-07).
+    /// </summary>
+    public const int EvilMinStartDistance = 240;
 
     public static void AssertAll(WorldMap world, WorldGenParamsDef p)
     {

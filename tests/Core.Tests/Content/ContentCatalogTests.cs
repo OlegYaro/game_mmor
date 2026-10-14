@@ -35,7 +35,7 @@ public sealed class ContentCatalogTests
         Assert.Equal(15, catalog.Time.DaysPerSeason);
         Assert.Equal(4, catalog.Time.SeasonsPerYear);
         Assert.Equal(["stone", "wheat", "wood"], catalog.Items.Select(i => i.Id));
-        Assert.Equal(new FogBalanceDef("fog", HeroDay: 12, HeroNight: 6, VillagerDay: 8, VillagerNight: 4, TowerDay: 16, TowerNight: 16), catalog.Fog);
+        Assert.Equal(new FogBalanceDef("fog", HeroDay: 24, HeroNight: 12, VillagerDay: 16, VillagerNight: 8, TowerDay: 32, TowerNight: 32), catalog.Fog);
         Assert.Equal(new SaveBalanceDef("saves", ManualSlots: 5, AutosavesKept: 3), catalog.Saves);
     }
 
@@ -225,7 +225,7 @@ public sealed class ContentCatalogTests
         ContentLoadResult twice = ContentCatalog.Load(WithTime().Add("balance/fog.json", _fogJson.Replace("\"fog\"", "\"fog_two\"", StringComparison.Ordinal)));
         Assert.Contains(twice.Errors, e => e.Kind == ContentErrorKind.Validation && e.Message.Contains("FogBalanceDef", StringComparison.Ordinal));
 
-        string zero = _fogJson.Replace("\"heroNight\": 6", "\"heroNight\": 0", StringComparison.Ordinal);
+        string zero = _fogJson.Replace("\"heroNight\": 12", "\"heroNight\": 0", StringComparison.Ordinal);
         ContentError range = Assert.Single(ContentCatalog.Load(new InMemoryContentSource()
             .Add("balance/time.json", TimeJson).Add("balance/saves.json", _savesJson).Add("balance/fog.json", zero).Add("worldgen/world.json", _worldGenJson)).Errors);
         Assert.Equal(ContentErrorKind.Validation, range.Kind);

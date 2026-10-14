@@ -4,27 +4,27 @@
     {
       "id": "world",
       "height": {
-        "wavelength": 256,
+        "wavelength": 512,
         "octaves": 5,
         "lacunarityPermille": 2000,
         "gainPermille": 500,
-        "warpWavelength": 384,
-        "warpAmplitude": 60,
+        "warpWavelength": 768,
+        "warpAmplitude": 120,
         "warpOctaves": 3,
-        "oceanMargin": 48,
+        "oceanMargin": 96,
         "waterPermille": 300,
         "step1Permille": 560,
         "step2Permille": 760,
         "step3Permille": 900,
-        "minLakeTiles": 24,
-        "minIslandTiles": 64,
+        "minLakeTiles": 96,
+        "minIslandTiles": 256,
         "smoothingPasses": 2,
         "majorityThreshold": 5
       },
       "climate": {
-        "moistureWavelength": 288,
+        "moistureWavelength": 576,
         "moistureOctaves": 3,
-        "temperatureWavelength": 448,
+        "temperatureWavelength": 896,
         "temperatureOctaves": 2,
         "temperatureLapsePermille": 700
       },
@@ -41,14 +41,14 @@
         ]
       },
       "rivers": {
-        "sourcesPerMillionTiles": 48,
-        "minSourceSpacing": 40,
-        "minLength": 30,
+        "sourcesPerMillionTiles": 12,
+        "minSourceSpacing": 80,
+        "minLength": 60,
         "meanderJitter": 48
       },
       "resources": {
         "trees": {
-          "noiseWavelength": 16,
+          "noiseWavelength": 32,
           "noiseOctaves": 2,
           "noisePermille": 600,
           "automatonPasses": 3,
@@ -62,28 +62,28 @@
           ]
         },
         "stone": {
-          "cellSize": 16,
+          "cellSize": 32,
           "minHeight": 0,
           "stockMin": 150,
           "stockMax": 300,
           "biomes": [
-            { "biome": "mountain", "chancePermille": 650, "radius": 5 },
-            { "biome": "wasteland", "chancePermille": 250, "radius": 3 },
-            { "biome": "meadow", "chancePermille": 150, "radius": 2 },
-            { "biome": "forest", "chancePermille": 100, "radius": 2 }
+            { "biome": "mountain", "chancePermille": 650, "radius": 10 },
+            { "biome": "wasteland", "chancePermille": 250, "radius": 6 },
+            { "biome": "meadow", "chancePermille": 150, "radius": 4 },
+            { "biome": "forest", "chancePermille": 100, "radius": 4 }
           ]
         },
         "ore": {
-          "cellSize": 24,
+          "cellSize": 48,
           "minHeight": 2,
           "stockMin": 300,
           "stockMax": 600,
           "biomes": [
-            { "biome": "mountain", "chancePermille": 400, "radius": 3 }
+            { "biome": "mountain", "chancePermille": 400, "radius": 6 }
           ]
         },
         "berries": {
-          "edgeDistance": 2,
+          "edgeDistance": 4,
           "stockMin": 10,
           "stockMax": 25,
           "biomes": [
@@ -93,9 +93,9 @@
         }
       },
       "pointsOfInterest": {
-        "tilesPerPoi": 1600,
-        "minSpacing": 24,
-        "edgeMargin": 8,
+        "tilesPerPoi": 6400,
+        "minSpacing": 48,
+        "edgeMargin": 16,
         "kinds": [
           { "kind": "chest", "weight": 50 },
           { "kind": "ruins", "weight": 30 },
@@ -104,24 +104,24 @@
       },
       "start": {
         "biome": "meadow",
-        "zoneRadius": 40,
-        "minTreeTiles": 40,
-        "minStoneTiles": 6,
-        "minWaterTiles": 1,
-        "flatRadius": 12,
+        "zoneRadius": 80,
+        "minTreeTiles": 160,
+        "minStoneTiles": 24,
+        "minWaterTiles": 4,
+        "flatRadius": 24,
         "minFlatPermille": 600,
-        "poiClearance": 10,
-        "edgeMargin": 56,
-        "candidateSpacing": 8
+        "poiClearance": 20,
+        "edgeMargin": 112,
+        "candidateSpacing": 16
       },
       "settlements": {
-        "siteSize": 9,
-        "minSpacing": 64,
-        "edgeMargin": 8,
-        "poiClearance": 4,
+        "siteSize": 17,
+        "minSpacing": 128,
+        "edgeMargin": 16,
+        "poiClearance": 8,
         "factions": [
-          { "faction": "orc", "perMillionTiles": 12, "minStartDistance": 120, "preferredBiome": "wasteland" },
-          { "faction": "human", "perMillionTiles": 12, "minStartDistance": 64, "preferredBiome": "meadow" }
+          { "faction": "orc", "perMillionTiles": 3, "minStartDistance": 240, "preferredBiome": "wasteland" },
+          { "faction": "human", "perMillionTiles": 3, "minStartDistance": 128, "preferredBiome": "meadow" }
         ]
       }
     }

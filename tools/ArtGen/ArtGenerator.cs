@@ -42,7 +42,7 @@ public static class ArtGenerator
     /// <summary>Repo-relative output path of the table's schema.</summary>
     public const string SchemaPath = "data/art/atlas.schema.json";
 
-    private const int TilesAtlasWidth = 640;
+    private const int TilesAtlasWidth = 512;
     private const int ObjectColumns = 3;
 
     /// <summary>Builds all outputs in memory.</summary>
@@ -93,8 +93,8 @@ public static class ArtGenerator
             (string id, int kind, int height, int variant) = tiles[i];
             Canvas cell = TileArt.Draw(kind, height, variant);
             tileAtlas.Blit(cell, 0, 0, cell.Width, cell.Height, positions[i].X, positions[i].Y);
-            // The ground diamond centre sits 16 px above the cell's bottom diamond vertex... i.e. below the top face by the raise.
-            cells.Add(new AtlasCell(id, "tiles", "tile", positions[i].X, positions[i].Y, cell.Width, cell.Height, 32, 16 + (TileArt.HeightStep * height), height, variant));
+            Pt origin = TileArt.Origin(height);
+            cells.Add(new AtlasCell(id, "tiles", "tile", positions[i].X, positions[i].Y, cell.Width, cell.Height, origin.X, origin.Y, height, variant));
         }
 
         int rows = (ObjectArt.Ids.Count + ObjectColumns - 1) / ObjectColumns;

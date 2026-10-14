@@ -3,12 +3,12 @@
   "items": [
     {
       "id": "fog",
-      "heroDay": 12,
-      "heroNight": 6,
-      "villagerDay": 8,
-      "villagerNight": 4,
-      "towerDay": 16,
-      "towerNight": 16
+      "heroDay": 24,
+      "heroNight": 12,
+      "villagerDay": 16,
+      "villagerNight": 8,
+      "towerDay": 32,
+      "towerNight": 32
     }
   ]
 }

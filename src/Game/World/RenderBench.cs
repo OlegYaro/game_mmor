@@ -31,6 +31,7 @@ public partial class RenderBench : Node2D
     private const double PhaseSeconds = 6.0;
     private const double SweepSpeed = 4000.0; // world px per second (1000 screen px/s at the widest zoom)
     private const double WarmupSeconds = 1.0;
+    private const double MaxSweepSeconds = 90.0;
     private const double TimeLimitSeconds = 170.0;
     private const int FailureExitCode = 1;
     private const int ErrorExitCode = 2;
@@ -236,7 +237,9 @@ public partial class RenderBench : Node2D
             length += points[i].DistanceTo(points[i - 1]);
         }
 
-        phases.Add(("sweep_zoom_0.25", await Scroll(t => AlongPath(points, t * SweepSpeed), length / SweepSpeed)));
+        // Large maps would not fit the time limit at the base speed: the sweep then runs faster, which only makes it harsher.
+        double sweepSpeed = Math.Max(SweepSpeed, length / MaxSweepSeconds);
+        phases.Add(($"sweep_zoom_{WorldCamera.ZoomLevels[0].ToString(CultureInfo.InvariantCulture)}", await Scroll(t => AlongPath(points, t * sweepSpeed), length / sweepSpeed)));
 
         var all = phases.SelectMany(p => p.Frames).ToList();
         for (int i = 0; i < phases.Count; i++)

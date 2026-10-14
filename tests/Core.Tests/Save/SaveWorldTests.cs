@@ -88,7 +88,8 @@ public sealed class SaveWorldTests
         Assert.Equal("hero", (string?)body["components"]!["revealer"]![0]!["kind"]);
         JsonArray runs = body["fog"]!["exploredRuns"]!.AsArray();
         Assert.Equal(64 * 64, runs.Sum(r => (int)r!));
-        Assert.InRange(runs.Count, 3, 2 * 25 + 1); // two runs per row of a radius-12 disc, at most
+        int rows = (2 * SimTestData.Real.Fog.HeroDay) + 1;
+        Assert.InRange(runs.Count, 3, (2 * rows) + 1); // two runs per row of the hero's day disc (radius 24), at most
         Assert.Contains("\"worldGenVersion\":1,", Encoding.UTF8.GetString(bytes, 0, Array.IndexOf(bytes, (byte)'\n')), StringComparison.Ordinal);
     }
 
@@ -97,16 +98,18 @@ public sealed class SaveWorldTests
     [Trait("Req", "FR-WORLD-01")]
     public void FullSizeWorldSaveStaysSmall()
     {
-        Simulation sim = Simulation.CreateNewGame(SimTestData.Real, new NewGameOptions(1));
+        // The smallest player size (P-07); the 2048² default is measured in LargeMapMeasureTests (Benchmark), because
+        // generating it twice (new game and load) takes about 15 s in Debug.
+        Simulation sim = Simulation.CreateNewGame(SimTestData.Real, new NewGameOptions(1, 1024));
         byte[] fresh = SaveGame.ToBytes(sim);
         sim.Enqueue(new RevealAllCommand());
         sim.Step();
         byte[] revealed = SaveGame.ToBytes(sim);
 
-        // The 512² map is regenerated, not stored; the fog is a handful of runs.
+        // The 1024² map is regenerated, not stored; the fog is a handful of runs.
         Assert.InRange(fresh.Length, 1, 2048);
         Assert.InRange(revealed.Length, 1, 2048);
-        Assert.Equal([0, 512 * 512], Body(revealed)["fog"]!["exploredRuns"]!.AsArray().Select(r => (int)r!));
+        Assert.Equal([0, 1024 * 1024], Body(revealed)["fog"]!["exploredRuns"]!.AsArray().Select(r => (int)r!));
         Assert.Equal(revealed, SaveGame.ToBytes(Load(revealed).Simulation!));
     }
 

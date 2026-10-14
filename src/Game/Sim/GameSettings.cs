@@ -44,7 +44,7 @@ public static class GameSettings
         return DefaultSeed;
     }
 
-    /// <summary>New game parameters from <c>--seed</c>, <c>--size</c> (default 512) and <c>--difficulty</c> (default normal).</summary>
+    /// <summary>New game parameters from <c>--seed</c>, <c>--size</c> (default <see cref="NewGameOptions.DefaultMapSize"/>, 2048) and <c>--difficulty</c> (default normal).</summary>
     public static NewGameOptions ResolveNewGameOptions()
     {
         int size = NewGameOptions.DefaultMapSize;

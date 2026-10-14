@@ -112,8 +112,8 @@ public sealed class NewGameTests
         long nightfall = sim.Calendar.FirstTickOf(0, sim.Calendar.NightStartHour);
         int day = DiscTiles(world, start.X, start.Y, SimTestData.Real.Fog.HeroDay);
         int night = DiscTiles(world, start.X, start.Y, SimTestData.Real.Fog.HeroNight);
-        Assert.Equal(12, SimTestData.Real.Fog.HeroDay);
-        Assert.Equal(6, SimTestData.Real.Fog.HeroNight);
+        Assert.Equal(24, SimTestData.Real.Fog.HeroDay); // 12 tiles of the former 64x32 grid (P-07)
+        Assert.Equal(12, SimTestData.Real.Fog.HeroNight);
 
         sim.Step((int)nightfall - 1);
         Assert.False(sim.Now.IsNight);
@@ -139,8 +139,10 @@ public sealed class NewGameTests
         StartPoint start = world.Map.Start;
         int firstDisc = world.Fog.CountStates().Visible;
 
-        // Systems move entities in M2; here the test moves the marker between ticks.
-        int dx = start.X < Size / 2 ? 20 : -20;
+        // Systems move entities in M2; here the test moves the marker between ticks, just beyond the day radius (24 on the
+        // 32x16 grid, P-07), so the start tile leaves the disc. On the 64² map the start falls back near the centre.
+        int shift = SimTestData.Real.Fog.HeroDay + 2;
+        int dx = start.X < Size / 2 ? shift : -shift;
         sim.Positions.Get(marker) = Simulation.TileCenter(start.X + dx, start.Y);
         sim.Step();
 
@@ -272,5 +274,5 @@ public sealed class NewGameTests
 
     [Fact]
     [Trait("Req", "FR-WORLD-02")]
-    public void DefaultMapSizeIsTheMvpSize() => Assert.Equal(512, new NewGameOptions(1).MapSize);
+    public void DefaultMapSizeIs2048() => Assert.Equal(2048, new NewGameOptions(1).MapSize); // P-07
 }

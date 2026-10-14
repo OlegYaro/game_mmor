@@ -126,12 +126,13 @@ public sealed class SaveGoldenTests
     // Frozen together with save_v2.sav (values read once from the generated file, never from today's code).
     private static class V2Frozen
     {
-        public const string MapHash = "afdd50c1d7e7999d";
+        public const string MapHash = "17f103636ce737ff";
         public const int StartX = 32;
         public const int StartY = 32;
 
-        // A radius-12 disc is 441 tiles; moving it 3 tiles east left 71 tiles explored but no longer visible.
-        public static readonly FogCounts Counts = new(Unknown: 3584, Explored: 71, Visible: 441);
+        // Values read once from the regenerated file (sample refreshed on 15.10.2026 when the grid moved to 32x16 and the
+        // fog radii doubled: a radius-24 disc clipped by the 64x64 map; moving it 3 tiles east left 143 tiles explored only).
+        public static readonly FogCounts Counts = new(Unknown: 2160, Explored: 143, Visible: 1793);
     }
 
     private static void CreateV2SampleIfMissing()

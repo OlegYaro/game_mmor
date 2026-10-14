@@ -49,8 +49,11 @@ public static class DifficultyNames
 /// <param name="Difficulty">Difficulty.</param>
 public sealed record NewGameOptions(ulong Seed, int MapSize = NewGameOptions.DefaultMapSize, Difficulty Difficulty = Difficulty.Normal)
 {
-    /// <summary>MVP map size (FR-WORLD-02).</summary>
-    public const int DefaultMapSize = 512;
+    /// <summary>
+    /// Default map size (FR-WORLD-02): 2048² on the 32×16 tile grid (P-07), four times the area of the former 512² MVP
+    /// map on the 64×32 grid.
+    /// </summary>
+    public const int DefaultMapSize = 2048;
 
     /// <summary>Throws when the options cannot start a game.</summary>
     /// <exception cref="ArgumentException">Bad map size or difficulty.</exception>

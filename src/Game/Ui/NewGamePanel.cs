@@ -4,7 +4,7 @@ using Godot;
 namespace Game.Ui;
 
 /// <summary>
-/// New game form: seed (number or text, with a Random button), difficulty and the map size (512 or 1024). The random seed is only
+/// New game form: seed (number or text, with a Random button), difficulty and the map size (1024 or 2048, default 2048). The random seed is only
 /// the default in the text box; the seed that starts the game is the deterministic input (FR-SAVE-05).
 /// </summary>
 public partial class NewGamePanel : VBoxContainer
@@ -13,8 +13,8 @@ public partial class NewGamePanel : VBoxContainer
     private OptionButton _difficulty = null!;
     private OptionButton _size = null!;
 
-    /// <summary>Map sizes offered in the menu (2048 stays CLI-only until it is playable).</summary>
-    public static readonly int[] MenuSizes = [512, 1024];
+    /// <summary>Map sizes offered in the menu (P-07); 512 stays available through <c>--size</c> only.</summary>
+    public static readonly int[] MenuSizes = [1024, 2048];
 
     /// <summary>The player pressed Start.</summary>
     public event Action<NewGameOptions>? StartRequested;

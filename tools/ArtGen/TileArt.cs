@@ -1,16 +1,16 @@
 namespace ArtGen;
 
-/// <summary>Isometric diamond tile drawing (64x32 top face, side faces for raised tiles).</summary>
+/// <summary>Isometric diamond tile drawing (32x16 top face, side faces for raised tiles).</summary>
 public static class TileArt
 {
     /// <summary>Tile width in pixels.</summary>
-    public const int TileWidth = 64;
+    public const int TileWidth = 32;
 
     /// <summary>Tile top-face height in pixels.</summary>
-    public const int TileHeight = 32;
+    public const int TileHeight = 16;
 
     /// <summary>Pixels a tile is raised per height step.</summary>
-    public const int HeightStep = 16;
+    public const int HeightStep = 8;
 
     /// <summary>Highest height level.</summary>
     public const int MaxHeight = 3;
@@ -18,12 +18,12 @@ public static class TileArt
     /// <summary>The tile kinds in atlas order: id, base colour, whether raised variants exist.</summary>
     public static readonly IReadOnlyList<TileKind> Kinds =
     [
-        new("meadow", Rgba.Hex(0x7FB069), true),
-        new("forest", Rgba.Hex(0x3E7B4F), true),
-        new("mountain", Rgba.Hex(0x8A8D91), true),
-        new("wasteland", Rgba.Hex(0xC2A878), true),
-        new("water", Rgba.Hex(0x3A6EA5), false),
-        new("river", Rgba.Hex(0x5B8FD0), false),
+        new("meadow", Rgba.Hex(0x7FB069), true, null),
+        new("forest", Rgba.Hex(0x3E7B4F), true, null),
+        new("mountain", Rgba.Hex(0x8A8D91), true, null),
+        new("wasteland", Rgba.Hex(0xC2A878), true, null),
+        new("water", Rgba.Hex(0x3A6EA5), false, null),
+        new("river", Rgba.Hex(0x5B8FD0), true, Rgba.Hex(0x7A5C3E)),
     ];
 
     /// <summary>Variants per tile kind and height.</summary>
@@ -41,7 +41,7 @@ public static class TileArt
         return (uint)((z ^ (z >> 31)) >> 16);
     }
 
-    /// <summary>Draws one tile into a new canvas of 64 x CellHeight(height).</summary>
+    /// <summary>Draws one tile into a new canvas of TileWidth x CellHeight(height).</summary>
     public static Canvas Draw(int kindIndex, int height, int variant)
     {
         TileKind kind = Kinds[kindIndex];
@@ -55,41 +55,49 @@ public static class TileArt
 
         Rgba outline = top.Scale(55);
         int raise = HeightStep * height;
+        int hw = TileWidth / 2;
+        int hh = TileHeight / 2;
 
         if (height > 0)
         {
-            Rgba left = top.Scale(75);
-            Rgba right = top.Scale(55);
-            Rgba edge = top.Scale(38);
-            cell.FillPolygon([new Pt(0, 16), new Pt(32, 32), new Pt(32, 32 + raise), new Pt(0, 16 + raise)], left);
-            cell.FillPolygon([new Pt(64, 16), new Pt(32, 32), new Pt(32, 32 + raise), new Pt(64, 16 + raise)], right);
-            cell.Line(0, 15, 0, 15 + raise, edge);
-            cell.Line(63, 15, 63, 15 + raise, edge);
-            cell.Line(0, 15 + raise, 31, 30 + raise, edge);
-            cell.Line(32, 30 + raise, 63, 15 + raise, edge);
+            // Raised river blocks keep the riverbed colour on top and use the bank colour on the sides.
+            Rgba sideBase = kind.Side ?? top;
+            Rgba left = sideBase.Scale(75);
+            Rgba right = sideBase.Scale(55);
+            Rgba edge = sideBase.Scale(38);
+            cell.FillPolygon([new Pt(0, hh), new Pt(hw, TileHeight), new Pt(hw, TileHeight + raise), new Pt(0, hh + raise)], left);
+            cell.FillPolygon([new Pt(TileWidth, hh), new Pt(hw, TileHeight), new Pt(hw, TileHeight + raise), new Pt(TileWidth, hh + raise)], right);
+            cell.Line(0, hh - 1, 0, hh - 1 + raise, edge);
+            cell.Line(TileWidth - 1, hh - 1, TileWidth - 1, hh - 1 + raise, edge);
+            cell.Line(0, hh - 1 + raise, hw - 1, TileHeight - 2 + raise, edge);
+            cell.Line(hw, TileHeight - 2 + raise, TileWidth - 1, hh - 1 + raise, edge);
             // Seam between the two side faces.
-            cell.Line(31, 31, 31, 30 + raise, edge);
+            cell.Line(hw - 1, TileHeight - 1, hw - 1, TileHeight - 2 + raise, edge);
         }
 
-        cell.FillPolygon([new Pt(0, 16), new Pt(32, 0), new Pt(64, 16), new Pt(32, 32)], top);
+        cell.FillPolygon([new Pt(0, hh), new Pt(hw, 0), new Pt(TileWidth, hh), new Pt(hw, TileHeight)], top);
         AddSpecks(cell, kindIndex, height, variant, top, kind.Id is "water" or "river");
 
         // 1px outline of the top face (the apex pixels are two wide so it is mirror symmetric).
-        cell.Line(0, 15, 31, 0, outline);
-        cell.Line(32, 0, 63, 15, outline);
-        cell.Line(63, 16, 32, 31, outline);
-        cell.Line(31, 31, 0, 16, outline);
+        cell.Line(0, hh - 1, hw - 1, 0, outline);
+        cell.Line(hw, 0, TileWidth - 1, hh - 1, outline);
+        cell.Line(TileWidth - 1, hh, hw, TileHeight - 1, outline);
+        cell.Line(hw - 1, TileHeight - 1, 0, hh, outline);
         return cell;
     }
 
+    /// <summary>Texture origin of a tile cell: the pixel that lands on the map cell's ground diamond centre.</summary>
+    public static Pt Origin(int height) => new(TileWidth / 2, (TileHeight / 2) + (HeightStep * height));
+
     private static void AddSpecks(Canvas cell, int kindIndex, int height, int variant, Rgba top, bool wet)
     {
-        for (uint i = 0; i < 6; i++)
+        for (uint i = 0; i < 4; i++)
         {
             uint h = Hash((uint)kindIndex, ((uint)height << 8) | (uint)variant, i + 100);
-            int x = 10 + (int)(h % 44);
-            int y = 6 + (int)((h >> 8) % 20);
-            if (Math.Abs((2 * x) - 63) + (2 * Math.Abs((2 * y) - 31)) > 52)
+            int x = 6 + (int)(h % 20);
+            int y = 3 + (int)((h >> 8) % 10);
+            // Keep the speck (and its right neighbours) well inside the diamond.
+            if (Math.Abs((2 * x) - (TileWidth - 1)) + (2 * Math.Abs((2 * y) - (TileHeight - 1))) > 22)
             {
                 continue;
             }
@@ -100,7 +108,6 @@ public static class TileArt
             if (wet)
             {
                 cell.Set(x + 1, y, c);
-                cell.Set(x + 2, y, c);
             }
             else if ((h & 0x20000) != 0)
             {
@@ -113,5 +120,6 @@ public static class TileArt
 /// <summary>One tile kind.</summary>
 /// <param name="Id">Content id.</param>
 /// <param name="Base">Top-face colour of variant 0.</param>
-/// <param name="Raisable">Whether heights 1-3 exist (water and river are flat).</param>
-public sealed record TileKind(string Id, Rgba Base, bool Raisable);
+/// <param name="Raisable">Whether heights 1-3 exist (water is flat).</param>
+/// <param name="Side">Base colour of the side faces of raised tiles; null means the top colour.</param>
+public sealed record TileKind(string Id, Rgba Base, bool Raisable, Rgba? Side);

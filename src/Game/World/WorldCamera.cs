@@ -12,8 +12,8 @@ namespace Game.World;
 /// </summary>
 public partial class WorldCamera : Camera2D
 {
-    /// <summary>Zoom steps, widest first (ADR 0010: integer ratios of 64×32 pixel art plus one overview step).</summary>
-    public static readonly float[] ZoomLevels = [0.25f, 0.5f, 1f, 2f];
+    /// <summary>Zoom steps, widest first (ADR 0010: integer ratios of 32×16 pixel art plus one overview step).</summary>
+    public static readonly float[] ZoomLevels = [0.5f, 1f, 2f, 4f];
 
     private const int DefaultZoomIndex = 2;
     private const float KeyPanSpeed = 1100f;   // screen pixels per second

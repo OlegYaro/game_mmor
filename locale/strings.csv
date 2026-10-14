@@ -32,8 +32,8 @@ ui.newgame.seed,Зерно мира (число или текст),World seed (n
 ui.newgame.random,Случайное,Random
 ui.newgame.difficulty,Сложность,Difficulty
 ui.newgame.map_size,Размер карты,Map size
-ui.newgame.size.512,512 x 512,512 x 512
-ui.newgame.size.1024,1024 x 1024 (больше и дольше),1024 x 1024 (larger and slower)
+ui.newgame.size.1024,1024 x 1024 (меньше и быстрее),1024 x 1024 (smaller and faster)
+ui.newgame.size.2048,2048 x 2048,2048 x 2048
 ui.newgame.start,Начать,Start
 ui.newgame.generating,Создание мира...,Generating world...
 ui.difficulty.peaceful,Мирная,Peaceful

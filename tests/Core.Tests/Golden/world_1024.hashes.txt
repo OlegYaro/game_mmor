@@ -1,0 +1,3 @@
+# Generator version, seed, size, terrain hash, full map hash, tiles per biome (Biome order).
+# Regenerate deliberately with UPDATE_GOLDEN=1 tools/test.sh.
+1 1 1024 42c70fd29967a74b bafff806e2e98b18 water=314677 meadow=173778 forest=220310 mountain=131906 wasteland=207905

@@ -4,27 +4,29 @@ using Core.WorldGen;
 namespace Core.Geometry;
 
 /// <summary>
-/// Isometric 2:1 projection of the tile grid (ADR 0010, GDD §3): tiles are 64×32 diamonds, height steps lift by 16 px.
+/// Isometric 2:1 projection of the tile grid (ADR 0010, GDD §3): tiles are 32×16 diamonds, height steps lift by 8 px.
 /// It is the same mapping as a Godot <c>TileMapLayer</c> with <c>TileShape = Isometric</c>,
-/// <c>TileLayout = DiamondDown</c>, <c>TileOffsetAxis = Horizontal</c> and a 64×32 tile size (checked against
+/// <c>TileLayout = DiamondDown</c>, <c>TileOffsetAxis = Horizontal</c> and a 32×16 tile size (checked against
 /// <c>MapToLocal</c>/<c>LocalToMap</c> by the Game smoke test), so Core and the renderer agree on every pixel.
 /// </summary>
 /// <remarks>
 /// <para>World pixels: x grows to the right, y grows down. Tile (x, y) has its ground centre at
-/// <c>px = 32(x − y) + 32</c>, <c>py = 16(x + y) + 16</c>; its top corner is at <c>(32(x − y) + 32, 16(x + y))</c>.
+/// <c>px = 16(x − y) + 16</c>, <c>py = 8(x + y) + 8</c>; its top corner is at <c>(16(x − y) + 16, 8(x + y))</c>.
 /// A continuous tile-space point (tx, ty) (tile (x, y) covers [x, x + 1) × [y, y + 1)) maps to
-/// <c>px = 32(tx − ty) + 32</c>, <c>py = 16(tx + ty)</c>.</para>
-/// <para>The inverse is linear: for a ground point, <c>x = floor((u + 2v + 32) / 64)</c>,
-/// <c>y = floor((2v − u + 32) / 64)</c> with <c>u = px − 32</c>, <c>v = py − 16</c>. Everything here is integer
+/// <c>px = 16(tx − ty) + 16</c>, <c>py = 8(tx + ty)</c>.</para>
+/// <para>The inverse is linear: for a ground point, <c>x = floor((u + 2v + 16) / 32)</c>,
+/// <c>y = floor((2v − u + 16) / 32)</c> with <c>u = px − 16</c>, <c>v = py − 8</c>. Everything here is integer
 /// math; sub-pixel inputs use a caller-chosen scale.</para>
 /// </remarks>
 public static class IsoProjection
 {
+    // The single source of truth for tile geometry; the art atlas table (data/art/atlas.json) must match.
+
     /// <summary>Width of a tile diamond in pixels.</summary>
-    public const int TileWidth = 64;
+    public const int TileWidth = 32;
 
     /// <summary>Height of a tile diamond in pixels.</summary>
-    public const int TileHeight = 32;
+    public const int TileHeight = 16;
 
     /// <summary>Half of <see cref="TileWidth"/>.</summary>
     public const int HalfWidth = TileWidth / 2;
@@ -33,7 +35,7 @@ public static class IsoProjection
     public const int HalfHeight = TileHeight / 2;
 
     /// <summary>Vertical lift of one height step in pixels.</summary>
-    public const int HeightStep = 16;
+    public const int HeightStep = 8;
 
     /// <summary>Ground centre of tile (<paramref name="x"/>, <paramref name="y"/>) in world pixels.</summary>
     public static (int Px, int Py) TileCenter(int x, int y) =>

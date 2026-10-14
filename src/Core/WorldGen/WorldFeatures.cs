@@ -48,7 +48,7 @@ public enum Faction : byte
     /// <summary>Humans (люди): a good faction.</summary>
     Human = 1,
 
-    /// <summary>Orcs (орки): an evil faction, kept at least 120 tiles from the start.</summary>
+    /// <summary>Orcs (орки): an evil faction, kept at least 240 tiles from the start (FR-WORLD-09, P-07).</summary>
     Orc = 2,
 }
 

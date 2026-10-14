@@ -114,7 +114,7 @@ public sealed class WorldPlacementTests
     [Theory]
     [Trait("Req", "FR-WORLD-07")]
     [MemberData(nameof(WorldGenTestData.InvariantSeeds), MemberType = typeof(WorldGenTestData))]
-    public void PointOfInterestDensityIsAboutOnePer40x40LandTiles(int seed) => AssertPoiDensity(WorldGenTestData.InvariantWorld(seed));
+    public void PointOfInterestDensityIsAboutOnePer80x80LandTiles(int seed) => AssertPoiDensity(WorldGenTestData.InvariantWorld(seed));
 
     [Theory]
     [Trait("Req", "FR-WORLD-07")]
@@ -190,12 +190,13 @@ public sealed class WorldPlacementTests
 
     [Fact]
     [Trait("Req", "FR-WORLD-09")]
-    public void RealDataKeepsEvilSitesAtLeast120TilesAway()
+    public void RealDataKeepsEvilSitesAtLeast240TilesAway()
     {
         FactionSitesDef orc = P.Settlements.Factions.Single(f => f.Faction == "orc");
 
+        // P-07: FR-WORLD-09's 120 tiles and the B1 zone radius of 40 were set on the 64x32 grid; lengths double on 32x16.
         Assert.True(orc.MinStartDistance >= WorldInvariants.EvilMinStartDistance);
-        Assert.Equal(40, P.Start.ZoneRadius);
+        Assert.Equal(80, P.Start.ZoneRadius);
     }
 
     // ---- B1 relaxation and shortfalls ----
@@ -205,7 +206,7 @@ public sealed class WorldPlacementTests
     public void MissingWaterRelaxesTheWaterCheckFirst()
     {
         WorldGenParamsDef p = P with { Start = P.Start with { MinWaterTiles = 100000 } };
-        WorldMap world = WorldGenTestData.GenerateWorld(4, 256, p);
+        WorldMap world = WorldGenTestData.GenerateWorld(4, WorldGenTestData.InvariantSize, p);
 
         Assert.Equal(StartRelaxation.Water, world.StartRelaxation);
         Assert.Contains(world.Warnings, w => w.Contains("water check was relaxed", StringComparison.Ordinal));
@@ -224,7 +225,7 @@ public sealed class WorldPlacementTests
                 Factions = [.. P.Settlements.Factions.Select(f => f.Faction == "orc" ? f with { PerMillionTiles = 1000 } : f)],
             },
         };
-        WorldMap world = WorldGenTestData.GenerateWorld(4, 256, p);
+        WorldMap world = WorldGenTestData.GenerateWorld(4, WorldGenTestData.InvariantSize, p);
 
         Assert.Equal(StartRelaxation.EvilDistance, world.StartRelaxation);
         Assert.Contains(world.Warnings, w => w.Contains("evil-room", StringComparison.Ordinal));
@@ -238,7 +239,7 @@ public sealed class WorldPlacementTests
     public void ImpossibleZoneFallsBackToTheFirstQualifyingCandidate()
     {
         WorldGenParamsDef p = P with { Start = P.Start with { MinTreeTiles = 100000 } };
-        WorldMap world = WorldGenTestData.GenerateWorld(4, 256, p);
+        WorldMap world = WorldGenTestData.GenerateWorld(4, WorldGenTestData.InvariantSize, p);
 
         Assert.Equal(StartRelaxation.Fallback, world.StartRelaxation);
         Assert.Contains(world.Warnings, w => w.Contains("fell back", StringComparison.Ordinal));
@@ -272,8 +273,9 @@ public sealed class WorldPlacementTests
     [Trait("Req", "FR-WORLD-07")]
     public void TooWideSpacingPlacesFewerPointsAndWarns()
     {
-        WorldGenParamsDef p = P with { PointsOfInterest = P.PointsOfInterest with { MinSpacing = 200 } };
-        WorldMap world = WorldGenTestData.GenerateWorld(4, 256, p);
+        // 400 tiles on a 512² map, as 200 tiles were on the former 256² map (P-07): only a few points fit.
+        WorldGenParamsDef p = P with { PointsOfInterest = P.PointsOfInterest with { MinSpacing = 400 } };
+        WorldMap world = WorldGenTestData.GenerateWorld(4, WorldGenTestData.InvariantSize, p);
 
         Assert.InRange(world.PointsOfInterest.Count, 1, 4);
         Assert.Contains(world.Warnings, w => w.StartsWith("Points of interest: placed", StringComparison.Ordinal));
@@ -347,9 +349,10 @@ public sealed class WorldPlacementTests
             land += WorldInvariants.IsLand(world, i) ? 1 : 0;
         }
 
-        // ±50 % around one point per 1600 land tiles (FR-WORLD-07: about one per 40x40).
-        long expected = land / 1600;
+        // ±50 % around one point per 6400 land tiles (FR-WORLD-07: about one per 40x40 tiles of the former 64x32 grid,
+        // which is one per 80x80 tiles of the 32x16 grid, P-07).
+        long expected = land / 6400;
         Assert.InRange(world.PointsOfInterest.Count, expected / 2, expected * 3 / 2);
-        Assert.Equal(1600, P.PointsOfInterest.TilesPerPoi);
+        Assert.Equal(6400, P.PointsOfInterest.TilesPerPoi);
     }
 }

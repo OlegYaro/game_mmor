@@ -6,7 +6,8 @@ namespace Core.Tests.WorldGen;
 public sealed class TerrainInvariantTests
 {
     // Checkerboard residue after smoothing: land tiles that share their biome with no orthogonal land neighbour.
-    // Measured on the golden seeds: 2–10 of ~183 000 land tiles; the threshold leaves room for tuning.
+    // Measured on the golden seeds: 0–3 of ~183 000 land tiles at 512² (2–10 on the former 64x32 grid's 512² maps, whose
+    // geography the 1024² maps now cover with 3–9 of ~734 000); the threshold leaves room for tuning.
     private const int MaxIsolatedPerMille = 1;
 
     [Theory]
@@ -76,12 +77,17 @@ public sealed class TerrainInvariantTests
         Assert.True(mean[0] - mean[TerrainMap.MaxHeight] >= 200, $"Height barely affects temperature: {string.Join(", ", mean)}.");
     }
 
+    // Checked at 1024², the geography of the former 512² golden maps (P-07): a 512² map on the 32x16 grid covers only
+    // the former 256² area, where lakes are rare (none on about half of the seeds). River tiles: 300 on the former grid,
+    // twice that now because a river of the same length crosses twice as many tiles.
     [Theory]
     [Trait("Req", "FR-WORLD-03")]
-    [MemberData(nameof(WorldGenTestData.GoldenIndices), MemberType = typeof(WorldGenTestData))]
-    public void GoldenMapsHaveRiversAndLakes(int index)
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void LargeMapsHaveRiversAndLakes(int seed)
     {
-        TerrainMap map = WorldGenTestData.Golden(index);
+        TerrainMap map = WorldGenTestData.LargeWorld(seed).Terrain;
         int rivers = 0;
         int lakes = 0;
         foreach (TileFeatures features in map.Features)
@@ -90,7 +96,7 @@ public sealed class TerrainInvariantTests
             lakes += (features & TileFeatures.Lake) != 0 ? 1 : 0;
         }
 
-        Assert.True(rivers >= 300, $"Only {rivers} river tiles.");
+        Assert.True(rivers >= 600, $"Only {rivers} river tiles.");
         Assert.True(lakes > 0);
     }
 
@@ -116,8 +122,10 @@ public sealed class TerrainInvariantTests
             Height = WorldGenTestData.Params.Height with { SmoothingPasses = 0 },
             Biomes = WorldGenTestData.Params.Biomes with { SmoothingPasses = 0 },
         };
-        TerrainMap raw = WorldGenerator.GenerateTerrain(new WorldGenRequest(1, 256, unsmoothed));
-        TerrainMap smooth = WorldGenTestData.Generate(1, 256);
+        // 1024²: on the 32x16 grid (P-07) the noise is smooth at tile scale, so a 256² or 512² map has 0–2 isolated tiles
+        // even unsmoothed; seed 1 at 1024² has 8 unsmoothed and 3 smoothed.
+        TerrainMap raw = WorldGenerator.GenerateTerrain(new WorldGenRequest(1, WorldGenTestData.LargeSize, unsmoothed));
+        TerrainMap smooth = WorldGenTestData.LargeWorld(1).Terrain;
 
         int before = TerrainInvariants.CountIsolatedBiomeTiles(raw);
         int after = TerrainInvariants.CountIsolatedBiomeTiles(smooth);

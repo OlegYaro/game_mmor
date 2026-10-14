@@ -11,7 +11,6 @@ namespace Core.Tests.Art;
 public sealed class AtlasTests
 {
     private static readonly string[] _biomes = ["meadow", "forest", "mountain", "wasteland"];
-    private static readonly string[] _flatKinds = ["water", "river"];
     private static readonly string[] _objectIds =
         ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker"];
 
@@ -45,12 +44,13 @@ public sealed class AtlasTests
             }
         }
 
-        foreach (string kind in _flatKinds)
+        for (int v = 0; v < TileArt.Variants; v++)
         {
-            for (int v = 0; v < TileArt.Variants; v++)
+            Assert.Contains($"water_h0_v{v}", ids);
+            Assert.DoesNotContain($"water_h1_v{v}", ids);
+            for (int h = 0; h <= 3; h++)
             {
-                Assert.Contains($"{kind}_h0_v{v}", ids);
-                Assert.DoesNotContain($"{kind}_h1_v{v}", ids);
+                Assert.Contains($"river_h{h}_v{v}", ids);
             }
         }
 
@@ -61,15 +61,15 @@ public sealed class AtlasTests
 
         foreach (AtlasCell tile in art.Cells.Where(c => c.Kind == "tile"))
         {
-            Assert.Equal(64, tile.W);
-            Assert.Equal(32 + (16 * tile.Height), tile.H);
-            Assert.Equal(32, tile.OriginX);
-            Assert.Equal(16 + (16 * tile.Height), tile.OriginY);
+            Assert.Equal(TileArt.TileWidth, tile.W);
+            Assert.Equal(TileArt.TileHeight + (TileArt.HeightStep * tile.Height), tile.H);
+            Assert.Equal(TileArt.TileWidth / 2, tile.OriginX);
+            Assert.Equal((TileArt.TileHeight / 2) + (TileArt.HeightStep * tile.Height), tile.OriginY);
         }
 
         foreach (AtlasCell obj in art.Cells.Where(c => c.Kind == "object"))
         {
-            Assert.Equal((64, 64, 32, 48), (obj.W, obj.H, obj.OriginX, obj.OriginY));
+            Assert.Equal((32, 32, 16, 24), (obj.W, obj.H, obj.OriginX, obj.OriginY));
         }
     }
 
@@ -110,7 +110,10 @@ public sealed class AtlasTests
         JsonElement cells = doc.RootElement.GetProperty("cells");
 
         Assert.Equal(art.Cells.Count, cells.GetArrayLength());
-        Assert.Equal(16, doc.RootElement.GetProperty("heightStep").GetInt32());
+        Assert.Equal((32, 16, 8), (TileArt.TileWidth, TileArt.TileHeight, TileArt.HeightStep));
+        Assert.Equal(TileArt.TileWidth, doc.RootElement.GetProperty("tileWidth").GetInt32());
+        Assert.Equal(TileArt.TileHeight, doc.RootElement.GetProperty("tileHeight").GetInt32());
+        Assert.Equal(TileArt.HeightStep, doc.RootElement.GetProperty("heightStep").GetInt32());
         for (int i = 0; i < art.Cells.Count; i++)
         {
             Assert.Equal(art.Cells[i].Id, cells[i].GetProperty("id").GetString());
@@ -187,7 +190,7 @@ public sealed class AtlasTests
         using JsonDocument good = JsonDocument.Parse(File.ReadAllText(Path.Combine(TestPaths.Data, ArtGenerator.TablePath["data/".Length..])));
         Assert.True(schema.Evaluate(good.RootElement, new EvaluationOptions { OutputFormat = OutputFormat.Flag }).IsValid);
 
-        string bad = """{ "tileWidth": 64, "tileHeight": 32, "heightStep": 16, "atlases": [], "cells": [] }""";
+        string bad = """{ "tileWidth": 32, "tileHeight": 16, "heightStep": 8, "atlases": [], "cells": [] }""";
         using JsonDocument badDoc = JsonDocument.Parse(bad);
         Assert.False(schema.Evaluate(badDoc.RootElement, new EvaluationOptions { OutputFormat = OutputFormat.Flag }).IsValid);
     }

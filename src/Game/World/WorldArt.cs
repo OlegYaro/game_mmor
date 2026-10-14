@@ -39,7 +39,7 @@ public enum WorldObject : byte
 /// The TileSet built in code from the atlas table (ADR 0010) and the lookups from map data to tiles. One TileSet serves
 /// every chunk layer: source <see cref="GroundSource"/> holds the ground cells (one tile per biome × height × variant;
 /// the height art already contains the raised block, placed with <c>TextureOrigin</c>), source <see cref="ObjectSource"/>
-/// holds the objects with one alternative per height step (<c>TextureOrigin</c> lifted by 16 px per step), and source
+/// holds the objects with one alternative per height step (<c>TextureOrigin</c> lifted by the height step per step), and source
 /// <see cref="RiverSource"/> holds raised river blocks composed at load time (see <see cref="RiversRaised"/>).
 /// </summary>
 public sealed class WorldArt
@@ -75,7 +75,10 @@ public sealed class WorldArt
 
     private WorldArt(TileSet tileSet) => TileSet = tileSet;
 
-    /// <summary>The shared TileSet (isometric, DiamondDown, 64×32).</summary>
+    /// <summary>Pixels the tallest object art reaches above its tile's ground centre (from the table's object cells).</summary>
+    public int ObjectRise { get; private set; }
+
+    /// <summary>The shared TileSet (isometric, DiamondDown, <see cref="IsoProjection.TileWidth"/>×<see cref="IsoProjection.TileHeight"/>).</summary>
     public TileSet TileSet { get; }
 
     /// <summary>
@@ -114,7 +117,7 @@ public sealed class WorldArt
         art = null!;
         if (table.TileWidth != IsoProjection.TileWidth || table.TileHeight != IsoProjection.TileHeight || table.HeightStep != IsoProjection.HeightStep)
         {
-            error = $"Art table geometry {table.TileWidth}x{table.TileHeight}/{table.HeightStep} does not match the projection 64x32/16.";
+            error = $"Art table geometry {table.TileWidth}x{table.TileHeight}/{table.HeightStep} does not match the projection {IsoProjection.TileWidth}x{IsoProjection.TileHeight}/{IsoProjection.HeightStep}.";
             return false;
         }
 
@@ -174,6 +177,7 @@ public sealed class WorldArt
                 return false;
             }
 
+            built.ObjectRise = Math.Max(built.ObjectRise, cell.Origin.Y);
             built._objects[i] = AddTile(objects, cell, objectUnit, heights: Heights);
         }
 
@@ -318,21 +322,23 @@ public sealed class WorldArt
             return true; // flat rivers (headless or unreadable atlas)
         }
 
-        // Composite layout: one column per (bank biome, variant), rows for heights 1..3 stacked; cell heights 32 + 16h.
+        // Composite layout: one column per (bank biome, variant), rows for heights 1..3 stacked; cell sizes come from the table's block cells.
         int columns = LandKinds * Variants;
+        int cellWidth = table.TileWidth;
+        int step = table.HeightStep;
         int[] rowTop = new int[Heights];
         int imageHeight = 0;
         for (int h = 1; h < Heights; h++)
         {
             rowTop[h] = imageHeight;
-            imageHeight += IsoProjection.TileHeight + (IsoProjection.HeightStep * h);
+            imageHeight += table.TileHeight + (step * h);
         }
 
-        var composite = Image.CreateEmpty(columns * IsoProjection.TileWidth, imageHeight, false, Image.Format.Rgba8);
+        var composite = Image.CreateEmpty(columns * cellWidth, imageHeight, false, Image.Format.Rgba8);
         var source = new TileSetAtlasSource
         {
             Texture = null,
-            TextureRegionSize = new Vector2I(IsoProjection.TileWidth, IsoProjection.HeightStep),
+            TextureRegionSize = new Vector2I(cellWidth, step),
             UseTexturePadding = false,
         };
         var pending = new List<(Vector2I Coords, Vector2I Size, Vector2I Origin, int Kind, int Height, int Variant)>();
@@ -349,15 +355,15 @@ public sealed class WorldArt
                         continue;
                     }
 
-                    var at = new Vector2I(column * IsoProjection.TileWidth, rowTop[h]);
+                    var at = new Vector2I(column * cellWidth, rowTop[h]);
                     composite.BlitRect(atlas, block.Region, at);
 
-                    // The top face of a block cell spans its top 32 rows (origin minus h steps minus half a tile).
-                    int topFace = block.Origin.Y - (IsoProjection.HeightStep * h) - IsoProjection.HalfHeight;
+                    // The top face of a block cell spans its top TileHeight rows (origin minus h steps minus half a tile).
+                    int topFace = block.Origin.Y - (step * h) - (table.TileHeight / 2);
                     composite.BlendRect(atlas, flat.Region, at + new Vector2I(0, topFace));
-                    var size = new Vector2I(1, block.Region.Size.Y / IsoProjection.HeightStep);
+                    var size = new Vector2I(1, block.Region.Size.Y / step);
                     var origin = new Vector2I(block.Origin.X - (block.Region.Size.X / 2), block.Origin.Y - (block.Region.Size.Y / 2));
-                    pending.Add((new Vector2I(column, rowTop[h] / IsoProjection.HeightStep), size, origin, kind, h, v));
+                    pending.Add((new Vector2I(column, rowTop[h] / step), size, origin, kind, h, v));
                 }
             }
         }
@@ -398,7 +404,7 @@ public sealed class WorldArt
     }
 
     // One source per atlas image. The region unit is the GCD of all cell positions and sizes, so differently sized
-    // cells (64x32 flat diamonds, 64x80 height-3 blocks) are tiles spanning several units.
+    // cells (flat diamonds, tall blocks, 32x32 objects) are tiles spanning several units.
     private static TileSetAtlasSource? CreateSource(AtlasTable table, string atlasId, out Vector2I unit, out string error)
     {
         unit = default;

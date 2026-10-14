@@ -259,7 +259,7 @@ public sealed class ChunkManager
     }
 
     // Screen bounding box of a chunk's diamond including the highest blocks.
-    private static Rect2 ChunkRect(int cx, int cy)
+    private Rect2 ChunkRect(int cx, int cy)
     {
         int x0 = cx * ChunkCoord.Size;
         int y0 = cy * ChunkCoord.Size;
@@ -269,8 +269,9 @@ public sealed class ChunkManager
         float top = IsoProjection.TileCenter(x0, y0, TerrainMap.MaxHeight).Py - IsoProjection.HalfHeight;
         float bottom = IsoProjection.TileCenter(x0 + last, y0 + last).Py + IsoProjection.HalfHeight;
 
-        // Objects stick up above their tile (art up to 48 px above the ground centre).
-        return new Rect2(left, top - IsoProjection.TileHeight, right - left, bottom - top + IsoProjection.TileHeight);
+        // Objects stick up above their tile (the art table gives how far above the ground centre).
+        int rise = Math.Max(_art?.ObjectRise ?? 0, IsoProjection.TileHeight);
+        return new Rect2(left, top - rise, right - left, bottom - top + rise);
     }
 
     private void ReleaseFar()

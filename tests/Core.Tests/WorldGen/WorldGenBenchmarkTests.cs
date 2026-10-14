@@ -4,9 +4,9 @@ using Core.WorldGen;
 namespace Core.Tests.WorldGen;
 
 /// <summary>
-/// Smoke checks for FR-WORLD-02 (1024² world in ≤ 30 s) over the whole pipeline (<see cref="WorldGenerator.Generate"/>,
-/// ADR 0006 steps 1–9). Thresholds are generous so a loaded CI machine in Debug never fails them; the printed times
-/// are the useful part. Excluded with <c>--filter "Category!=Benchmark"</c>. Runs alone, after the parallel tests, so
+/// Smoke checks for FR-WORLD-02 (1024² world in ≤ 30 s) and the 2048² default size (P-07) over the whole pipeline
+/// (<see cref="WorldGenerator.Generate"/>, ADR 0006 steps 1–9). Thresholds are generous so a loaded CI machine in Debug
+/// never fails them, except the 2048² Release budget, which is the M1.1 target; the printed times are the useful part. Excluded with <c>--filter "Category!=Benchmark"</c>. Runs alone, after the parallel tests, so
 /// the timing is not distorted by other generators running at the same time.
 /// </summary>
 [Collection(WorldGenBenchmarkGroup.Name)]
@@ -16,6 +16,14 @@ public sealed class WorldGenBenchmarkTests(ITestOutputHelper output)
 
     // The FR-WORLD-02 budget for 1024² (v1); measured in M1 so the risk is visible early.
     private const double MaxSeconds1024 = 30.0;
+
+    // 2048² is the default size (P-07) and a load regenerates it: hard budget 8 s in Release (measured about 2 s on an
+    // M-series Mac). Debug code is about four times slower (measured about 7.5 s), so Debug runs only get a sanity bound.
+#if DEBUG
+    private const double MaxSeconds2048 = 40.0;
+#else
+    private const double MaxSeconds2048 = 8.0;
+#endif
 
     [Fact]
     [Trait("Req", "FR-WORLD-02")]
@@ -33,6 +41,11 @@ public sealed class WorldGenBenchmarkTests(ITestOutputHelper output)
         TerrainInvariants.AssertAll(world.Terrain);
         WorldInvariants.AssertAll(world, WorldGenTestData.Params);
     }
+
+    [Fact]
+    [Trait("Req", "FR-WORLD-02")]
+    [Trait("Category", "Benchmark")]
+    public void World2048StaysWithinTheBudget() => Assert.Equal(2048, Measure(2048, MaxSeconds2048).Size);
 
     private WorldMap Measure(int size, double maxSeconds)
     {

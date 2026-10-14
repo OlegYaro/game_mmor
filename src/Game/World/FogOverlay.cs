@@ -66,6 +66,7 @@ public partial class FogOverlay : Node2D
         _material ??= new ShaderMaterial { Shader = GD.Load<Shader>(ShaderPath) };
         Material = _material;
         _material.SetShaderParameter("map_size", size);
+        _material.SetShaderParameter("geometry", new Vector3(IsoProjection.TileWidth, IsoProjection.TileHeight, IsoProjection.HeightStep));
         (int minX, int minY, int maxX, int maxY) = IsoProjection.MapBounds(size);
         _rect = new Rect2(minX - OuterMargin, minY - OuterMargin, maxX - minX + (2 * OuterMargin), maxY - minY + (2 * OuterMargin));
         Refresh();

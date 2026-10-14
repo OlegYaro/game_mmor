@@ -93,10 +93,11 @@ public sealed class WorldGenContentTests
         Assert.Equal(["forest", "meadow"], world.Resources.Trees.Biomes.Select(b => b.Biome));
         Assert.Equal(["mountain"], world.Resources.Ore.Biomes.Select(b => b.Biome));
         Assert.Equal(["chest", "ruins", "lair"], world.PointsOfInterest.Kinds.Select(k => k.Kind));
-        Assert.Equal(1600, world.PointsOfInterest.TilesPerPoi);
-        Assert.Equal(40, world.Start.ZoneRadius);
+        // Lengths in tiles on the 32x16 grid: twice the 64x32 values (40, 120), areas four times (1600), P-07.
+        Assert.Equal(6400, world.PointsOfInterest.TilesPerPoi);
+        Assert.Equal(80, world.Start.ZoneRadius);
         Assert.Equal(["orc", "human"], world.Settlements.Factions.Select(f => f.Faction));
-        Assert.Equal(120, world.Settlements.Factions[0].MinStartDistance);
+        Assert.Equal(240, world.Settlements.Factions[0].MinStartDistance);
     }
 
     [Fact]

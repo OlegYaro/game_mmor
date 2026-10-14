@@ -4,7 +4,7 @@ string root = ArtGenerator.FindRepoRoot(AppContext.BaseDirectory);
 
 if (args.Length >= 2 && args[0] == "preview")
 {
-    File.WriteAllBytes(args[1], PngWriter.Encode(Preview.Render(ArtGenerator.Generate())));
+    File.WriteAllBytes(args[1], PngWriter.Encode(Preview.Enlarge(Preview.Render(ArtGenerator.Generate()))));
     Console.WriteLine("artgen: preview -> " + args[1]);
     return;
 }

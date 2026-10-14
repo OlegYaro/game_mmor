@@ -314,7 +314,10 @@ public sealed record BerryParams(
 /// Step 6: points of interest (FR-WORLD-07, B7), placed Poisson-disk style (dart throwing in seeded order with a
 /// minimum spacing) on flat land until the target count is reached.
 /// </summary>
-/// <param name="TilesPerPoi">Target density: one point per this many land tiles (1600 = one per 40x40).</param>
+/// <param name="TilesPerPoi">
+/// Target density: one point per this many land tiles (6400 = one per 80x80, i.e. FR-WORLD-07's one per 40x40 tiles of
+/// the former 64x32 grid, P-07).
+/// </param>
 /// <param name="MinSpacing">Smallest distance in tiles between two points.</param>
 /// <param name="EdgeMargin">Points keep this many tiles from the map edge.</param>
 /// <param name="Kinds">Kinds with their relative weights.</param>
@@ -378,7 +381,10 @@ public sealed record SettlementParams(
 /// <summary>Sites of one faction.</summary>
 /// <param name="Faction">Faction name: <c>human</c> or <c>orc</c>.</param>
 /// <param name="PerMillionTiles">Target number of sites per 1 000 000 map tiles (at least one on any map when positive).</param>
-/// <param name="MinStartDistance">Smallest distance in tiles from the start to a site centre (120 for evil factions, FR-WORLD-09).</param>
+/// <param name="MinStartDistance">
+/// Smallest distance in tiles from the start to a site centre (at least 240 for evil factions: FR-WORLD-09's 120 tiles of
+/// the former 64x32 grid, P-07).
+/// </param>
 /// <param name="PreferredBiome">Clearings in this biome are tried first.</param>
 public sealed record FactionSitesDef(
     [property: RegularExpression(WorldNames.FactionPattern)] string Faction,
