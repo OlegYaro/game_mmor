@@ -31,6 +31,12 @@ jobs:
       - name: Test with coverage
         run: dotnet test tests/Core.Tests/Core.Tests.csproj -c Release --no-build --nologo --collect:"XPlat Code Coverage" --results-directory TestResults
 
+      - name: Schemas up to date
+        shell: bash
+        run: |
+          dotnet run --project tools/SchemaGen/SchemaGen.csproj -c Release --nologo
+          git diff --exit-code data/schema
+
       - name: Coverage report (ReportGenerator, 70% line threshold)
         if: matrix.os == 'macos-latest'
         shell: pwsh

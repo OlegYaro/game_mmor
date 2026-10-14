@@ -18,6 +18,15 @@ config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 
 CrashGuard="*res://CrashGuard.cs"
 
+[game]
+
+world_seed="12345"
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://locale/strings.en.translation", "res://locale/strings.ru.translation")
+locale/fallback="en"
+
 [display]
 
 window/size/viewport_width=1920

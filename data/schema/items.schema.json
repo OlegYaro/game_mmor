@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ItemFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "stackSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "nameKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "spoilsInto": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null,
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          }
+        },
+        "required": [
+          "id",
+          "stackSize",
+          "weight"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

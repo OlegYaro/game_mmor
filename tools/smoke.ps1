@@ -11,6 +11,8 @@ $log = if ($env:SMOKE_LOG) { $env:SMOKE_LOG } else { Join-Path $logDir 'smoke.lo
 $out = Join-Path $logDir 'smoke.out'
 Remove-Item -Force -ErrorAction SilentlyContinue $log, $out
 
+& "$PSScriptRoot/sync-data.ps1"
+
 Write-Host 'smoke: dotnet build'
 dotnet build Game.sln -c Debug --nologo -v q
 if ($LASTEXITCODE -ne 0) { exit 1 }

@@ -24,3 +24,5 @@ coverage/
 *.csproj.old*
 # Generated copy of the root data/ folder, synced before export (ADR 0002)
 src/Game/data/
+# Generated copy of locale/, synced before export
+src/Game/locale/

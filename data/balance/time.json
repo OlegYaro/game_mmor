@@ -1,0 +1,14 @@
+{
+  "$schema": "../schema/balance.schema.json",
+  "items": [
+    {
+      "id": "time",
+      "ticksPerSecond": 10,
+      "realMinutesPerGameDay": 15,
+      "nightPermille": 333,
+      "daysPerWeek": 7,
+      "daysPerSeason": 15,
+      "seasonsPerYear": 4
+    }
+  ]
+}

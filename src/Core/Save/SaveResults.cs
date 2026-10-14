@@ -1,0 +1,55 @@
+using Core.Sim;
+
+namespace Core.Save;
+
+/// <summary>Why a save could not be loaded.</summary>
+public enum SaveErrorKind
+{
+    /// <summary>The file could not be read.</summary>
+    Io,
+
+    /// <summary>No valid header line: not a save file, or truncated at the start.</summary>
+    InvalidHeader,
+
+    /// <summary>The file was written by a newer build (format version above <see cref="SaveFormat.CurrentVersion"/>).</summary>
+    UnsupportedVersion,
+
+    /// <summary>The file is older than the oldest version the migration chain can bring up to date.</summary>
+    MissingMigration,
+
+    /// <summary>The header names a codec this build does not know.</summary>
+    UnknownCodec,
+
+    /// <summary>The body cannot be decoded or does not match the format (damaged or hand-edited file).</summary>
+    CorruptBody,
+
+    /// <summary>The body parsed but describes an impossible simulation state.</summary>
+    InvalidState,
+}
+
+/// <summary>A load failure with a message for logs and the player.</summary>
+/// <param name="Kind">Category.</param>
+/// <param name="Message">Human-readable detail (English, for logs; Game maps <paramref name="Kind"/> to localized text).</param>
+public sealed record SaveError(SaveErrorKind Kind, string Message);
+
+/// <summary>Outcome of <see cref="SaveGame.Read(Stream, Content.ContentCatalog, Logging.SimLog?)"/>.</summary>
+/// <param name="Simulation">The restored simulation, or null on failure.</param>
+/// <param name="Header">The header after migration (format version is current), or null when it could not be read.</param>
+/// <param name="SourceFormatVersion">Format version found in the file, or 0 when the header could not be read.</param>
+/// <param name="Error">Why loading failed, or null on success.</param>
+public sealed record SaveLoadResult(Simulation? Simulation, SaveHeader? Header, int SourceFormatVersion, SaveError? Error)
+{
+    /// <summary>True when <see cref="Simulation"/> is set.</summary>
+    public bool Succeeded => Simulation is not null;
+}
+
+/// <summary>Options for writing saves.</summary>
+/// <param name="Indented">
+/// Developer flag: write the body as indented, uncompressed JSON (codec <see cref="SaveFormat.CodecJson"/>) for
+/// reading by eye. Such files load like normal saves.
+/// </param>
+public sealed record SaveWriteOptions(bool Indented = false)
+{
+    /// <summary>Normal saves: compact JSON, Brotli.</summary>
+    public static SaveWriteOptions Default { get; } = new();
+}

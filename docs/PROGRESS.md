@@ -1,7 +1,7 @@
 # Журнал работы
 
 ## Текущий статус
-Веха M0: не начата. Фазы 0-2 завершены (подготовка), ждём «ок» владельца на старт M0.
+Веха M0 реализована (14.10.2026), ждёт проверки владельцем. Следующая: M1 «Мир и рендер».
 
 ## Фаза 0. Решения (2026-10-14)
 Выбран стек: Godot 4 + C#, чистый Core без Godot. Целевые платформы MVP: macOS и Windows. Коммиты только локальные. Значения GDD по умолчанию приняты.
@@ -11,6 +11,33 @@
 
 ## Фаза 2. Каркас проекта (2026-10-14)
 Создан каркас: `Game.sln`, `src/Core`, `src/Game` (Godot, smoke-режим, `CrashGuard`), `tests/Core.Tests`. Добавлены скрипты `tools/` (bash и PowerShell), CI в `.github/workflows/ci.yml`, `CLAUDE.md`, `README.md`, настройки проекта для Claude Code (`.claude/settings.json`, хук сборки по `.cs`), экспорт-пресеты macOS и Windows. Проверено локально: сборка, тесты, smoke (включая обнаружение `--smoke-throw`), экспорт. Не проверено: `.ps1` и CI (нет Windows и GitHub).
+
+## Веха M0. Фундамент (2026-10-14)
+Статус: реализовано, ждёт проверки владельцем.
+
+Сделано:
+- Determinism: SplitMix64, xoshiro256**, RngStreams, StateWriter, XxHash3.
+- Entities.
+- Simulation: Calendar, TickScheduler.
+- SimLog.
+- Content: каталог и JSON-схемы, генерация через `tools/SchemaGen`.
+- Save: формат v1 с цепочкой миграций.
+- Replay: эталонные хэши (golden).
+- DevConsole.
+- Game: SimulationHost, HUD, консоль, локализация ru/en, smoke.
+
+Отклонения:
+- пространство имён `Core.Sim` вместо `Core.Simulation`;
+- имя кодека `json-brotli` (без плюса);
+- dev-сохранения с отступами пишутся несжатыми, кодек `json`;
+- в replay добавлено поле `endTick`;
+- лог исключён из хэша состояния;
+- тесты используют xunit.v3.mtp-off.
+
+Не проверено:
+- хэши на Windows (только в CI);
+- клавиатура и визуал HUD;
+- скрипты `.ps1`.
 
 ## Заметка: csharp-lsp
 `.tools/bin` и `.tools/dotnet` добавлены в `PATH` через `env` в `.claude/settings.json`. Работу LSP (диагностика по `.cs`) нужно проверить после перезапуска сессии и записать результат сюда: на момент записи не проверено.

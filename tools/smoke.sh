@@ -21,6 +21,8 @@ run_limited() {
     fi
 }
 
+"$ROOT/tools/sync-data.sh"
+
 echo "smoke: dotnet build"
 dotnet build Game.sln -c Debug --nologo -v q
 

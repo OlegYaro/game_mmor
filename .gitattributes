@@ -1,0 +1,10 @@
+# Save files: JSON header line + Brotli body. Line-ending conversion would corrupt them.
+*.sav binary
+
+# Golden files are compared across macOS and Windows (NFR-04); keep LF everywhere.
+tests/Core.Tests/Golden/*.json text eol=lf
+tests/Core.Tests/Golden/*.txt text eol=lf
+
+# Content and schemas are hashed and compared byte-for-byte (content hash, stale-schema test); keep LF.
+data/**/*.json text eol=lf
+locale/*.csv text eol=lf

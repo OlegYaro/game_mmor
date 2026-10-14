@@ -1,6 +1,31 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Main.cs" id="1_main"]
+[ext_resource type="Script" path="res://Sim/SimulationHost.cs" id="2_host"]
+[ext_resource type="Script" path="res://Ui/Hud.cs" id="3_hud"]
+[ext_resource type="Script" path="res://Ui/DevConsolePanel.cs" id="4_console"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
+
+[node name="SimulationHost" type="Node" parent="."]
+script = ExtResource("2_host")
+
+[node name="Ui" type="CanvasLayer" parent="."]
+
+[node name="Hud" type="Control" parent="Ui"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_hud")
+
+[node name="DevConsolePanel" type="PanelContainer" parent="Ui"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 360.0
+grow_horizontal = 2
+script = ExtResource("4_console")

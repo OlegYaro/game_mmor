@@ -1,0 +1,17 @@
+keys,ru,en
+item.wood.name,Дерево,Wood
+item.stone.name,Камень,Stone
+item.wheat.name,Пшеница,Wheat
+ui.hud.day,День,Day
+ui.hud.night,Ночь,Night
+ui.speed.paused,Пауза,Paused
+ui.hud.daylight,Светло,Daylight
+ui.hud.season.spring,Весна,Spring
+ui.hud.season.summer,Лето,Summer
+ui.hud.season.autumn,Осень,Autumn
+ui.hud.season.winter,Зима,Winter
+ui.hud.tick,Тик,Tick
+ui.speed.label,Скорость,Speed
+ui.hud.lang_hint,F2 - язык,F2 - language
+ui.console.title,Консоль разработчика (~),Developer console (~)
+ui.console.placeholder,Введите команду (help),Enter a command (help)
