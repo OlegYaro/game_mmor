@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  core:
+    name: core (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: dotnet build Game.sln -c Release --nologo
+
+      - name: Test with coverage
+        run: dotnet test tests/Core.Tests/Core.Tests.csproj -c Release --no-build --nologo --collect:"XPlat Code Coverage" --results-directory TestResults
+
+      - name: Coverage report (ReportGenerator, 70% line threshold)
+        if: matrix.os == 'macos-latest'
+        shell: pwsh
+        run: |
+          dotnet tool restore
+          dotnet reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:TestResults/report -reporttypes:"Html;JsonSummary"
+          $line = (Get-Content TestResults/report/Summary.json -Raw | ConvertFrom-Json).summary.linecoverage
+          Write-Host "Line coverage: $line%"
+          if ($line -lt 70) { Write-Error "Line coverage $line% is below 70%"; exit 1 }
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage-${{ matrix.os }}
+          path: TestResults
+          if-no-files-found: ignore
+
+  smoke:
+    name: smoke (ubuntu-latest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - uses: chickensoft-games/setup-godot@v2.4.3
+        with:
+          version: 4.7.2
+          use-dotnet: true
+
+      - name: Smoke test
+        run: tools/smoke.sh
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: smoke-logs
+          path: .tools/logs
+          if-no-files-found: ignore

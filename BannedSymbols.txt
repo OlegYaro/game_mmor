@@ -1,0 +1,51 @@
+# APIs banned in Core (ADR 0005). Format: documentation comment ID; description after ';'.
+# Enforced by Microsoft.CodeAnalysis.BannedApiAnalyzers (RS0030), which is an error in Core.
+
+# --- Wall-clock time: Core only knows the tick number ---
+P:System.DateTime.Now;Wall-clock time is non-deterministic. Core uses the tick number (ADR 0005).
+P:System.DateTime.UtcNow;Wall-clock time is non-deterministic. Core uses the tick number (ADR 0005).
+P:System.DateTime.Today;Wall-clock time is non-deterministic. Core uses the tick number (ADR 0005).
+P:System.DateTimeOffset.Now;Wall-clock time is non-deterministic. Core uses the tick number (ADR 0005).
+P:System.DateTimeOffset.UtcNow;Wall-clock time is non-deterministic. Core uses the tick number (ADR 0005).
+P:System.TimeProvider.System;Wall-clock time is non-deterministic. Core uses the tick number (ADR 0005).
+T:System.Diagnostics.Stopwatch;Real time must not affect logic. Measure in Game or in benchmark tests (ADR 0005).
+P:System.Environment.TickCount;Real time must not affect logic (ADR 0005).
+P:System.Environment.TickCount64;Real time must not affect logic (ADR 0005).
+
+# --- Randomness: only the project's seeded Xoshiro256** streams ---
+T:System.Random;Algorithm is not guaranteed across .NET versions. Use the project RNG streams (ADR 0005).
+M:System.Guid.NewGuid;Random IDs are non-deterministic. Use sequential entity IDs (ADR 0005).
+M:System.Guid.CreateVersion7;Time-based IDs are non-deterministic. Use sequential entity IDs (ADR 0005).
+M:System.Guid.CreateVersion7(System.DateTimeOffset);Time-based IDs are non-deterministic. Use sequential entity IDs (ADR 0005).
+
+# --- Process-randomized hashing ---
+M:System.String.GetHashCode;String hash codes are randomized per process. Use XxHash3 over canonical bytes (ADR 0005).
+M:System.String.GetHashCode(System.StringComparison);String hash codes are randomized per process (ADR 0005).
+M:System.String.GetHashCode(System.ReadOnlySpan{System.Char});String hash codes are randomized per process (ADR 0005).
+M:System.String.GetHashCode(System.ReadOnlySpan{System.Char},System.StringComparison);String hash codes are randomized per process (ADR 0005).
+T:System.HashCode;HashCode is randomized per process. Use XxHash3 over canonical bytes (ADR 0005).
+
+# --- Platform-dependent floating point (OS libm) ---
+M:System.Math.Sin(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Cos(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Tan(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.SinCos(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Asin(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Acos(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Atan(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Atan2(System.Double,System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Sinh(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Cosh(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Tanh(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Pow(System.Double,System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Exp(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Log(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Log(System.Double,System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Log2(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Log10(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+M:System.Math.Cbrt(System.Double);Result differs between platforms. Use integer/fixed-point math (ADR 0005).
+T:System.MathF;float lives only in Godot; Core uses integers and fixed-point (ADR 0005).
+
+# --- Parallelism: tick order must be deterministic ---
+T:System.Threading.Tasks.Parallel;Parallel execution order is non-deterministic (ADR 0005).
+T:System.Linq.ParallelEnumerable;PLINQ execution order is non-deterministic (ADR 0005).

@@ -1,0 +1,29 @@
+{
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true,
+    "csharp-lsp@claude-plugins-official": true,
+    "microsoft-docs@claude-plugins-official": true
+  },
+  "env": {
+    "DOTNET_ROOT": "/Users/krip/Gemini/Games/1/.tools/dotnet",
+    "DOTNET_CLI_HOME": "/Users/krip/Gemini/Games/1/.tools/dotnet-home",
+    "NUGET_PACKAGES": "/Users/krip/Gemini/Games/1/.tools/nuget",
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+    "DOTNET_NOLOGO": "1",
+    "PATH": "/Users/krip/Gemini/Games/1/.tools/bin:/Users/krip/Gemini/Games/1/.tools/dotnet:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/tools/hook-build.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

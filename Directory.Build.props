@@ -1,0 +1,20 @@
+<Project>
+  <!--
+    Shared settings for every project (Core, Game, tests).
+    Do not set OutputPath, BaseOutputPath, Configurations or DefineConstants here:
+    Godot.NET.Sdk owns them for Game (see docs/research/solution-structure.md).
+  -->
+  <PropertyGroup>
+    <!--
+      The single place for the target framework (ADR 0002). src/Game/Game.csproj has to repeat it
+      as a literal (Godot rewrites it otherwise); Directory.Build.targets checks they match.
+    -->
+    <SolutionTargetFramework>net10.0</SolutionTargetFramework>
+    <TargetFramework>$(SolutionTargetFramework)</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Version>0.1.0</Version>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+</Project>

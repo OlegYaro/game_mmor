@@ -1,0 +1,22 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+  <!--
+    Godot presentation layer. Must stay next to project.godot (ADR 0002).
+    Nullable, LangVersion etc. come from the root Directory.Build.props.
+    TreatWarningsAsErrors is intentionally not enabled yet: the Godot source generators
+    emit their own GD0xxx diagnostics (ADR 0002).
+  -->
+  <PropertyGroup>
+    <!--
+      Must be a literal here: on every editor start Godot 4.7 rewrites a missing or non-literal
+      TargetFramework in this file to net8.0. Directory.Build.targets fails the build if this
+      value differs from SolutionTargetFramework in Directory.Build.props.
+    -->
+    <TargetFramework>net10.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <RootNamespace>Game</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Core/Core.csproj" />
+  </ItemGroup>
+</Project>

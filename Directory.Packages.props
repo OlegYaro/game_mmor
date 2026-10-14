@@ -1,0 +1,18 @@
+<Project>
+  <!-- Central package management: versions live here, csproj files reference packages without versions. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup Label="Core">
+    <PackageVersion Include="System.IO.Hashing" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="5.6.0" />
+    <PackageVersion Include="JsonSchema.Net" Version="9.4.1" />
+  </ItemGroup>
+  <ItemGroup Label="Tests">
+    <!-- xunit.v3.mtp-off = xunit.v3 without Microsoft Testing Platform: VSTest mode, required for coverlet (ADR 0011). -->
+    <PackageVersion Include="xunit.v3.mtp-off" Version="4.0.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.1.0" />
+  </ItemGroup>
+</Project>

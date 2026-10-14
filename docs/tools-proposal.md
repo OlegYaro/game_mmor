@@ -1,15 +1,18 @@
 # Предлагаемые инструменты и зависимости
 
-Фаза 1, 14.10.2026. Ставлю только то, что одобрено владельцем. Всё ставится в домашнюю папку пользователя, без прав администратора и без системных пакетов. Подробности и источники: `docs/research/godot-dotnet.md`, `docs/research/claude-tooling.md`, `docs/research/testing.md`.
+Фаза 1, 14.10.2026. Ставлю только то, что одобрено владельцем. Всё ставится только в папку проекта (`.tools/`), без прав администратора, без системных пакетов и без влияния на другие проекты. Подробности и источники: `docs/research/godot-dotnet.md`, `docs/research/claude-tooling.md`, `docs/research/testing.md`.
 
 ## 1. Окружение разработки
 
+Решение владельца 14.10.2026: всё ставится только в папку проекта и не влияет на другие проекты.
+
 | Что | Версия | Куда и как | Зачем |
 | --- | --- | --- | --- |
-| .NET SDK | 10.0.4xx (LTS) | Официальный `dotnet-install.sh` в `~/.dotnet`, PATH в `~/.zprofile` | Сборка и тесты Core и Game |
-| Godot .NET | 4.7.2 stable, universal | Официальный zip с godotengine.org в `~/Applications` | Движок и редактор |
-| Шаблоны экспорта Godot .NET | 4.7.2 | Официальный `.tpz` в `~/Library/Application Support/Godot/export_templates/4.7.2.stable.mono/` | Экспорт под macOS и Windows |
-| csharp-ls | 0.28.x | `dotnet tool install --global csharp-ls`, ставится в `~/.dotnet/tools` | Навигация по C#-коду для меня через LSP |
+| .NET SDK | 10.0.4xx (LTS) | Официальный `dotnet-install.sh` с `--install-dir .tools/dotnet`, `~/.zprofile` не меняется | Сборка и тесты Core и Game |
+| Godot .NET | 4.7.2 stable, universal | Официальный zip с godotengine.org в `.tools/godot`, режим self-contained | Движок и редактор |
+| Шаблоны экспорта Godot .NET | 4.7.2 | Официальный `.tpz` в `.tools/godot`, рядом с движком | Экспорт под macOS и Windows |
+| csharp-ls | 0.28.x | `dotnet tool install csharp-ls --tool-path .tools/bin` | Навигация по C#-коду для меня через LSP |
+| NuGet-кэш | — | `.tools/nuget` (через `NUGET_PACKAGES`) | Пакеты проекта, отдельно от `~/.nuget` |
 
 Не нужны: Homebrew, gh CLI (репозиторий создаёшь ты), Docker.
 
@@ -24,6 +27,8 @@
 | `beckett-godot-mcp` | beckettlab, 44 звезды, обновлён 07.10.2026 | Сборка C#, логи игры, скриншоты из редактора | Молодой проект; плагин в редакторе | Позже, когда появятся сцены (M1–M2), отдельным решением |
 | `Coding-Solo/godot-mcp` | Coding-Solo, 6 тыс. звёзд | Запуск проекта | Не поддерживает C#, 73 открытых issue | Не ставить |
 | `IvanMurzak/Godot-MCP` | IvanMurzak | Аддон C# в редакторе | По умолчанию ходит в облако и добавляет NuGet в проект игры | Не ставить |
+
+Плагины `context7`, `microsoft-docs`, `csharp-lsp` и хук PostToolUse включаются только в `.claude/settings.json` проекта, в пользовательские настройки Claude Code не попадают.
 
 Логи и ошибки запущенной игры я получаю без MCP: headless-запуск Godot с записью лога в файл и чтение `user://logs/godot.log`.
 

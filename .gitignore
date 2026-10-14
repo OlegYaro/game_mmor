@@ -8,3 +8,19 @@ build/
 *.key
 .DS_Store
 *.log
+.tools/
+
+# .NET build output
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+coverage/
+
+# Godot
+.godot/
+# Backups Godot writes when it edits Game.csproj
+*.csproj.old*
+# Generated copy of the root data/ folder, synced before export (ADR 0002)
+src/Game/data/

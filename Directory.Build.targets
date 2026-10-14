@@ -1,0 +1,8 @@
+<Project>
+  <!-- Keeps every project, including the Godot-managed Game.csproj, on the shared target framework. -->
+  <Target Name="CheckSolutionTargetFramework" BeforeTargets="BeforeBuild">
+    <Error
+      Condition="'$(TargetFramework)' != '$(SolutionTargetFramework)'"
+      Text="$(MSBuildProjectName) targets '$(TargetFramework)', but Directory.Build.props sets SolutionTargetFramework='$(SolutionTargetFramework)'. Update the project's TargetFramework (Godot may have rewritten Game.csproj)." />
+  </Target>
+</Project>
