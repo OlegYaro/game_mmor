@@ -22,6 +22,16 @@ public sealed class SaveGuardTests
         ["SimulationState.Positions"] = ["ComponentsDto.position"],
         ["SimulationState.NextCommandSequence"] = ["CommandQueueDto.nextSequence"],
         ["SimulationState.PendingCommands"] = ["CommandQueueDto.pending"],
+        ["SimulationState.Difficulty"] = ["GameDto.difficulty"],
+        ["SimulationState.World"] = ["SaveBodyDto.game", "SaveBodyDto.fog"],
+        ["WorldState.MapSize"] = ["GameDto.mapSize"],
+        ["WorldState.GeneratorVersion"] = ["SaveHeader.worldGenVersion"],
+        ["WorldState.MapHash"] = ["GameDto.mapHash"],
+        ["WorldState.ExploredBits"] = ["FogDto.exploredRuns"],
+        ["WorldState.Revealers"] = ["ComponentsDto.revealer"],
+        ["ComponentEntry<Revealer>.Entity"] = ["RevealerEntryDto"],
+        ["ComponentEntry<Revealer>.Value"] = ["RevealerEntryDto"],
+        ["Revealer.Kind"] = ["RevealerEntryDto.kind"],
         ["Xoshiro256State.S0"] = ["RngStreamDto.s0"],
         ["Xoshiro256State.S1"] = ["RngStreamDto.s1"],
         ["Xoshiro256State.S2"] = ["RngStreamDto.s2"],
@@ -30,8 +40,8 @@ public sealed class SaveGuardTests
         ["EntityRegistryState.Alive"] = ["EntitiesDto.alive"],
         ["ComponentEntry<Position>.Entity"] = ["PositionEntryDto"],
         ["ComponentEntry<Position>.Value"] = ["PositionEntryDto"],
-        ["EntityId.Index"] = ["PositionEntryDto.index", "DestroyEntityCommandDto.index"],
-        ["EntityId.Generation"] = ["PositionEntryDto.generation", "DestroyEntityCommandDto.generation"],
+        ["EntityId.Index"] = ["PositionEntryDto.index", "RevealerEntryDto.index", "DestroyEntityCommandDto.index"],
+        ["EntityId.Generation"] = ["PositionEntryDto.generation", "RevealerEntryDto.generation", "DestroyEntityCommandDto.generation"],
         ["Position.X"] = ["PositionEntryDto.x", "SpawnMarkerCommandDto.x"],
         ["Position.Y"] = ["PositionEntryDto.y", "SpawnMarkerCommandDto.y"],
         ["PendingCommand.ExecuteTick"] = ["PendingCommandDto.executeTick"],
@@ -41,6 +51,7 @@ public sealed class SaveGuardTests
         ["SpawnMarkerCommand.Position"] = ["SpawnMarkerCommandDto"],
         ["DestroyEntityCommand.Kind"] = ["CommandDto.kind"],
         ["DestroyEntityCommand.Entity"] = ["DestroyEntityCommandDto"],
+        ["RevealAllCommand.Kind"] = ["CommandDto.kind"],
     };
 
     // State members deliberately not saved.
@@ -57,7 +68,6 @@ public sealed class SaveGuardTests
     {
         ["SaveHeader.formatVersion"] = "Container metadata: format version.",
         ["SaveHeader.gameVersion"] = "Container metadata: writer build, informational.",
-        ["SaveHeader.worldGenVersion"] = "Container metadata: generator version for the seed (ADR 0006).",
         ["SaveHeader.codec"] = "Container metadata: body encoding.",
         ["SaveBodyDto.components"] = "Grouping of the component stores.",
         ["SaveBodyDto.commands"] = "Grouping of the command queue.",
@@ -131,6 +141,7 @@ public sealed class SaveGuardTests
         [
             new SpawnMarkerCommand(new Core.Entities.Position(-5, 9)),
             new DestroyEntityCommand(new Core.Entities.EntityId(3, 4)),
+            new RevealAllCommand(),
         ];
 
         foreach (ISimCommand command in commands)

@@ -52,6 +52,9 @@ public partial class DevConsolePanel : PanelContainer
         _logSubscription = null;
     }
 
+    /// <summary>A console command (<c>goto</c>) asked the camera to centre on a tile.</summary>
+    public event Action<int, int>? CameraRequested;
+
     /// <summary>Connects the panel to the run it controls and starts listening to its log.</summary>
     public void Bind(SimulationHost host)
     {
@@ -118,6 +121,11 @@ public partial class DevConsolePanel : PanelContainer
         foreach (string text in result.Lines)
         {
             Print(text, result.Success ? null : "red");
+        }
+
+        if (result.CameraRequest is { } camera)
+        {
+            CameraRequested?.Invoke(camera.TileX, camera.TileY);
         }
     }
 

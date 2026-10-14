@@ -1,0 +1,12 @@
+# Third-party file kept as close to upstream as possible (Auburn/FastNoiseLite v1.1.1, MIT; ADR 0006), so it can
+# be diffed against upstream. Only style/performance rules that the upstream code style violates are silenced, and
+# only for this one file. Determinism rules stay on: BannedApiAnalyzers (RS0030) still checks it.
+[FastNoiseLite.cs]
+# Upstream naming: mSeed-style private fields.
+dotnet_diagnostic.IDE1006.severity = none
+# Upstream omits braces on single-line if/else.
+dotnet_diagnostic.IDE0011.severity = none
+# Upstream private helpers that could be static.
+dotnet_diagnostic.CA1822.severity = none
+# Upstream explicit default initializers (e.g. "= 0.0f").
+dotnet_diagnostic.CA1805.severity = none

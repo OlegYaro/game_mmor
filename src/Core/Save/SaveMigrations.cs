@@ -23,11 +23,46 @@ public interface ISaveMigration
 /// <summary>The migrations shipped with the game.</summary>
 public static class SaveMigrations
 {
-    /// <summary>
-    /// All shipped migrations. Empty: v1 is the first format version. The chain itself is exercised by tests with a
-    /// synthetic older version and a test-only migration.
-    /// </summary>
-    public static IReadOnlyList<ISaveMigration> All { get; } = [];
+    /// <summary>All shipped migrations, one per format step (order does not matter; the chain is resolved by version).</summary>
+    public static IReadOnlyList<ISaveMigration> All { get; } = [new SaveMigrationV1ToV2()];
+}
+
+/// <summary>
+/// v1 → v2 (M1, FR-SAVE-05, FR-WORLD-06). v1 saves hold only the simulation core, so they become games without a
+/// world: <c>game = {difficulty: "normal", mapSize: 0, mapHash: 0}</c>, <c>fog = {exploredRuns: []}</c> and an empty
+/// <c>components.revealer</c> store. The header is unchanged. Frozen: never edit after release.
+/// </summary>
+internal sealed class SaveMigrationV1ToV2 : ISaveMigration
+{
+    /// <inheritdoc />
+    public int FromVersion => 1;
+
+    /// <inheritdoc />
+    public void Migrate(JsonObject header, JsonObject body)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        if (body["components"] is not JsonObject components)
+        {
+            throw new InvalidOperationException("v1 body has no 'components' object.");
+        }
+
+        if (body.ContainsKey("game") || body.ContainsKey("fog") || components.ContainsKey("revealer"))
+        {
+            throw new InvalidOperationException("v1 body already has v2 members ('game', 'fog' or 'components.revealer').");
+        }
+
+        components["revealer"] = new JsonArray();
+        body["game"] = new JsonObject
+        {
+            ["difficulty"] = "normal",
+            ["mapSize"] = 0,
+            ["mapHash"] = 0,
+        };
+        body["fog"] = new JsonObject
+        {
+            ["exploredRuns"] = new JsonArray(),
+        };
+    }
 }
 
 /// <summary>A missing link in the migration chain.</summary>

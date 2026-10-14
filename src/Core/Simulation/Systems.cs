@@ -51,3 +51,17 @@ internal sealed class CommandSystem : ISimSystem
 
     public void Update(Simulation sim) => sim.ExecuteDueCommands();
 }
+
+/// <summary>
+/// Third system: recomputes the visible fog layer from the revealers and the time of day (FR-WORLD-06). Runs after
+/// the commands so circles reflect this tick's spawns and moves; cheap when nothing moved (one list compare).
+/// Simulations without a world skip it.
+/// </summary>
+internal sealed class FogSystem : ISimSystem
+{
+    public const string SystemName = "fog";
+
+    public string Name => SystemName;
+
+    public void Update(Simulation sim) => sim.RefreshFog();
+}

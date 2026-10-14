@@ -15,3 +15,58 @@ ui.speed.label,Скорость,Speed
 ui.hud.lang_hint,F2 - язык,F2 - language
 ui.console.title,Консоль разработчика (~),Developer console (~)
 ui.console.placeholder,Введите команду (help),Enter a command (help)
+ui.hud.difficulty,Сложность,Difficulty
+ui.hud.seed,Зерно,Seed
+ui.hud.esc_hint,Esc - меню,Esc - menu
+ui.hud.map,Карта,Map
+ui.menu.title,Главное меню,Main menu
+ui.menu.new_game,Новая игра,New game
+ui.menu.continue,Продолжить,Continue
+ui.menu.load,Загрузить,Load
+ui.menu.settings,Настройки,Settings
+ui.menu.quit,Выход,Quit
+ui.menu.back,Назад,Back
+ui.menu.no_saves,Нет сохранений,No saves yet
+ui.newgame.title,Новая игра,New game
+ui.newgame.seed,Зерно мира (число или текст),World seed (number or text)
+ui.newgame.random,Случайное,Random
+ui.newgame.difficulty,Сложность,Difficulty
+ui.newgame.map_size,Размер карты,Map size
+ui.newgame.size.512,512 x 512,512 x 512
+ui.newgame.size.1024,1024 x 1024 (больше и дольше),1024 x 1024 (larger and slower)
+ui.newgame.start,Начать,Start
+ui.newgame.generating,Создание мира...,Generating world...
+ui.difficulty.peaceful,Мирная,Peaceful
+ui.difficulty.normal,Обычная,Normal
+ui.difficulty.hard,Сложная,Hard
+ui.load.title,Загрузить игру,Load game
+ui.save.title,Сохранить игру,Save game
+ui.slot.empty,(пусто),(empty)
+ui.slot.manual,Слот {0},Slot {0}
+ui.slot.autosave,Автосохранение {0},Autosave {0}
+ui.slot.info,День {0} | зерно {1} | {2} | {3},Day {0} | seed {1} | {2} | {3}
+ui.slot.unreadable,(повреждено),(unreadable)
+ui.slot.load,Загрузить,Load
+ui.slot.save,Сохранить,Save
+ui.slot.delete,Удалить,Delete
+ui.confirm.delete,Удалить это сохранение?,Delete this save?
+ui.confirm.overwrite,Перезаписать это сохранение?,Overwrite this save?
+ui.confirm.yes,Да,Yes
+ui.confirm.no,Нет,No
+ui.settings.title,Настройки,Settings
+ui.settings.language,Язык,Language
+ui.settings.volume,Общая громкость,Master volume
+ui.pause.title,Меню паузы,Pause menu
+ui.pause.resume,Продолжить игру,Resume
+ui.pause.save,Сохранить игру,Save game
+ui.pause.load,Загрузить игру,Load game
+ui.pause.settings,Настройки,Settings
+ui.pause.to_menu,В главное меню,To main menu
+ui.toast.saved,Игра сохранена,Game saved
+ui.toast.save_failed,Не удалось сохранить. Проверьте место на диске,Could not save. Check free disk space
+ui.toast.autosave_failed,Автосохранение не удалось,Autosave failed
+ui.toast.load_failed,Не удалось загрузить сохранение,Could not load the save
+ui.toast.load_version,Сохранение сделано в более новой версии игры,The save was made by a newer game version
+ui.toast.load_worldgen,Сохранение несовместимо с этим генератором мира,The save does not match this world generator
+ui.toast.start_failed,Не удалось начать игру,Could not start the game
+ui.error.world_missing,Сцена мира не найдена (World/WorldView.tscn). Карта недоступна,World scene not found (World/WorldView.tscn). The map is unavailable

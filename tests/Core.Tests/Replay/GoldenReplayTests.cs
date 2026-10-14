@@ -171,6 +171,64 @@ public sealed class GoldenReplayTests(ITestOutputHelper output)
         Assert.True(second.IsFinished);
     }
 
+    // M1 scenario: a game with a world, fog through nightfall and dawn, a reveal command, and a save + load in the
+    // middle (between nightfall and the reveal); every sampled hash matches the golden of an uninterrupted run.
+    [Fact]
+    [Trait("Req", "NFR-04")]
+    [Trait("Req", "FR-SAVE-04")]
+    [Trait("Req", "FR-WORLD-01")]
+    [Trait("Req", "FR-WORLD-06")]
+    public void WorldScenarioWithFogRevealAndSaveLoadMatchesGolden()
+    {
+        ReplayGolden golden = GoldenFiles.World;
+        Assert.Equal(GoldenFiles.WorldOptions, golden.Replay.NewGame);
+        Assert.Contains(golden.Replay.Commands, c => c.Command is RevealAllCommand && c.Tick == GoldenFiles.WorldRevealTick);
+        Assert.Contains(golden.Replay.Commands, c => c.Command is DestroyEntityCommand);
+        Assert.True(golden.Expected.TryGet(golden.Replay.EndTick, out SubsystemHashes last));
+        Assert.Equal(
+            [Simulation.CalendarHashName, Simulation.RngHashName, Simulation.EntitiesHashName, Simulation.ComponentsHashName,
+                Simulation.CommandsHashName, Simulation.GameHashName, Simulation.FogHashName],
+            last.Entries.Select(e => e.Name));
+
+        ReplayPlayer first = ReplayPlayer.Start(golden.Replay, SimTestData.Real);
+        first.RunTo(6500);
+        Assert.True(first.Simulation.Now.IsNight);
+        SaveLoadResult loaded = SaveGame.Read(SaveGame.ToBytes(first.Simulation), SimTestData.Real);
+        Assert.True(loaded.Succeeded, loaded.Error?.Message);
+        Assert.Null(loaded.Simulation!.ComputeHashes().FindFirstMismatch(first.Simulation.ComputeHashes()));
+        var second = new ReplayPlayer(golden.Replay, loaded.Simulation);
+        second.RunToEnd();
+        var actual = new HashTrace();
+        actual.AddRange(first.Hashes);
+        actual.AddRange(second.Hashes);
+
+        AssertNoDivergence(golden.Expected, actual);
+        Assert.Equal(golden.Expected.Last!.Value.Hashes.Combined, actual.Last!.Value.Hashes.Combined);
+        Assert.Equal(0, loaded.Simulation.World!.Fog.CountStates().Unknown);
+    }
+
+    [Fact]
+    [Trait("Req", "NFR-04")]
+    [Trait("Req", "FR-WORLD-06")]
+    public void ReplacedRevealCommandIsReportedInFogSubsystem()
+    {
+        // Swap the reveal for a no-op (destroying a never-issued id) so the command sequence numbers stay the same and
+        // only the fog differs.
+        ReplayFile replay = GoldenFiles.World.Replay;
+        ReplayCommand[] altered = [.. replay.Commands.Select(c => c.Command is RevealAllCommand
+            ? c with { Command = new DestroyEntityCommand(new EntityId(9999, 1)) }
+            : c)];
+        HashTrace reference = GoldenFiles.RunDense(replay);
+
+        ReplayDivergence? divergence = ReplayComparer.FindFirstDivergence(reference, GoldenFiles.RunDense(
+            new ReplayFile(replay.Seed, replay.ContentHash, replay.EndTick, altered, replay.MapSize, replay.Difficulty)));
+
+        Assert.NotNull(divergence);
+        output.WriteLine(divergence.Describe());
+        Assert.Equal(GoldenFiles.WorldRevealTick, divergence.Tick);
+        Assert.Equal(Simulation.FogHashName, divergence.Subsystem);
+    }
+
     [Fact]
     [Trait("Req", "NFR-04")]
     public void GoldenReplayFilesAreCanonical()
@@ -179,6 +237,8 @@ public sealed class GoldenReplayTests(ITestOutputHelper output)
         Assert.Equal(Normalize(GoldenFiles.ReadText("replay_basic.json")), GoldenFiles.Basic.Replay.ToJson());
         Assert.Equal(Normalize(GoldenFiles.ReadText("replay_basic.hashes.txt")), GoldenFiles.Basic.Expected.ToText());
         Assert.Equal(Normalize(GoldenFiles.ReadText("scenario_m0.json")), GoldenFiles.Scenario.Replay.ToJson());
+        Assert.Equal(Normalize(GoldenFiles.ReadText("scenario_world_m1.json")), GoldenFiles.World.Replay.ToJson());
+        Assert.Equal(Normalize(GoldenFiles.ReadText("scenario_world_m1.hashes.txt")), GoldenFiles.World.Expected.ToText());
     }
 
     private void AssertNoDivergence(HashTrace expected, HashTrace actual)

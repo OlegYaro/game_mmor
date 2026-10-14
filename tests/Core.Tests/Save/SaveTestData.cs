@@ -39,6 +39,48 @@ internal static class SaveTestData
         return sim;
     }
 
+    /// <summary>Seed of <see cref="BuildV2Sample"/>; part of the frozen save_v2.sav expectations.</summary>
+    public const ulong V2SampleSeed = 0x5A5E_0002;
+
+    /// <summary>Map size of <see cref="BuildV2Sample"/>.</summary>
+    public const int V2SampleMapSize = 64;
+
+    /// <summary>
+    /// Script of the frozen <c>Golden/save_v2.sav</c> (first format with a world): a hard 64² game, a marker spawned
+    /// at tile (5, 6) in tick 1, the start marker moved by 3 tiles east before tick 3 (so explored is wider than
+    /// visible), 4 ticks run, then a pending <c>reveal_all</c> and a pending spawn at tile (1, 1).
+    /// </summary>
+    public static Simulation BuildV2Sample()
+    {
+        Simulation sim = Simulation.CreateNewGame(SimTestData.Real, new NewGameOptions(V2SampleSeed, V2SampleMapSize, Difficulty.Hard));
+        sim.Enqueue(new SpawnMarkerCommand(Position.FromTile(5, 6)));
+        sim.Step(2);
+        EntityId start = sim.World!.Revealers.Entities[0];
+        sim.Positions.Get(start) = new Position(sim.Positions.Get(start).X + (3 * Position.UnitsPerTile), sim.Positions.Get(start).Y);
+        sim.Step(2);
+        sim.Enqueue(new RevealAllCommand());
+        sim.Enqueue(new SpawnMarkerCommand(Position.FromTile(1, 1)));
+        return sim;
+    }
+
+    /// <summary>A new 64² game run for <paramref name="ticks"/> ticks with a few markers, ending with a pending reveal.</summary>
+    public static Simulation BuildWorld(ulong seed = 0xF06, int ticks = 30, Difficulty difficulty = Difficulty.Normal)
+    {
+        Simulation sim = Simulation.CreateNewGame(SimTestData.Real, new NewGameOptions(seed, 64, difficulty));
+        for (int i = 0; i < ticks; i++)
+        {
+            if (i % 7 == 0)
+            {
+                sim.Enqueue(new SpawnMarkerCommand(Position.FromTile(i % 64, (i * 3) % 64)));
+            }
+
+            sim.Step();
+        }
+
+        sim.Enqueue(new RevealAllCommand());
+        return sim;
+    }
+
     /// <summary>A longer busy run (seeded random script) ending with a pending spawn and a pending destroy of a live entity.</summary>
     public static Simulation BuildBusy(ulong seed = 0xBEEF, int ticks = 120)
     {

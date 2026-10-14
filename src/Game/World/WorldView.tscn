@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://World/WorldView.cs" id="1_view"]
+[ext_resource type="Script" path="res://World/FogOverlay.cs" id="2_fog"]
+[ext_resource type="Script" path="res://World/WorldCamera.cs" id="3_camera"]
+
+[node name="WorldView" type="Node2D"]
+script = ExtResource("1_view")
+
+[node name="Ground" type="Node2D" parent="."]
+
+[node name="Objects" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Fog" type="Node2D" parent="."]
+z_index = 100
+script = ExtResource("2_fog")
+
+[node name="Camera" type="Camera2D" parent="."]
+script = ExtResource("3_camera")

@@ -13,13 +13,30 @@ namespace Core.Save;
 public static class SaveFormat
 {
     /// <summary>Format version written by this build. Older versions are migrated on load; newer ones are rejected.</summary>
-    public const int CurrentVersion = 1;
+    /// <remarks>
+    /// v1 (M0): simulation core only. v2 (M1): adds <c>game</c> (difficulty, map size, map hash), <c>fog</c> (explored
+    /// runs) and the <c>revealer</c> component store; <see cref="SaveMigrations"/> brings v1 files up to v2 as games
+    /// without a world.
+    /// </remarks>
+    public const int CurrentVersion = 2;
 
     /// <summary>
-    /// Version of the world generator the save's seed must be fed to (ADR 0006). There is no generator yet (M2), so it
-    /// is 0; a save whose value differs from the running generator will need a full tile snapshot instead of diffs.
+    /// Version of the world generator the save's seed must be fed to (ADR 0006), written into every new header. It is
+    /// <see cref="WorldGen.WorldGenerator.Version"/>: loading regenerates the map from the seed with that generator.
     /// </summary>
-    public const int WorldGenVersion = 0;
+    public const int WorldGenVersion = WorldGen.WorldGenerator.Version;
+
+    /// <summary>
+    /// <c>worldGenVersion</c> of saves written before the world generator existed (M0, e.g. the committed
+    /// <c>save_v1.sav</c> sample): they hold no world, only the simulation core, and keep loading as such.
+    /// Any other value that this build's generator cannot reproduce is rejected with
+    /// <see cref="SaveErrorKind.UnsupportedWorldGenVersion"/>.
+    /// </summary>
+    public const int NoWorldGenVersion = 0;
+
+    /// <summary>True when a save with header <c>worldGenVersion</c> = <paramref name="worldGenVersion"/> can be loaded.</summary>
+    public static bool IsLoadableWorldGenVersion(int worldGenVersion) =>
+        worldGenVersion == NoWorldGenVersion || WorldGen.WorldGenerator.IsSupportedVersion(worldGenVersion);
 
     /// <summary>Codec of normal saves: canonical compact JSON, Brotli-compressed.</summary>
     public const string CodecBrotliJson = "json-brotli";

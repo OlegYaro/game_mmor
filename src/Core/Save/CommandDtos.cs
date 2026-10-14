@@ -18,6 +18,7 @@ namespace Core.Save;
     UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FailSerialization)]
 [JsonDerivedType(typeof(SpawnMarkerCommandDto), SpawnMarkerCommand.KindName)]
 [JsonDerivedType(typeof(DestroyEntityCommandDto), DestroyEntityCommand.KindName)]
+[JsonDerivedType(typeof(RevealAllCommandDto), RevealAllCommand.KindName)]
 public abstract record CommandDto
 {
     /// <summary>JSON name of the discriminator property.</summary>
@@ -36,6 +37,7 @@ public abstract record CommandDto
         {
             SpawnMarkerCommand c => new SpawnMarkerCommandDto(c.Position.X, c.Position.Y),
             DestroyEntityCommand c => new DestroyEntityCommandDto(c.Entity.Index, c.Entity.Generation),
+            RevealAllCommand => new RevealAllCommandDto(),
             _ => throw new NotSupportedException($"Command kind '{command.Kind}' ({command.GetType().Name}) has no CommandDto."),
         };
     }
@@ -57,4 +59,11 @@ public sealed record DestroyEntityCommandDto(int Index, int Generation) : Comman
 {
     /// <inheritdoc />
     public override ISimCommand ToCommand() => new DestroyEntityCommand(new EntityId(Index, Generation));
+}
+
+/// <summary>DTO of <see cref="RevealAllCommand"/>: no fields, just the kind.</summary>
+public sealed record RevealAllCommandDto : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new RevealAllCommand();
 }

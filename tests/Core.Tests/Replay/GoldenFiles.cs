@@ -27,6 +27,9 @@ internal static class GoldenFiles
     private static readonly Lazy<ReplayGolden> _scenario = new(() => LoadOrUpdate(
         "scenario_m0", ScenarioReplayScript, sampleInterval: 250));
 
+    private static readonly Lazy<ReplayGolden> _world = new(() => LoadOrUpdate(
+        "scenario_world_m1", WorldReplayScript, sampleInterval: 250));
+
     /// <summary>True when the run may (re)write goldens.</summary>
     public static bool Updating => Environment.GetEnvironmentVariable(UpdateVariable) == "1";
 
@@ -37,6 +40,18 @@ internal static class GoldenFiles
 
     /// <summary>M0 acceptance scenario: 10 000 ticks with scheduled commands; hashes every 250 ticks.</summary>
     public static ReplayGolden Scenario => _scenario.Value;
+
+    /// <summary>
+    /// M1 scenario: a new game on a 64² world (hard), through nightfall (fog radius halves) and dawn, with markers,
+    /// destroys and a <c>reveal</c> after nightfall; hashes every 250 ticks.
+    /// </summary>
+    public static ReplayGolden World => _world.Value;
+
+    /// <summary>New-game parameters of <see cref="World"/>.</summary>
+    public static NewGameOptions WorldOptions { get; } = new(0x3011D_F06, 64, Difficulty.Hard);
+
+    /// <summary>Tick at which <see cref="World"/> reveals the map (after nightfall at tick 6000).</summary>
+    public const long WorldRevealTick = 7000;
 
     public static string PathOf(string fileName) => Path.Combine(Directory, fileName);
 
@@ -81,18 +96,34 @@ internal static class GoldenFiles
     }
 
     private static ReplayFile BasicReplayScript() =>
-        RecordRandomCommands(seed: 0xB1A5ED, scriptSeed: 1, endTick: 300, spawnPermille: 200, destroyPermille: 120);
+        RecordRandomCommands(new Simulation(0xB1A5ED, SimTestData.Real), scriptSeed: 1, endTick: 300, spawnPermille: 200, destroyPermille: 120);
 
     private static ReplayFile ScenarioReplayScript() =>
-        RecordRandomCommands(seed: 0x5CE7A410, scriptSeed: 2, endTick: 10_000, spawnPermille: 8, destroyPermille: 5);
+        RecordRandomCommands(new Simulation(0x5CE7A410, SimTestData.Real), scriptSeed: 2, endTick: 10_000, spawnPermille: 8, destroyPermille: 5);
+
+    // The start marker (the only revealer) is entity 0; it is never destroyed, so the fog keeps a source.
+    private static ReplayFile WorldReplayScript() =>
+        RecordRandomCommands(Simulation.CreateNewGame(SimTestData.Real, WorldOptions), scriptSeed: 3, endTick: 9_500, spawnPermille: 6, destroyPermille: 4,
+            keepAlive: new EntityId(0, 1), extra: (tick, recorder) =>
+            {
+                if (tick == WorldRevealTick - 1)
+                {
+                    recorder.Enqueue(new RevealAllCommand());
+                }
+            });
 
     /// <summary>
     /// Records a replay by playing a seeded random script: per tick it may spawn markers (sometimes two in one tick),
     /// destroy a live entity, or destroy a stale id (which the simulation must ignore).
     /// </summary>
-    private static ReplayFile RecordRandomCommands(ulong seed, ulong scriptSeed, long endTick, int spawnPermille, int destroyPermille)
+    /// <remarks>
+    /// <paramref name="keepAlive"/> is never chosen as a victim; <paramref name="extra"/> may enqueue more commands
+    /// each tick (called with the current tick, after the random ones). Both default to no-ops, which keeps the M0
+    /// scripts (and their goldens) unchanged.
+    /// </remarks>
+    private static ReplayFile RecordRandomCommands(Simulation sim, ulong scriptSeed, long endTick, int spawnPermille, int destroyPermille,
+        EntityId? keepAlive = null, Action<long, ReplayRecorder>? extra = null)
     {
-        var sim = new Simulation(seed, SimTestData.Real);
         var recorder = new ReplayRecorder(sim);
         var script = new Xoshiro256StarStar(scriptSeed);
         var destroyed = new List<EntityId>();
@@ -109,7 +140,7 @@ internal static class GoldenFiles
             }
             else if (roll < spawnPermille + destroyPermille)
             {
-                EntityId[] alive = sim.Entities.Registry.AliveEntities().ToArray();
+                EntityId[] alive = sim.Entities.Registry.AliveEntities().Where(e => e != keepAlive).ToArray();
                 if (destroyed.Count > 0 && script.ChancePercent(15))
                 {
                     recorder.Enqueue(new DestroyEntityCommand(destroyed[script.NextInt(destroyed.Count)]));
@@ -122,6 +153,7 @@ internal static class GoldenFiles
                 }
             }
 
+            extra?.Invoke(sim.Tick, recorder);
             sim.Step();
         }
 

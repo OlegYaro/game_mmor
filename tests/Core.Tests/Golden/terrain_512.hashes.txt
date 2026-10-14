@@ -1,0 +1,5 @@
+# Terrain hashes (TerrainMap.ComputeHash): generator version, seed, size, hash.
+# Regenerate deliberately with UPDATE_GOLDEN=1 tools/test.sh.
+1 1 512 54587616a61a9dc7
+1 2 512 e9a599c09688f8b1
+1 3 512 9f000392788bbe91

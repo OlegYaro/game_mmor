@@ -27,6 +27,30 @@ public sealed record TimeBalanceDef(
     [property: Range(1, 1000)] int DaysPerSeason,
     [property: Range(1, 100)] int SeasonsPerYear) : IContentDef;
 
+/// <summary>
+/// Fog of war sight radii in tiles (FR-WORLD-06, B3), <c>data/balance/fog.json</c>. A tile is seen when its squared
+/// distance to the source tile is at most the squared radius. Night radii apply while the calendar says it is night.
+/// </summary>
+/// <param name="Id">Definition id.</param>
+/// <param name="HeroDay">Hero by day.</param>
+/// <param name="HeroNight">Hero at night.</param>
+/// <param name="VillagerDay">Villager by day.</param>
+/// <param name="VillagerNight">Villager at night.</param>
+/// <param name="TowerDay">Watch tower by day.</param>
+/// <param name="TowerNight">Watch tower at night.</param>
+public sealed record FogBalanceDef(
+    [property: RegularExpression(ContentId.Pattern)] string Id,
+    [property: Range(1, FogBalanceDef.MaxRadius)] int HeroDay,
+    [property: Range(1, FogBalanceDef.MaxRadius)] int HeroNight,
+    [property: Range(1, FogBalanceDef.MaxRadius)] int VillagerDay,
+    [property: Range(1, FogBalanceDef.MaxRadius)] int VillagerNight,
+    [property: Range(1, FogBalanceDef.MaxRadius)] int TowerDay,
+    [property: Range(1, FogBalanceDef.MaxRadius)] int TowerNight) : IContentDef
+{
+    /// <summary>Largest allowed radius; keeps one fog update cheap (a circle is at most 129 rows).</summary>
+    public const int MaxRadius = 64;
+}
+
 /// <summary>An item type.</summary>
 /// <param name="Id">Definition id.</param>
 /// <param name="StackSize">Maximum items in one stack.</param>
@@ -57,6 +81,13 @@ public static class ContentKeys
 /// <param name="Schema">Optional <c>$schema</c> reference.</param>
 public sealed record TimeBalanceFile(
     IReadOnlyList<TimeBalanceDef> Items,
+    [property: JsonPropertyName("$schema")] string? Schema = null);
+
+/// <summary>File envelope for <c>data/balance/fog.json</c>.</summary>
+/// <param name="Items">Definitions in the file.</param>
+/// <param name="Schema">Optional <c>$schema</c> reference.</param>
+public sealed record FogBalanceFile(
+    IReadOnlyList<FogBalanceDef> Items,
     [property: JsonPropertyName("$schema")] string? Schema = null);
 
 /// <summary>File envelope for <c>data/items/*.json</c>.</summary>

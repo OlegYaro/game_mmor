@@ -2,13 +2,18 @@ using System.Globalization;
 using Core.Content;
 using Core.Determinism;
 using Core.Entities;
+using Core.Fog;
 using Core.Logging;
 using Core.Save;
 using Core.Sim;
+using Core.WorldGen;
 
 namespace Core.DevConsole;
 
-/// <summary>The M0 console commands: help, tick, speed, pause, resume, seed, hash, spawn, save, load, log.</summary>
+/// <summary>
+/// The built-in console commands: help, tick, speed, pause, resume, seed, hash, spawn, save, load, log (M0) and
+/// world, worldhash, fog, reveal, goto (M1).
+/// </summary>
 internal static class BuiltInCommands
 {
     private const string SaveExtension = ".sav";
@@ -27,6 +32,11 @@ internal static class BuiltInCommands
         console.Register("save", "save <name>", "Save the game to the save directory.", Save);
         console.Register("load", "load <name>", "Load a save from the save directory.", Load);
         console.Register("log", "log <trace|debug|info|warn|error> [n]", "Set log verbosity, or print the last n events at that level or above.", Log);
+        console.Register("world", "world", "Print the world: seed, size, start, points of interest, sites, resources, warnings.", World);
+        console.Register("worldhash", "worldhash", "Print the map hash (same seed and size give the same hash).", WorldHash);
+        console.Register("fog", "fog", "Print how many tiles are unknown, explored and visible.", FogCounts);
+        console.Register("reveal", "reveal", "Mark the whole map explored (runs next tick, recorded in replays).", Reveal);
+        console.Register("goto", "goto <x> <y>", "Move the camera to a tile.", GoTo);
     }
 
     private static ConsoleResult Usage(DevConsole console, string name) =>
@@ -134,6 +144,115 @@ internal static class BuiltInCommands
         Simulation sim = context.Simulation.Current;
         PendingCommand pending = sim.Enqueue(new SpawnMarkerCommand(Position.FromTile(x, y)));
         return ConsoleResult.Ok(string.Create(CultureInfo.InvariantCulture, $"marker queued at {x},{y} for tick {pending.ExecuteTick}"));
+    }
+
+    private static bool TryGetWorld(DevConsoleContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out GameWorld? world)
+    {
+        world = context.Simulation.Current.World;
+        return world is not null;
+    }
+
+    private static ConsoleResult NoWorld() => ConsoleResult.Fail("This simulation has no world (start a new game).");
+
+    private static ConsoleResult World(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        if (args.Count != 0)
+        {
+            return ConsoleResult.Fail("Usage: world");
+        }
+
+        if (!TryGetWorld(context, out GameWorld? world))
+        {
+            return NoWorld();
+        }
+
+        Simulation sim = context.Simulation.Current;
+        WorldMap map = world.Map;
+        CultureInfo inv = CultureInfo.InvariantCulture;
+        int[] resources = map.CountResources();
+        List<string> lines =
+        [
+            string.Create(inv, $"seed {map.Seed} | size {map.Size}x{map.Size} | generator v{map.Version} | difficulty {DifficultyNames.ToName(sim.Difficulty)}"),
+            string.Create(inv, $"start {map.Start.X},{map.Start.Y} (relaxed: {map.StartRelaxation})"),
+            "points of interest " + map.PointsOfInterest.Count.ToString(inv) + ": " + string.Join(", ",
+                WorldNames.PoiKinds.Select(k => string.Create(inv, $"{WorldNames.ToName(k)} {map.PointsOfInterest.Count(p => p.Kind == k)}"))),
+            "settlement sites " + map.SettlementSites.Count.ToString(inv) + ": " + string.Join(", ",
+                WorldNames.Factions.Select(f => string.Create(inv, $"{WorldNames.ToName(f)} {map.SettlementSites.Count(s => s.Faction == f)}"))),
+            "resource tiles: " + string.Join(", ",
+                WorldNames.Resources.Select(r => string.Create(inv, $"{WorldNames.ToName(r)} {resources[(int)r]}"))),
+            "warnings " + map.Warnings.Count.ToString(inv) + (map.Warnings.Count == 0 ? string.Empty : ":"),
+        ];
+        lines.AddRange(map.Warnings.Select(w => "  " + w));
+        return ConsoleResult.Ok(lines);
+    }
+
+    private static ConsoleResult WorldHash(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        if (args.Count != 0)
+        {
+            return ConsoleResult.Fail("Usage: worldhash");
+        }
+
+        return TryGetWorld(context, out GameWorld? world) ? ConsoleResult.Ok(ContentHash.Format(world.MapHash)) : NoWorld();
+    }
+
+    private static ConsoleResult FogCounts(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        if (args.Count != 0)
+        {
+            return ConsoleResult.Fail("Usage: fog");
+        }
+
+        if (!TryGetWorld(context, out GameWorld? world))
+        {
+            return NoWorld();
+        }
+
+        FogCounts counts = world.Fog.CountStates();
+        return ConsoleResult.Ok(string.Create(CultureInfo.InvariantCulture,
+            $"unknown {counts.Unknown} | explored {counts.Explored} | visible {counts.Visible} | total {world.Fog.TileCount}"));
+    }
+
+    private static ConsoleResult Reveal(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        if (args.Count != 0)
+        {
+            return ConsoleResult.Fail("Usage: reveal");
+        }
+
+        if (!TryGetWorld(context, out _))
+        {
+            return NoWorld();
+        }
+
+        PendingCommand pending = context.Simulation.Current.Enqueue(new RevealAllCommand());
+        return ConsoleResult.Ok(string.Create(CultureInfo.InvariantCulture, $"reveal queued for tick {pending.ExecuteTick}"));
+    }
+
+    private static ConsoleResult GoTo(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        const string UsageText = "Usage: goto <x> <y> (tile coordinates)";
+        if (args.Count != 2)
+        {
+            return ConsoleResult.Fail(UsageText);
+        }
+
+        if (!TryParseInt(args[0], out int x) || !TryParseInt(args[1], out int y))
+        {
+            return ConsoleResult.Fail($"Coordinates must be whole numbers. {UsageText}");
+        }
+
+        if (!TryGetWorld(context, out GameWorld? world))
+        {
+            return NoWorld();
+        }
+
+        if (!world.Map.Terrain.Contains(x, y))
+        {
+            return ConsoleResult.Fail(string.Create(CultureInfo.InvariantCulture, $"Tile {x},{y} is outside the map (0..{world.Size - 1})."));
+        }
+
+        return ConsoleResult.OkWithCamera(new CameraRequest(x, y), string.Create(CultureInfo.InvariantCulture, $"camera to {x},{y}"));
     }
 
     private static bool TryValidName(string name) =>

@@ -18,7 +18,7 @@ public sealed class ReplayPlayer
     private int _next;
 
     /// <summary>Plays <paramref name="replay"/> on <paramref name="simulation"/>, starting at its current tick.</summary>
-    /// <exception cref="ArgumentException">Seed or content hash differ from the replay's.</exception>
+    /// <exception cref="ArgumentException">Seed, content hash, map size or difficulty differ from the replay's.</exception>
     public ReplayPlayer(ReplayFile replay, Simulation simulation)
     {
         ArgumentNullException.ThrowIfNull(replay);
@@ -33,6 +33,14 @@ public sealed class ReplayPlayer
             throw new ArgumentException(
                 $"Replay was recorded with content {ContentHash.Format(replay.ContentHash)}, but the simulation runs content " +
                 $"{ContentHash.Format(simulation.Content.ContentHash)}. If data/ changed on purpose, regenerate the replay and its hashes.",
+                nameof(simulation));
+        }
+
+        int mapSize = simulation.World?.Size ?? 0;
+        if (mapSize != replay.MapSize || simulation.Difficulty != replay.Difficulty)
+        {
+            throw new ArgumentException(
+                $"Replay is for map size {replay.MapSize} ({DifficultyNames.ToName(replay.Difficulty)}), the simulation has map size {mapSize} ({DifficultyNames.ToName(simulation.Difficulty)}).",
                 nameof(simulation));
         }
 
@@ -53,12 +61,17 @@ public sealed class ReplayPlayer
     /// <summary>True once the simulation reached <see cref="ReplayFile.EndTick"/>.</summary>
     public bool IsFinished => Simulation.Tick >= _replay.EndTick;
 
-    /// <summary>Starts a new simulation with the replay's seed and plays from tick 0.</summary>
+    /// <summary>
+    /// Starts a new simulation with the replay's seed (a new game with its map size and difficulty, or a core
+    /// simulation) and plays from tick 0.
+    /// </summary>
     /// <exception cref="ArgumentException">The content hash differs from the replay's.</exception>
     public static ReplayPlayer Start(ReplayFile replay, ContentCatalog content, SimLog? log = null)
     {
         ArgumentNullException.ThrowIfNull(replay);
-        return new ReplayPlayer(replay, new Simulation(replay.Seed, content, log));
+        NewGameOptions? newGame = replay.NewGame;
+        Simulation simulation = newGame is null ? new Simulation(replay.Seed, content, log) : Simulation.CreateNewGame(content, newGame, log);
+        return new ReplayPlayer(replay, simulation);
     }
 
     /// <summary>Enqueues the commands of the next tick, steps once and records the hashes.</summary>

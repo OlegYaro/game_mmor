@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Dev tool: deterministic placeholder art (PNG atlases + data/art/atlas.json), see ADR 0010. Never shipped with the game. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ArtGen</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

@@ -17,7 +17,12 @@ public sealed class SchemaTests
         foreach (Core.Content.ContentFile file in TestPaths.LoadDataSource().GetFiles())
         {
             string folder = file.Path[..file.Path.IndexOf('/', StringComparison.Ordinal)];
-            Core.Content.ContentCategory category = Core.Content.ContentCategories.All.Single(c => c.Folder == folder);
+            if (Core.Content.ContentCategories.NonDefinitionFolders.Contains(folder))
+            {
+                continue; // validated by its own test (Art/AtlasTests)
+            }
+
+            Core.Content.ContentCategory category = Core.Content.ContentCategories.Find(file.Path)!;
             using JsonDocument instance = JsonDocument.Parse(file.Text);
             EvaluationResults results = LoadSchema(category.SchemaFileName)
                 .Evaluate(instance.RootElement, new EvaluationOptions { OutputFormat = OutputFormat.Flag });
@@ -25,7 +30,10 @@ public sealed class SchemaTests
             checkedFiles++;
         }
 
-        Assert.True(checkedFiles >= 2);
+        Assert.True(checkedFiles >= 4);
+        Assert.Equal("fog.schema.json", Core.Content.ContentCategories.Find("balance/fog.json")!.SchemaFileName);
+        Assert.Equal("balance.schema.json", Core.Content.ContentCategories.Find("balance/time.json")!.SchemaFileName);
+        Assert.Null(Core.Content.ContentCategories.Find("nofolder.json"));
     }
 
     [Fact]

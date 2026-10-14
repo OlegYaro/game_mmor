@@ -1,4 +1,5 @@
 using System.Globalization;
+using Core.Sim;
 using Godot;
 
 namespace Game.Sim;
@@ -12,21 +13,26 @@ public static class GameSettings
     /// <summary>Project setting that holds the default seed.</summary>
     public const string SeedSetting = "game/world_seed";
 
+    /// <summary>Command-line flag that skips the menu and starts a new game at once.</summary>
+    public const string AutoStartArg = "--autostart";
+
     private const string SeedArgPrefix = "--seed=";
+    private const string SizeArgPrefix = "--size=";
+    private const string DifficultyArgPrefix = "--difficulty=";
 
     /// <summary>Real filesystem folder for saves (<c>user://saves</c>).</summary>
     public static string SaveDirectory => ProjectSettings.GlobalizePath("user://saves");
 
-    /// <summary>Seed from <c>-- --seed=N</c>, else the <c>game/world_seed</c> project setting, else <see cref="DefaultSeed"/>.</summary>
+    /// <summary>True when launched with <c>-- --autostart</c>.</summary>
+    public static bool AutoStart => OS.GetCmdlineUserArgs().Contains(AutoStartArg);
+
+    /// <summary>Seed from <c>-- --seed=N</c> (a number or any text), else the <c>game/world_seed</c> project setting, else <see cref="DefaultSeed"/>.</summary>
     public static ulong ResolveSeed()
     {
-        foreach (string arg in OS.GetCmdlineUserArgs())
+        string? cli = ArgValue(SeedArgPrefix);
+        if (cli is not null && SeedText.TryParse(cli, out ulong fromCli))
         {
-            if (arg.StartsWith(SeedArgPrefix, StringComparison.Ordinal)
-                && ulong.TryParse(arg.AsSpan(SeedArgPrefix.Length), NumberStyles.None, CultureInfo.InvariantCulture, out ulong cli))
-            {
-                return cli;
-            }
+            return fromCli;
         }
 
         if (ProjectSettings.HasSetting(SeedSetting)
@@ -36,5 +42,38 @@ public static class GameSettings
         }
 
         return DefaultSeed;
+    }
+
+    /// <summary>New game parameters from <c>--seed</c>, <c>--size</c> (default 512) and <c>--difficulty</c> (default normal).</summary>
+    public static NewGameOptions ResolveNewGameOptions()
+    {
+        int size = NewGameOptions.DefaultMapSize;
+        string? sizeText = ArgValue(SizeArgPrefix);
+        if (sizeText is not null && int.TryParse(sizeText, NumberStyles.None, CultureInfo.InvariantCulture, out int parsedSize))
+        {
+            size = parsedSize;
+        }
+
+        Difficulty difficulty = Difficulty.Normal;
+        string? difficultyText = ArgValue(DifficultyArgPrefix);
+        if (difficultyText is not null && DifficultyNames.TryParse(difficultyText, out Difficulty parsed))
+        {
+            difficulty = parsed;
+        }
+
+        return new NewGameOptions(ResolveSeed(), size, difficulty);
+    }
+
+    private static string? ArgValue(string prefix)
+    {
+        foreach (string arg in OS.GetCmdlineUserArgs())
+        {
+            if (arg.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                return arg[prefix.Length..];
+            }
+        }
+
+        return null;
     }
 }

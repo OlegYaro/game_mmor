@@ -13,7 +13,10 @@ namespace Core.Content;
     AllowTrailingCommas = false,
     ReadCommentHandling = JsonCommentHandling.Disallow)]
 [JsonSerializable(typeof(TimeBalanceFile))]
+[JsonSerializable(typeof(FogBalanceFile))]
+[JsonSerializable(typeof(SaveBalanceFile))]
 [JsonSerializable(typeof(ItemFile))]
+[JsonSerializable(typeof(WorldGenFile))]
 public sealed partial class ContentJsonContext : JsonSerializerContext
 {
 }

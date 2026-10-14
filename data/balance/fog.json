@@ -1,0 +1,14 @@
+{
+  "$schema": "../schema/fog.schema.json",
+  "items": [
+    {
+      "id": "fog",
+      "heroDay": 12,
+      "heroNight": 6,
+      "villagerDay": 8,
+      "villagerNight": 4,
+      "towerDay": 16,
+      "towerNight": 16
+    }
+  ]
+}

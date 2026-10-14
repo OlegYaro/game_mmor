@@ -209,12 +209,25 @@ public static class SaveGame
             return Fail(SaveErrorKind.CorruptBody, $"Save does not match format v{currentVersion}: {ex.Message}", version);
         }
 
-        // 4. Restore.
+        // 4. The world is rebuilt from the seed, so the generator version must be one this build can run.
+        bool hasWorld = bodyDto.Game is { MapSize: not 0 };
+        if (!SaveFormat.IsLoadableWorldGenVersion(headerDto.WorldGenVersion)
+            || (hasWorld && !WorldGen.WorldGenerator.IsSupportedVersion(headerDto.WorldGenVersion)))
+        {
+            return new SaveLoadResult(null, headerDto, version, new SaveError(SaveErrorKind.UnsupportedWorldGenVersion,
+                $"Save was made with world generator v{headerDto.WorldGenVersion}; this build has v{SaveFormat.WorldGenVersion} and cannot rebuild that world."));
+        }
+
+        // 5. Restore; a game's map is regenerated and must hash to the saved map hash.
         try
         {
             SimulationState state = SaveMapper.ToState(headerDto, bodyDto);
             Simulation simulation = Simulation.Restore(content, state, log);
             return new SaveLoadResult(simulation, headerDto, version, null);
+        }
+        catch (WorldGenMismatchException ex)
+        {
+            return new SaveLoadResult(null, headerDto, version, new SaveError(SaveErrorKind.WorldGenMismatch, ex.Message));
         }
         catch (Exception ex) when (ex is InvalidDataException or ArgumentException or InvalidOperationException)
         {

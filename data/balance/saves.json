@@ -1,0 +1,10 @@
+{
+  "$schema": "../schema/saves.schema.json",
+  "items": [
+    {
+      "id": "saves",
+      "manualSlots": 5,
+      "autosavesKept": 3
+    }
+  ]
+}

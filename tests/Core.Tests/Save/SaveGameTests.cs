@@ -87,15 +87,16 @@ public sealed class SaveGameTests
         byte[] body = DecompressBrotli(bytes.AsSpan(newline + 1).ToArray());
 
         Assert.Equal(
-            $"{{\"formatVersion\":{SaveFormat.CurrentVersion},\"gameVersion\":\"{SaveMapper.GameVersion}\",\"worldGenVersion\":0,\"seed\":48879,\"codec\":\"json-brotli\"}}",
+            $"{{\"formatVersion\":{SaveFormat.CurrentVersion},\"gameVersion\":\"{SaveMapper.GameVersion}\",\"worldGenVersion\":1,\"seed\":48879,\"codec\":\"json-brotli\"}}",
             header);
-        Assert.Equal(0, SaveFormat.WorldGenVersion);
+        Assert.Equal(1, SaveFormat.WorldGenVersion);
+        Assert.Equal(Core.WorldGen.WorldGenerator.Version, SaveFormat.WorldGenVersion);
         string json = Encoding.UTF8.GetString(body);
         Assert.StartsWith("{\"tick\":120,\"rng\":[{\"stream\":\"world_gen\",", json, StringComparison.Ordinal);
         Assert.DoesNotContain('\n', json);
 
         SaveLoadResult loaded = Load(bytes);
-        Assert.Equal(new SaveHeader(SaveFormat.CurrentVersion, SaveMapper.GameVersion, 0, 48879, SaveFormat.CodecBrotliJson), loaded.Header);
+        Assert.Equal(new SaveHeader(SaveFormat.CurrentVersion, SaveMapper.GameVersion, 1, 48879, SaveFormat.CodecBrotliJson), loaded.Header);
         Assert.Equal(SaveFormat.CurrentVersion, loaded.SourceFormatVersion);
     }
 
@@ -111,6 +112,39 @@ public sealed class SaveGameTests
         Assert.Equal(SaveErrorKind.UnsupportedVersion, result.Error!.Kind);
         Assert.Contains("newer", result.Error.Message, StringComparison.Ordinal);
         Assert.Equal(SaveFormat.CurrentVersion + 1, result.SourceFormatVersion);
+    }
+
+    [Theory]
+    [Trait("Req", "FR-SAVE-02")]
+    [Trait("Req", "FR-WORLD-01")]
+    [InlineData(2)]
+    [InlineData(-1)]
+    [InlineData(99)]
+    public void UnknownWorldGenVersionIsRejectedWithClearError(int worldGenVersion)
+    {
+        byte[] bytes = EditHeader(SaveGame.ToBytes(SaveTestData.BuildBusy()), h => h["worldGenVersion"] = worldGenVersion);
+
+        SaveLoadResult result = SaveGame.Read(bytes, SimTestData.Real);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(SaveErrorKind.UnsupportedWorldGenVersion, result.Error!.Kind);
+        Assert.Contains($"world generator v{worldGenVersion}", result.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(worldGenVersion, result.Header!.WorldGenVersion);
+    }
+
+    [Theory]
+    [Trait("Req", "FR-SAVE-02")]
+    [InlineData(SaveFormat.NoWorldGenVersion)]
+    [InlineData(SaveFormat.WorldGenVersion)]
+    public void PreGeneratorAndCurrentWorldGenVersionsLoad(int worldGenVersion)
+    {
+        byte[] bytes = EditHeader(SaveGame.ToBytes(SaveTestData.BuildBusy()), h => h["worldGenVersion"] = worldGenVersion);
+
+        SaveLoadResult result = SaveGame.Read(bytes, SimTestData.Real);
+
+        Assert.True(result.Succeeded, result.Error?.Message);
+        Assert.Equal(worldGenVersion, result.Header!.WorldGenVersion);
+        Assert.True(SaveFormat.IsLoadableWorldGenVersion(worldGenVersion));
     }
 
     [Theory]
@@ -231,7 +265,7 @@ public sealed class SaveGameTests
     }
 
     // FR-SAVE-02 / ADR 0007: the migration chain on a synthetic older version. v1 is the first shipped format, so
-    // the "v0" layout and its migration exist only in this test.
+    // the "v0" layout and its migration exist only in this test; after it, the shipped v1 -> v2 migration runs too.
     [Fact]
     [Trait("Req", "FR-SAVE-02")]
     public void OlderVersionIsMigratedBeforeBinding()
@@ -240,7 +274,7 @@ public sealed class SaveGameTests
         byte[] v0 = MakeSyntheticV0(SaveGame.ToBytes(sim, new SaveWriteOptions(Indented: true)));
 
         SaveLoadResult withoutMigration = SaveGame.Read(v0, SimTestData.Real);
-        SaveLoadResult migrated = SaveGame.Read(v0, SimTestData.Real, null, [new TestV0ToV1Migration()]);
+        SaveLoadResult migrated = SaveGame.Read(v0, SimTestData.Real, null, [new TestV0ToV1Migration(), .. SaveMigrations.All]);
 
         Assert.Equal(SaveErrorKind.MissingMigration, withoutMigration.Error!.Kind);
         Assert.Contains("v0", withoutMigration.Error.Message, StringComparison.Ordinal);
@@ -256,10 +290,10 @@ public sealed class SaveGameTests
     public void ChainRunsEveryStepInOrderUpToTheCurrentVersion()
     {
         Simulation sim = SaveTestData.BuildBusy();
-        byte[] v1 = SaveGame.ToBytes(sim);
+        byte[] v1 = AsFormatVersion(SaveGame.ToBytes(sim), 1);
         List<int> applied = [];
 
-        // Pretend the build is at v3: v1 -> v2 renames "commands", v2 -> v3 renames it back. Registered out of order.
+        // Pretend the build is at v3 (labels only; the body is today's layout): v1 -> v2 renames "commands", v2 -> v3 renames it back. Registered out of order.
         SaveLoadResult result = SaveGame.Read(v1, SimTestData.Real, null,
         [
             new RenameMigration(2, "queue", "commands", applied),
@@ -277,7 +311,7 @@ public sealed class SaveGameTests
     [Trait("Req", "FR-SAVE-02")]
     public void BrokenChainsAreReported()
     {
-        byte[] v1 = SaveGame.ToBytes(SaveTestData.BuildBusy());
+        byte[] v1 = AsFormatVersion(SaveGame.ToBytes(SaveTestData.BuildBusy()), 1);
         List<int> applied = [];
 
         SaveLoadResult gap = SaveGame.Read(v1, SimTestData.Real, null, [new RenameMigration(2, "a", "b", applied)], currentVersion: 3);
@@ -420,10 +454,17 @@ public sealed class SaveGameTests
     }
 
     // The synthetic "v0" layout: the command queue was called "commandQueue" and its counter "next".
-    private static byte[] MakeSyntheticV0(byte[] indentedV1)
+    private static byte[] AsFormatVersion(byte[] bytes, int version) => EditHeader(bytes, h => h["formatVersion"] = version);
+
+    // Today's save of a core simulation, turned into the v1 layout (no game, fog, revealer) and then into "v0".
+    private static byte[] MakeSyntheticV0(byte[] indentedCurrent)
     {
-        (JsonObject header, string body) = Split(indentedV1);
+        (JsonObject header, string body) = Split(indentedCurrent);
         JsonObject tree = JsonNode.Parse(body)!.AsObject();
+        Assert.Equal(0, (int)tree["game"]!["mapSize"]!);
+        tree.Remove("game");
+        tree.Remove("fog");
+        tree["components"]!.AsObject().Remove("revealer");
         tree.Remove("commands", out JsonNode? commands);
         commands!.AsObject().Remove("nextSequence", out JsonNode? next);
         commands.AsObject().Add("next", next);

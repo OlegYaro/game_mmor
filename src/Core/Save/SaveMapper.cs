@@ -1,5 +1,6 @@
 using Core.Determinism;
 using Core.Entities;
+using Core.Fog;
 using Core.Sim;
 
 namespace Core.Save;
@@ -17,8 +18,15 @@ internal static class SaveMapper
     public static readonly IReadOnlyList<string> RngStreamNames =
         ["world_gen", "combat", "gathering", "ai", "storyteller", "factions"];
 
+    /// <summary>
+    /// Stable save names of <see cref="RevealerKind"/>, indexed by value (index 0, <see cref="RevealerKind.None"/>,
+    /// is never saved). Append only.
+    /// </summary>
+    public static readonly IReadOnlyList<string> RevealerKindNames = ["none", "hero", "villager", "tower"];
+
+    /// <summary>Header of a state: the world's generator version for a game, the running generator's otherwise.</summary>
     public static SaveHeader ToHeader(SimulationState state, string codec) =>
-        new(SaveFormat.CurrentVersion, GameVersion, SaveFormat.WorldGenVersion, state.Seed, codec);
+        new(SaveFormat.CurrentVersion, GameVersion, state.World?.GeneratorVersion ?? SaveFormat.WorldGenVersion, state.Seed, codec);
 
     /// <summary>Version of this build as written into headers.</summary>
     public static string GameVersion => CoreInfo.Version.ToString(3);
@@ -46,12 +54,21 @@ internal static class SaveMapper
             .Select(p => new PendingCommandDto(p.ExecuteTick, p.Sequence, CommandDto.FromCommand(p.Command)))
             .ToArray();
 
+        WorldState? world = state.World;
+        RevealerEntryDto[] revealers = world is null
+            ? []
+            : world.Revealers.Select(e => new RevealerEntryDto(e.Entity.Index, e.Entity.Generation, RevealerKindName(e.Value.Kind))).ToArray();
+        int tileCount = world is null ? 0 : world.MapSize * world.MapSize;
+        int[] exploredRuns = world is null ? [] : FogRunLength.Encode(world.ExploredBits.ToArray(), tileCount);
+
         return new SaveBodyDto(
             state.Tick,
             rng,
             new EntitiesDto(state.Entities.Generations.ToArray(), state.Entities.Alive.ToArray()),
-            new ComponentsDto(positions),
-            new CommandQueueDto(state.NextCommandSequence, pending));
+            new ComponentsDto(positions, revealers),
+            new CommandQueueDto(state.NextCommandSequence, pending),
+            new GameDto(DifficultyNames.ToName(state.Difficulty), world?.MapSize ?? 0, world?.MapHash ?? 0),
+            new FogDto(exploredRuns));
     }
 
     /// <summary>Builds the simulation state from a parsed header and body.</summary>
@@ -103,6 +120,11 @@ internal static class SaveMapper
             pending[i] = new PendingCommand(p.ExecuteTick, p.Sequence, p.Command.ToCommand());
         }
 
+        if (!DifficultyNames.TryParse(body.Game.Difficulty, out Difficulty difficulty))
+        {
+            throw new InvalidDataException($"Unknown difficulty '{body.Game.Difficulty}'.");
+        }
+
         return new SimulationState(
             header.Seed,
             body.Tick,
@@ -110,8 +132,51 @@ internal static class SaveMapper
             new EntityRegistryState(body.Entities.Generations.ToArray(), body.Entities.Alive.ToArray()),
             positions,
             body.Commands.NextSequence,
-            pending);
+            pending,
+            difficulty,
+            ToWorld(header, body));
     }
+
+    private static WorldState? ToWorld(SaveHeader header, SaveBodyDto body)
+    {
+        int size = body.Game.MapSize;
+        if (size == 0)
+        {
+            if (body.Game.MapHash != 0 || body.Fog.ExploredRuns.Count != 0 || body.Components.Revealer.Count != 0)
+            {
+                throw new InvalidDataException("A save without a world (mapSize 0) must have mapHash 0, no fog runs and no revealers.");
+            }
+
+            return null;
+        }
+
+        if (size < 0 || size > WorldGen.WorldGenRequest.MaxSize)
+        {
+            throw new InvalidDataException($"Map size {size} is out of range.");
+        }
+
+        var revealers = new ComponentEntry<Revealer>[body.Components.Revealer.Count];
+        for (int i = 0; i < revealers.Length; i++)
+        {
+            RevealerEntryDto? r = body.Components.Revealer[i];
+            NotNull(r, "revealer entry");
+            int kind = IndexOf(RevealerKindNames, r.Kind);
+            if (kind <= 0)
+            {
+                throw new InvalidDataException($"Unknown revealer kind '{r.Kind}'.");
+            }
+
+            revealers[i] = new ComponentEntry<Revealer>(new EntityId(r.Index, r.Generation), new Revealer((RevealerKind)kind));
+        }
+
+        ulong[] explored = FogRunLength.Decode(body.Fog.ExploredRuns, size * size);
+        return new WorldState(size, header.WorldGenVersion, body.Game.MapHash, explored, revealers);
+    }
+
+    private static string RevealerKindName(RevealerKind kind) =>
+        kind != RevealerKind.None && (int)kind < RevealerKindNames.Count
+            ? RevealerKindNames[(int)kind]
+            : throw new InvalidOperationException($"Revealer kind {(int)kind} has no save name.");
 
     private static int IndexOf(IReadOnlyList<string> names, string name)
     {

@@ -83,11 +83,11 @@ foreach (var c in snapshot.ChangedCells)          // c: (X, Y, TileId, Height)
 ```csharp
 // Core (no Godot). Matches TileSet.map_to_local / local_to_map for DiamondDown + Horizontal.
 const int W = 64, H = 32;
-static (float px, float py) CellCenter(int x, int y) => ((x - y) * (W / 2f) + W / 2f, (x + y) * (H / 4f) + H / 2f);
+static (float px, float py) CellCenter(int x, int y) => ((x - y) * (W / 2f) + W / 2f, (x + y) * (H / 2f) + H / 2f);   // = 32(x−y)+32, 16(x+y)+16
 static (int x, int y) CellAt(float px, float py)   // px,py in layer-local pixels
 {
     float u = px / (W / 2f) - 1f;   // = x - y
-    float v = py / (H / 4f) - 1f;   // = x + y   (H/4 because of the 0.5 overlap ratio)
+    float v = py / (H / 2f) - 1f;   // = x + y   (row step is H/2 = 16 px: half the tile height, 0.5 overlap ratio)
     float fx = (u + v) * 0.5f, fy = (v - u) * 0.5f;
     return ((int)MathF.Floor(fx + 0.5f), (int)MathF.Floor(fy + 0.5f));
 }

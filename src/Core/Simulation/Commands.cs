@@ -48,3 +48,30 @@ public sealed record DestroyEntityCommand(EntityId Entity) : ISimCommand
     /// <summary>Writes the entity id.</summary>
     public void WriteState(StateWriter writer) => Entity.WriteState(writer);
 }
+
+/// <summary>Marks the whole map explored (console <c>reveal</c>, NFR-07); does nothing without a world.</summary>
+public sealed record RevealAllCommand : ISimCommand
+{
+    /// <summary>Value of <see cref="Kind"/>.</summary>
+    public const string KindName = "reveal_all";
+
+    /// <inheritdoc />
+    public string Kind => KindName;
+
+    /// <inheritdoc />
+    public void Execute(Simulation sim)
+    {
+        ArgumentNullException.ThrowIfNull(sim);
+        if (sim.World is null)
+        {
+            sim.Log.Write(sim.Tick, LogLevel.Warning, "fog", "reveal_all ignored: the simulation has no world");
+            return;
+        }
+
+        sim.World.Fog.ExploreAll();
+        sim.Log.Write(sim.Tick, LogLevel.Info, "fog", "Whole map revealed");
+    }
+
+    /// <summary>No payload.</summary>
+    public void WriteState(StateWriter writer) => ArgumentNullException.ThrowIfNull(writer);
+}

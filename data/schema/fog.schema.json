@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FogBalanceFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "heroDay": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "heroNight": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "villagerDay": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "villagerNight": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "towerDay": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "towerNight": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          }
+        },
+        "required": [
+          "id",
+          "heroDay",
+          "heroNight",
+          "villagerDay",
+          "villagerNight",
+          "towerDay",
+          "towerNight"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

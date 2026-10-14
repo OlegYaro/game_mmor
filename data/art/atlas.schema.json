@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AtlasTable",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tileWidth", "tileHeight", "heightStep", "atlases", "cells"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "tileWidth": { "type": "integer", "minimum": 1 },
+    "tileHeight": { "type": "integer", "minimum": 1 },
+    "heightStep": { "type": "integer", "minimum": 0 },
+    "atlases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "file", "width", "height"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "file": { "type": "string", "minLength": 1 },
+          "width": { "type": "integer", "minimum": 1 },
+          "height": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "cells": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "atlas", "kind", "x", "y", "w", "h", "originX", "originY", "height", "variant"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "atlas": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "kind": { "enum": ["tile", "object"] },
+          "x": { "type": "integer", "minimum": 0 },
+          "y": { "type": "integer", "minimum": 0 },
+          "w": { "type": "integer", "minimum": 1 },
+          "h": { "type": "integer", "minimum": 1 },
+          "originX": { "type": "integer", "minimum": 0 },
+          "originY": { "type": "integer", "minimum": 0 },
+          "height": { "type": "integer", "minimum": 0, "maximum": 3 },
+          "variant": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

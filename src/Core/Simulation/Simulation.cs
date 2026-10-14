@@ -1,7 +1,9 @@
 using Core.Content;
 using Core.Determinism;
 using Core.Entities;
+using Core.Fog;
 using Core.Logging;
+using Core.WorldGen;
 
 namespace Core.Sim;
 
@@ -16,6 +18,8 @@ namespace Core.Sim;
 /// <param name="Positions">Position components in ascending entity index order.</param>
 /// <param name="NextCommandSequence">Sequence number the next enqueued command gets.</param>
 /// <param name="PendingCommands">Commands waiting to run, in execution order.</param>
+/// <param name="Difficulty">Difficulty; always <see cref="Difficulty.Normal"/> without a world.</param>
+/// <param name="World">The world part (map identity, explored fog, revealers), or null for a simulation without a world.</param>
 public sealed record SimulationState(
     ulong Seed,
     long Tick,
@@ -23,13 +27,18 @@ public sealed record SimulationState(
     EntityRegistryState Entities,
     IReadOnlyList<ComponentEntry<Position>> Positions,
     long NextCommandSequence,
-    IReadOnlyList<PendingCommand> PendingCommands);
+    IReadOnlyList<PendingCommand> PendingCommands,
+    Difficulty Difficulty = Difficulty.Normal,
+    WorldState? World = null);
 
 /// <summary>
 /// The deterministic simulation (ADR 0004, ADR 0005): seed, content, RNG streams, entities, calendar, command queue
 /// and log. <see cref="Step"/> runs one 10 Hz tick through a fixed, ordered list of systems.
 /// </summary>
 /// <remarks>
+/// <para>Two kinds exist. A game (<see cref="CreateNewGame"/>) has a <see cref="World"/>: generated map, fog of war,
+/// revealers and a difficulty; it adds the <c>game</c> and <c>fog</c> hash subsystems and the <c>revealer</c> store. A
+/// core simulation (the constructor; M0 tests and replays) has no world and keeps exactly the M0 state layout.</para>
 /// <para><see cref="Tick"/> is the number of the last executed tick; it is 0 before the first <see cref="Step"/>.
 /// <see cref="Step"/> first increments it, then runs the systems for the new value.</para>
 /// <para>The host changes state only through <see cref="Enqueue"/>. Systems and commands make structural entity
@@ -52,8 +61,17 @@ public sealed class Simulation : IStateHashable
     /// <summary>Hash subsystem: command queue.</summary>
     public const string CommandsHashName = "commands";
 
+    /// <summary>Hash subsystem (games only): difficulty and map identity.</summary>
+    public const string GameHashName = "game";
+
+    /// <summary>Hash subsystem (games only): fog of war layers.</summary>
+    public const string FogHashName = "fog";
+
     /// <summary>Name of the <see cref="Position"/> store.</summary>
     public const string PositionStoreName = "position";
+
+    /// <summary>Name of the <see cref="Revealer"/> store (games only; registered after <see cref="PositionStoreName"/>).</summary>
+    public const string RevealerStoreName = "revealer";
 
     private const string EcbCategory = "ecb";
 
@@ -63,6 +81,7 @@ public sealed class Simulation : IStateHashable
     private readonly StateWriterAdapter _calendarState;
     private readonly StateWriterAdapter _componentState;
     private readonly StateWriterAdapter _commandState;
+    private readonly StateWriterAdapter _gameState;
     private long _nextSequence;
     private bool _stepping;
 
@@ -77,11 +96,12 @@ public sealed class Simulation : IStateHashable
 
     // Test hook: runs the given systems instead of the default order.
     internal Simulation(ulong seed, ContentCatalog content, SimLog? log, IEnumerable<ISimSystem> systems)
-        : this(content, log, new RngStreams(seed), new EntityRegistry(), systems)
+        : this(content, log, new RngStreams(seed), new EntityRegistry(), systems, Difficulty.Normal, null, 0)
     {
     }
 
-    private Simulation(ContentCatalog content, SimLog? log, RngStreams rng, EntityRegistry registry, IEnumerable<ISimSystem> systems)
+    private Simulation(ContentCatalog content, SimLog? log, RngStreams rng, EntityRegistry registry, IEnumerable<ISimSystem> systems,
+        Difficulty difficulty, WorldMap? map, ulong mapHash)
     {
         ArgumentNullException.ThrowIfNull(content);
         ArgumentNullException.ThrowIfNull(systems);
@@ -91,6 +111,12 @@ public sealed class Simulation : IStateHashable
         Calendar = new Calendar(content.Time);
         Entities = new EntityWorld(registry);
         Positions = Entities.AddStore<Position>(PositionStoreName);
+        Difficulty = difficulty;
+        if (map is not null)
+        {
+            World = new GameWorld(map, mapHash, Entities.AddStore<Revealer>(RevealerStoreName));
+        }
+
         _systems = systems.ToArray();
         CheckSystemNames(_systems);
         Now = Calendar.At(0);
@@ -98,6 +124,7 @@ public sealed class Simulation : IStateHashable
         _calendarState = new StateWriterAdapter(WriteCalendarState);
         _componentState = new StateWriterAdapter(Entities.WriteComponentState);
         _commandState = new StateWriterAdapter(WriteCommandState);
+        _gameState = new StateWriterAdapter(WriteGameState);
     }
 
     /// <summary>World seed.</summary>
@@ -114,6 +141,12 @@ public sealed class Simulation : IStateHashable
 
     /// <summary>Position components.</summary>
     public ComponentStore<Position> Positions { get; }
+
+    /// <summary>The world (map, fog, revealers) of a game; null for a core simulation.</summary>
+    public GameWorld? World { get; }
+
+    /// <summary>Difficulty chosen at new game (FR-SAVE-05); <see cref="Difficulty.Normal"/> without a world.</summary>
+    public Difficulty Difficulty { get; }
 
     /// <summary>Tick-to-date conversion.</summary>
     public Calendar Calendar { get; }
@@ -139,18 +172,48 @@ public sealed class Simulation : IStateHashable
     /// <summary>Sequence number the next enqueued command gets.</summary>
     public long NextCommandSequence => _nextSequence;
 
-    /// <summary>Restores a simulation from <see cref="CaptureState"/> output (the save code maps its DTOs to this).</summary>
+    /// <summary>
+    /// Restores a simulation from <see cref="CaptureState"/> output (the save code maps its DTOs to this). A game's
+    /// map is regenerated from the seed and must hash to <see cref="WorldState.MapHash"/>; the visible fog is recomputed.
+    /// </summary>
     /// <exception cref="ArgumentException">The state is inconsistent.</exception>
+    /// <exception cref="WorldGenMismatchException">The regenerated map differs from the saved one.</exception>
     public static Simulation Restore(ContentCatalog content, SimulationState state, SimLog? log = null)
     {
+        ArgumentNullException.ThrowIfNull(content);
         ArgumentNullException.ThrowIfNull(state);
         ArgumentOutOfRangeException.ThrowIfNegative(state.Tick, nameof(state));
+        if (!Enum.IsDefined(state.Difficulty) || (state.World is null && state.Difficulty != Difficulty.Normal))
+        {
+            throw new ArgumentException($"Difficulty {(int)state.Difficulty} is invalid here (a simulation without a world is always Normal).", nameof(state));
+        }
+
+        WorldMap? map = null;
+        ulong mapHash = 0;
+        if (state.World is { } world)
+        {
+            if (!WorldGenerator.IsSupportedVersion(world.GeneratorVersion))
+            {
+                throw new ArgumentException($"World generator v{world.GeneratorVersion} is not available in this build.", nameof(state));
+            }
+
+            map = WorldGenerator.Generate(new WorldGenRequest(state.Seed, world.MapSize, content.WorldGen, world.GeneratorVersion));
+            mapHash = map.ComputeHash();
+            if (mapHash != world.MapHash)
+            {
+                throw new WorldGenMismatchException(world.MapHash, mapHash);
+            }
+        }
+
         var sim = new Simulation(
             content,
             log,
             new RngStreams(state.Seed, state.RngStates.ToArray()),
             EntityRegistry.FromState(state.Entities),
-            CreateDefaultSystems());
+            CreateDefaultSystems(),
+            state.Difficulty,
+            map,
+            mapHash);
 
         sim.Tick = state.Tick;
         sim.Now = sim.Calendar.At(state.Tick);
@@ -162,6 +225,26 @@ public sealed class Simulation : IStateHashable
             }
 
             sim.Positions.Add(entry.Entity, entry.Value);
+        }
+
+        if (state.World is not null && sim.World is not null)
+        {
+            foreach (ComponentEntry<Revealer> entry in state.World.Revealers)
+            {
+                if (!sim.Entities.IsAlive(entry.Entity))
+                {
+                    throw new ArgumentException($"Revealer belongs to {entry.Entity}, which is not alive.", nameof(state));
+                }
+
+                if (!Enum.IsDefined(entry.Value.Kind))
+                {
+                    throw new ArgumentException($"Revealer of {entry.Entity} has unknown kind {(int)entry.Value.Kind}.", nameof(state));
+                }
+
+                sim.World.Revealers.Add(entry.Entity, entry.Value);
+            }
+
+            sim.World.Fog.LoadExplored(state.World.ExploredBits);
         }
 
         long previousTick = state.Tick + 1;
@@ -182,7 +265,49 @@ public sealed class Simulation : IStateHashable
         }
 
         sim._nextSequence = state.NextCommandSequence;
+
+        // Visible is derived state: rebuild it exactly as the fog system left it after the last tick.
+        sim.RefreshFog();
         return sim;
+    }
+
+    /// <summary>
+    /// Starts a new game (FR-SAVE-05, FR-WORLD-01/08): generates the world from the seed and size, spawns the start
+    /// marker (a <see cref="RevealerKind.Hero"/> revealer until the hero exists, M2) on the start tile and applies the
+    /// initial fog. The simulation is at tick 0 with an empty command queue, ready for a replay recorder.
+    /// </summary>
+    /// <exception cref="ArgumentException">Invalid options.</exception>
+    public static Simulation CreateNewGame(ContentCatalog content, NewGameOptions options, SimLog? log = null)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        ArgumentNullException.ThrowIfNull(options);
+        options.Validate();
+        WorldMap map = WorldGenerator.Generate(new WorldGenRequest(options.Seed, options.MapSize, content.WorldGen));
+        var sim = new Simulation(content, log, new RngStreams(options.Seed), new EntityRegistry(), CreateDefaultSystems(),
+            options.Difficulty, map, map.ComputeHash());
+        GameWorld world = sim.World!;
+
+        EntityId marker = sim.Entities.Create();
+        sim.Positions.Add(marker, TileCenter(map.Start.X, map.Start.Y));
+        world.Revealers.Add(marker, new Revealer(RevealerKind.Hero));
+        sim.RefreshFog();
+
+        sim.Log.Write(0, LogLevel.Info, "world", "New game: seed {seed}, map {size}, difficulty {difficulty}, start {x},{y}",
+            LogField.Of("seed", options.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture)), LogField.Of("size", map.Size),
+            LogField.Of("difficulty", DifficultyNames.ToName(options.Difficulty)), LogField.Of("x", map.Start.X), LogField.Of("y", map.Start.Y));
+        foreach (string warning in map.Warnings)
+        {
+            sim.Log.Write(0, LogLevel.Warning, "world", "{warning}", LogField.Of("warning", warning));
+        }
+
+        return sim;
+    }
+
+    /// <summary>Position of the centre of tile (<paramref name="tileX"/>, <paramref name="tileY"/>).</summary>
+    public static Position TileCenter(int tileX, int tileY)
+    {
+        Position corner = Position.FromTile(tileX, tileY);
+        return new Position(corner.X + (Position.UnitsPerTile / 2), corner.Y + (Position.UnitsPerTile / 2));
     }
 
     /// <summary>Snapshot of the full simulation state for saving.</summary>
@@ -197,7 +322,11 @@ public sealed class Simulation : IStateHashable
             Entities.Registry.GetState(),
             Positions.GetEntries(),
             _nextSequence,
-            _pending.ToArray());
+            _pending.ToArray(),
+            Difficulty,
+            World is null
+                ? null
+                : new WorldState(World.Size, World.Map.Version, World.MapHash, World.Fog.CopyExplored(), World.Revealers.GetEntries()));
     }
 
     /// <summary>Queues a command for tick <c><see cref="Tick"/> + 1</c> (also when called from inside a step).</summary>
@@ -254,15 +383,24 @@ public sealed class Simulation : IStateHashable
     }
 
     /// <summary>
-    /// Hashes of each subsystem in fixed order: calendar, rng, entities, components, commands. The log is excluded
-    /// (see <see cref="SimLog"/>).
+    /// Hashes of each subsystem in fixed order: calendar, rng, entities, components, commands, and for a game also
+    /// game (difficulty, map identity) and fog. The log is excluded (see <see cref="SimLog"/>).
     /// </summary>
-    public SubsystemHashes ComputeHashes() => _hasher.HashSubsystems(
-        (CalendarHashName, _calendarState),
-        (RngHashName, Rng),
-        (EntitiesHashName, Entities.Registry),
-        (ComponentsHashName, _componentState),
-        (CommandsHashName, _commandState));
+    public SubsystemHashes ComputeHashes() => World is null
+        ? _hasher.HashSubsystems(
+            (CalendarHashName, _calendarState),
+            (RngHashName, Rng),
+            (EntitiesHashName, Entities.Registry),
+            (ComponentsHashName, _componentState),
+            (CommandsHashName, _commandState))
+        : _hasher.HashSubsystems(
+            (CalendarHashName, _calendarState),
+            (RngHashName, Rng),
+            (EntitiesHashName, Entities.Registry),
+            (ComponentsHashName, _componentState),
+            (CommandsHashName, _commandState),
+            (GameHashName, _gameState),
+            (FogHashName, World.Fog));
 
     /// <summary>Writes the full canonical state: each subsystem of <see cref="ComputeHashes"/>, in the same order.</summary>
     public void WriteState(StateWriter writer)
@@ -273,7 +411,15 @@ public sealed class Simulation : IStateHashable
         Entities.Registry.WriteState(writer);
         Entities.WriteComponentState(writer);
         WriteCommandState(writer);
+        if (World is not null)
+        {
+            WriteGameState(writer);
+            World.Fog.WriteState(writer);
+        }
     }
+
+    // Called by FogSystem, after a restore and at new game.
+    internal void RefreshFog() => World?.RefreshFog(Content.Fog, Positions, Now.IsNight);
 
     // Called by CommandSystem.
     internal void ExecuteDueCommands()
@@ -308,6 +454,7 @@ public sealed class Simulation : IStateHashable
     [
         new ClockSystem(),
         new CommandSystem(),
+        new FogSystem(),
     ];
 
     private static void CheckSystemNames(ISimSystem[] systems)
@@ -328,6 +475,12 @@ public sealed class Simulation : IStateHashable
     {
         writer.WriteInt64(Tick);
         Now.WriteState(writer);
+    }
+
+    private void WriteGameState(StateWriter writer)
+    {
+        writer.WriteByte((byte)Difficulty);
+        World?.WriteMapState(writer);
     }
 
     private void WriteCommandState(StateWriter writer)

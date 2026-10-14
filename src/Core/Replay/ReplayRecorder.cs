@@ -37,6 +37,7 @@ public sealed class ReplayRecorder
     public ReplayFile ToReplay()
     {
         long endTick = _commands.Count == 0 ? _simulation.Tick : Math.Max(_simulation.Tick, _commands[^1].Tick);
-        return new ReplayFile(_simulation.Seed, _simulation.Content.ContentHash, endTick, _commands);
+        return new ReplayFile(_simulation.Seed, _simulation.Content.ContentHash, endTick, _commands,
+            _simulation.World?.Size ?? 0, _simulation.Difficulty);
     }
 }

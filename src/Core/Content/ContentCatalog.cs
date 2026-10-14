@@ -31,6 +31,9 @@ public sealed class ContentCatalog
         ContentHash = contentHash;
         _ids = defs.Select((d, i) => KeyValuePair.Create(d.Id, new DefId(i + 1))).ToFrozenDictionary(StringComparer.Ordinal);
         Time = defs.OfType<TimeBalanceDef>().Single();
+        Fog = defs.OfType<FogBalanceDef>().Single();
+        Saves = defs.OfType<SaveBalanceDef>().Single();
+        WorldGen = defs.OfType<WorldGenParamsDef>().Single();
         Items = defs.OfType<ItemDef>().ToArray();
     }
 
@@ -42,6 +45,15 @@ public sealed class ContentCatalog
 
     /// <summary>Time constants (data/balance/time.json).</summary>
     public TimeBalanceDef Time { get; }
+
+    /// <summary>Fog of war sight radii (data/balance/fog.json).</summary>
+    public FogBalanceDef Fog { get; }
+
+    /// <summary>Save slot numbers (data/balance/saves.json).</summary>
+    public SaveBalanceDef Saves { get; }
+
+    /// <summary>World generator parameters (data/worldgen/*.json, ADR 0006).</summary>
+    public WorldGenParamsDef WorldGen { get; }
 
     /// <summary>All item definitions, ordered by id.</summary>
     public IReadOnlyList<ItemDef> Items { get; }
@@ -104,15 +116,10 @@ public sealed class ContentCatalog
             }
         }
 
-        if (!loaded.Any(l => l.Def is TimeBalanceDef))
-        {
-            errors.Add(new ContentError(ContentErrorKind.Missing, string.Empty, string.Empty, "No TimeBalanceDef found (data/balance/time.json)."));
-        }
-
-        if (loaded.Count(l => l.Def is TimeBalanceDef) > 1)
-        {
-            errors.Add(new ContentError(ContentErrorKind.Validation, string.Empty, string.Empty, "More than one TimeBalanceDef defined."));
-        }
+        RequireExactlyOne<TimeBalanceDef>(loaded, errors, "data/balance/time.json");
+        RequireExactlyOne<FogBalanceDef>(loaded, errors, "data/balance/fog.json");
+        RequireExactlyOne<SaveBalanceDef>(loaded, errors, "data/balance/saves.json");
+        RequireExactlyOne<WorldGenParamsDef>(loaded, errors, "data/worldgen/*.json");
 
         // Cross-reference pass runs only on structurally valid data so it does not report follow-up noise.
         if (errors.Count == 0)
@@ -139,11 +146,30 @@ public sealed class ContentCatalog
         return new ContentLoadResult(new ContentCatalog(defs, contentHash), errors);
     }
 
+    private static void RequireExactlyOne<T>(List<(string File, int Index, IContentDef Def)> loaded, List<ContentError> errors, string where)
+        where T : IContentDef
+    {
+        int count = loaded.Count(l => l.Def is T);
+        if (count == 0)
+        {
+            errors.Add(new ContentError(ContentErrorKind.Missing, string.Empty, string.Empty, $"No {typeof(T).Name} found ({where})."));
+        }
+        else if (count > 1)
+        {
+            errors.Add(new ContentError(ContentErrorKind.Validation, string.Empty, string.Empty, $"More than one {typeof(T).Name} defined."));
+        }
+    }
+
     private static void ParseFile(ContentFile file, List<(string File, int Index, IContentDef Def)> loaded, List<ContentError> errors)
     {
         int slash = file.Path.IndexOf('/', StringComparison.Ordinal);
         string folder = slash < 0 ? string.Empty : file.Path[..slash];
-        ContentCategory? category = ContentCategories.All.FirstOrDefault(c => c.Folder == folder);
+        if (ContentCategories.NonDefinitionFolders.Contains(folder) && file.Path.EndsWith(".json", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        ContentCategory? category = ContentCategories.Find(file.Path);
         if (category is null || !file.Path.EndsWith(".json", StringComparison.Ordinal))
         {
             errors.Add(new ContentError(ContentErrorKind.Parse, file.Path, "$", "File is not in a known content folder or is not a .json file."));
@@ -157,7 +183,10 @@ public sealed class ContentCatalog
             defs = envelope switch
             {
                 TimeBalanceFile f => f.Items,
+                FogBalanceFile f => f.Items,
+                SaveBalanceFile f => f.Items,
                 ItemFile f => f.Items,
+                WorldGenFile f => f.Items,
                 _ => throw new JsonException("Unexpected file content."),
             };
         }
@@ -176,7 +205,7 @@ public sealed class ContentCatalog
             }
             else
             {
-                Validate(file.Path, index, def, errors);
+                Validate(file.Path, $"$.items[{index}]", def, errors);
                 loaded.Add((file.Path, index, def));
             }
 
@@ -184,27 +213,69 @@ public sealed class ContentCatalog
         }
     }
 
-    private static void Validate(string file, int index, IContentDef def, List<ContentError> errors)
+    // Validates the DataAnnotations of `obj`, then recurses into IContentSection properties and lists of them
+    // (Validator itself does not descend into nested objects). Properties are visited in declaration order.
+    private static void Validate(string file, string path, object obj, List<ContentError> errors)
     {
         List<ValidationResult> results = [];
-        if (Validator.TryValidateObject(def, new ValidationContext(def), results, validateAllProperties: true))
+        if (!Validator.TryValidateObject(obj, new ValidationContext(obj), results, validateAllProperties: true))
         {
-            return;
+            foreach (ValidationResult result in results)
+            {
+                string member = result.MemberNames.FirstOrDefault() ?? "id";
+                errors.Add(new ContentError(ContentErrorKind.Validation, file, $"{path}.{CamelCase(member)}", result.ErrorMessage ?? "Invalid value."));
+            }
         }
 
-        foreach (ValidationResult result in results)
+        foreach (System.Reflection.PropertyInfo property in obj.GetType().GetProperties().OrderBy(p => p.MetadataToken))
         {
-            string member = result.MemberNames.FirstOrDefault() ?? "id";
-            string name = char.ToLowerInvariant(member[0]) + member[1..];
-            errors.Add(new ContentError(ContentErrorKind.Validation, file, $"$.items[{index}].{name}", result.ErrorMessage ?? "Invalid value."));
+            if (property.GetIndexParameters().Length > 0)
+            {
+                continue;
+            }
+
+            string childPath = $"{path}.{CamelCase(property.Name)}";
+            switch (property.GetValue(obj))
+            {
+                case IContentSection section:
+                    Validate(file, childPath, section, errors);
+                    break;
+                case IEnumerable<IContentSection?> sections:
+                    int index = 0;
+                    foreach (IContentSection? section in sections)
+                    {
+                        if (section is null)
+                        {
+                            errors.Add(new ContentError(ContentErrorKind.Parse, file, $"{childPath}[{index}]", "Entry must not be null."));
+                        }
+                        else
+                        {
+                            Validate(file, $"{childPath}[{index}]", section, errors);
+                        }
+
+                        index++;
+                    }
+
+                    break;
+            }
         }
     }
+
+    private static string CamelCase(string member) => char.ToLowerInvariant(member[0]) + member[1..];
 
     private static void CheckReferences(List<(string File, int Index, IContentDef Def)> loaded, List<ContentError> errors)
     {
         Dictionary<string, IContentDef> byId = loaded.ToDictionary(l => l.Def.Id, l => l.Def, StringComparer.Ordinal);
         foreach ((string file, int index, IContentDef def) in loaded)
         {
+            if (def is WorldGenParamsDef worldGen)
+            {
+                foreach ((string path, string message) in worldGen.CheckConsistency())
+                {
+                    errors.Add(new ContentError(ContentErrorKind.Validation, file, $"$.items[{index}].{path}", message));
+                }
+            }
+
             if (def is ItemDef { SpoilsInto: { } target })
             {
                 if (!byId.TryGetValue(target, out IContentDef? found))

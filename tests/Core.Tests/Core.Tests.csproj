@@ -31,5 +31,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Core/Core.csproj" />
     <ProjectReference Include="../../tools/SchemaGen/SchemaGen.csproj" />
+    <ProjectReference Include="../../tools/ArtGen/ArtGen.csproj" />
   </ItemGroup>
 </Project>

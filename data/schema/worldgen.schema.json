@@ -1,0 +1,713 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorldGenFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "height": {
+            "type": "object",
+            "properties": {
+              "wavelength": {
+                "type": "integer",
+                "minimum": 16,
+                "maximum": 4096
+              },
+              "octaves": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8
+              },
+              "lacunarityPermille": {
+                "type": "integer",
+                "minimum": 1000,
+                "maximum": 4000
+              },
+              "gainPermille": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 900
+              },
+              "warpWavelength": {
+                "type": "integer",
+                "minimum": 16,
+                "maximum": 4096
+              },
+              "warpAmplitude": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 512
+              },
+              "warpOctaves": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 6
+              },
+              "oceanMargin": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 512
+              },
+              "waterPermille": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 900
+              },
+              "step1Permille": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 999
+              },
+              "step2Permille": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 999
+              },
+              "step3Permille": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 999
+              },
+              "minLakeTiles": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000
+              },
+              "minIslandTiles": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000
+              },
+              "smoothingPasses": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "majorityThreshold": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 9
+              }
+            },
+            "required": [
+              "wavelength",
+              "octaves",
+              "lacunarityPermille",
+              "gainPermille",
+              "warpWavelength",
+              "warpAmplitude",
+              "warpOctaves",
+              "oceanMargin",
+              "waterPermille",
+              "step1Permille",
+              "step2Permille",
+              "step3Permille",
+              "minLakeTiles",
+              "minIslandTiles",
+              "smoothingPasses",
+              "majorityThreshold"
+            ],
+            "additionalProperties": false
+          },
+          "climate": {
+            "type": "object",
+            "properties": {
+              "moistureWavelength": {
+                "type": "integer",
+                "minimum": 16,
+                "maximum": 4096
+              },
+              "moistureOctaves": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8
+              },
+              "temperatureWavelength": {
+                "type": "integer",
+                "minimum": 16,
+                "maximum": 4096
+              },
+              "temperatureOctaves": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8
+              },
+              "temperatureLapsePermille": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4000
+              }
+            },
+            "required": [
+              "moistureWavelength",
+              "moistureOctaves",
+              "temperatureWavelength",
+              "temperatureOctaves",
+              "temperatureLapsePermille"
+            ],
+            "additionalProperties": false
+          },
+          "biomes": {
+            "type": "object",
+            "properties": {
+              "smoothingPasses": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "majorityThreshold": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 9
+              },
+              "rules": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "biome": {
+                      "type": "string",
+                      "pattern": "^(meadow|forest|mountain|wasteland)$"
+                    },
+                    "minHeight": {
+                      "type": "integer",
+                      "default": 0,
+                      "minimum": 0,
+                      "maximum": 3
+                    },
+                    "maxHeight": {
+                      "type": "integer",
+                      "default": 3,
+                      "minimum": 0,
+                      "maximum": 3
+                    },
+                    "minMoisture": {
+                      "type": "integer",
+                      "default": 0,
+                      "minimum": 0,
+                      "maximum": 1000
+                    },
+                    "maxMoisture": {
+                      "type": "integer",
+                      "default": 1000,
+                      "minimum": 0,
+                      "maximum": 1000
+                    },
+                    "minTemperature": {
+                      "type": "integer",
+                      "default": 0,
+                      "minimum": 0,
+                      "maximum": 1000
+                    },
+                    "maxTemperature": {
+                      "type": "integer",
+                      "default": 1000,
+                      "minimum": 0,
+                      "maximum": 1000
+                    }
+                  },
+                  "required": [
+                    "biome"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "smoothingPasses",
+              "majorityThreshold",
+              "rules"
+            ],
+            "additionalProperties": false
+          },
+          "rivers": {
+            "type": "object",
+            "properties": {
+              "sourcesPerMillionTiles": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "minSourceSpacing": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1024
+              },
+              "minLength": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4096
+              },
+              "meanderJitter": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1024
+              }
+            },
+            "required": [
+              "sourcesPerMillionTiles",
+              "minSourceSpacing",
+              "minLength",
+              "meanderJitter"
+            ],
+            "additionalProperties": false
+          },
+          "resources": {
+            "type": "object",
+            "properties": {
+              "trees": {
+                "type": "object",
+                "properties": {
+                  "noiseWavelength": {
+                    "type": "integer",
+                    "minimum": 4,
+                    "maximum": 1024
+                  },
+                  "noiseOctaves": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "noisePermille": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "automatonPasses": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 16
+                  },
+                  "birthNeighbours": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9
+                  },
+                  "surviveNeighbours": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9
+                  },
+                  "stockMin": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "stockMax": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "biomes": {
+                    "type": "array",
+                    "items": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "biome": {
+                          "type": "string",
+                          "pattern": "^(meadow|forest|mountain|wasteland)$"
+                        },
+                        "permille": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000
+                        }
+                      },
+                      "required": [
+                        "biome",
+                        "permille"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "noiseWavelength",
+                  "noiseOctaves",
+                  "noisePermille",
+                  "automatonPasses",
+                  "birthNeighbours",
+                  "surviveNeighbours",
+                  "stockMin",
+                  "stockMax",
+                  "biomes"
+                ],
+                "additionalProperties": false
+              },
+              "stone": {
+                "type": "object",
+                "properties": {
+                  "cellSize": {
+                    "type": "integer",
+                    "minimum": 4,
+                    "maximum": 256
+                  },
+                  "minHeight": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3
+                  },
+                  "stockMin": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "stockMax": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "biomes": {
+                    "type": "array",
+                    "items": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "biome": {
+                          "type": "string",
+                          "pattern": "^(meadow|forest|mountain|wasteland)$"
+                        },
+                        "chancePermille": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000
+                        },
+                        "radius": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 64
+                        }
+                      },
+                      "required": [
+                        "biome",
+                        "chancePermille",
+                        "radius"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "cellSize",
+                  "minHeight",
+                  "stockMin",
+                  "stockMax",
+                  "biomes"
+                ],
+                "additionalProperties": false
+              },
+              "ore": {
+                "type": "object",
+                "properties": {
+                  "cellSize": {
+                    "type": "integer",
+                    "minimum": 4,
+                    "maximum": 256
+                  },
+                  "minHeight": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3
+                  },
+                  "stockMin": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "stockMax": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "biomes": {
+                    "$ref": "#/properties/items/items/properties/resources/properties/stone/properties/biomes"
+                  }
+                },
+                "required": [
+                  "cellSize",
+                  "minHeight",
+                  "stockMin",
+                  "stockMax",
+                  "biomes"
+                ],
+                "additionalProperties": false
+              },
+              "berries": {
+                "type": "object",
+                "properties": {
+                  "edgeDistance": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 16
+                  },
+                  "stockMin": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "stockMax": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "biomes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/properties/items/items/properties/resources/properties/trees/properties/biomes/items"
+                    }
+                  }
+                },
+                "required": [
+                  "edgeDistance",
+                  "stockMin",
+                  "stockMax",
+                  "biomes"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "trees",
+              "stone",
+              "ore",
+              "berries"
+            ],
+            "additionalProperties": false
+          },
+          "pointsOfInterest": {
+            "type": "object",
+            "properties": {
+              "tilesPerPoi": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 1000000
+              },
+              "minSpacing": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 512
+              },
+              "edgeMargin": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 256
+              },
+              "kinds": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "pattern": "^(chest|ruins|lair)$"
+                    },
+                    "weight": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1000
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "weight"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "tilesPerPoi",
+              "minSpacing",
+              "edgeMargin",
+              "kinds"
+            ],
+            "additionalProperties": false
+          },
+          "start": {
+            "type": "object",
+            "properties": {
+              "biome": {
+                "type": "string",
+                "pattern": "^(meadow|forest|mountain|wasteland)$"
+              },
+              "zoneRadius": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 256
+              },
+              "minTreeTiles": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "minStoneTiles": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "minWaterTiles": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "flatRadius": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64
+              },
+              "minFlatPermille": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "poiClearance": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 256
+              },
+              "edgeMargin": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1024
+              },
+              "candidateSpacing": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64
+              }
+            },
+            "required": [
+              "biome",
+              "zoneRadius",
+              "minTreeTiles",
+              "minStoneTiles",
+              "minWaterTiles",
+              "flatRadius",
+              "minFlatPermille",
+              "poiClearance",
+              "edgeMargin",
+              "candidateSpacing"
+            ],
+            "additionalProperties": false
+          },
+          "settlements": {
+            "type": "object",
+            "properties": {
+              "siteSize": {
+                "type": "integer",
+                "minimum": 3,
+                "maximum": 31
+              },
+              "minSpacing": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1024
+              },
+              "edgeMargin": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 256
+              },
+              "poiClearance": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 256
+              },
+              "factions": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "faction": {
+                      "type": "string",
+                      "pattern": "^(human|orc)$"
+                    },
+                    "perMillionTiles": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1000
+                    },
+                    "minStartDistance": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4096
+                    },
+                    "preferredBiome": {
+                      "type": "string",
+                      "pattern": "^(meadow|forest|mountain|wasteland)$"
+                    }
+                  },
+                  "required": [
+                    "faction",
+                    "perMillionTiles",
+                    "minStartDistance",
+                    "preferredBiome"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "siteSize",
+              "minSpacing",
+              "edgeMargin",
+              "poiClearance",
+              "factions"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "height",
+          "climate",
+          "biomes",
+          "rivers",
+          "resources",
+          "pointsOfInterest",
+          "start",
+          "settlements"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

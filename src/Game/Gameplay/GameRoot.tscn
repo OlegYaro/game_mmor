@@ -1,0 +1,72 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Gameplay/GameRoot.cs" id="1_root"]
+[ext_resource type="Script" path="res://Ui/Hud.cs" id="2_hud"]
+[ext_resource type="Script" path="res://Ui/DevConsolePanel.cs" id="3_console"]
+[ext_resource type="Script" path="res://Menu/PauseMenu.cs" id="4_pause"]
+
+[node name="GameRoot" type="Node"]
+script = ExtResource("1_root")
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="Ui" type="CanvasLayer" parent="."]
+
+[node name="MinimapSlot" type="Control" parent="Ui"]
+layout_mode = 3
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -272.0
+offset_top = -272.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="Hud" type="Control" parent="Ui"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_hud")
+
+[node name="ErrorPanel" type="Label" parent="Ui"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -40.0
+offset_right = 400.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.35, 1)
+text = "ui.error.world_missing"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="DevConsolePanel" type="PanelContainer" parent="Ui"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 360.0
+grow_horizontal = 2
+script = ExtResource("3_console")
+
+[node name="PauseMenu" type="Control" parent="Ui"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("4_pause")
