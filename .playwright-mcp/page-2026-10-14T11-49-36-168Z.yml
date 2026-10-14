@@ -1,0 +1,661 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e4]:
+    - generic [ref=e6]:
+      - link [ref=e7] [cursor=pointer]:
+        - /url: https://www.photonengine.com
+        - img "Photon logo" [ref=e8]
+        - img "Photon logo" [ref=e9]
+      - button "PRODUCTS" [ref=e10] [cursor=pointer]
+      - generic [ref=e13]:
+        - link "Samples" [ref=e14] [cursor=pointer]:
+          - /url: https://www.photonengine.com/samples
+        - link "SDKs" [ref=e15] [cursor=pointer]:
+          - /url: https://www.photonengine.com/sdks#quantum
+        - link "Documentation":
+          - /url: https://doc.photonengine.com/quantum/v3/quantum-intro
+        - link "Sign In" [ref=e18] [cursor=pointer]:
+          - /url: "#"
+      - button [ref=e19] [cursor=pointer]
+  - main [ref=e24]:
+    - generic [ref=e25]:
+      - navigation [ref=e27]:
+        - list:
+          - listitem [ref=e28]:
+            - link "PHOTON" [ref=e29] [cursor=pointer]:
+              - /url: /photon/current/getting-started
+          - listitem [ref=e34]
+          - listitem [ref=e35]:
+            - link "FUSION CORE" [ref=e36] [cursor=pointer]:
+              - /url: /fusion-core/v3/fusion-core-intro
+          - listitem [ref=e41]:
+            - link "FUSION UNITY" [ref=e42] [cursor=pointer]:
+              - /url: /fusion/v2/fusion-intro
+          - listitem [ref=e47]:
+            - link "FUSION UNREAL" [ref=e48] [cursor=pointer]:
+              - /url: /fusion-unreal/v3/fusion-intro
+          - listitem [ref=e53]:
+            - link "FUSION GODOT" [ref=e54] [cursor=pointer]:
+              - /url: /fusion-godot/v3-shared-authority/fusion-intro
+          - listitem [ref=e59]:
+            - generic [ref=e60] [cursor=pointer]: QUANTUM UNITY
+            - list:
+              - listitem [ref=e65]:
+                - link "Quantum Intro" [ref=e67] [cursor=pointer]:
+                  - /url: /quantum/v3/quantum-intro
+              - listitem [ref=e68]:
+                - generic [ref=e69] [cursor=pointer]: Getting Started
+                - list
+              - listitem [ref=e74]:
+                - generic [ref=e75] [cursor=pointer]: Tutorials
+                - list
+              - listitem [ref=e80]:
+                - generic [ref=e81] [cursor=pointer]: Game Samples
+                - list
+              - listitem [ref=e86]:
+                - generic [ref=e87] [cursor=pointer]: Technical Samples
+                - list
+              - listitem [ref=e92]:
+                - generic [ref=e93] [cursor=pointer]: Addons
+                - list
+              - listitem [ref=e98]:
+                - generic [ref=e99] [cursor=pointer]: Manual
+                - list:
+                  - listitem [ref=e104]:
+                    - generic [ref=e105] [cursor=pointer]: Quantum ECS
+                    - list
+                  - listitem [ref=e110]:
+                    - link "Animation" [ref=e112] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/animation
+                  - listitem [ref=e113]:
+                    - generic [ref=e114] [cursor=pointer]: Assets
+                    - list
+                  - listitem [ref=e119]:
+                    - link "Cheat Protection" [ref=e121] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/cheat-protection
+                  - listitem [ref=e122]:
+                    - link "Commands" [ref=e124] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/commands
+                  - listitem [ref=e125]:
+                    - link "Configuration Files" [ref=e127] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/config-files
+                  - listitem [ref=e128]:
+                    - link "Entity Prototypes" [ref=e130] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/entity-prototypes
+                  - listitem [ref=e131]:
+                    - link "Entity View" [ref=e133] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/entityview
+                  - listitem [ref=e134]:
+                    - link "Entity View Component" [ref=e136] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/entity-view-component
+                  - listitem [ref=e137]:
+                    - link "Frames" [ref=e139] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/frames
+                  - listitem [ref=e140]:
+                    - generic [ref=e141] [cursor=pointer]: Game Session
+                    - list
+                  - listitem [ref=e146]:
+                    - link "Input" [ref=e148] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/input
+                  - listitem [ref=e149]:
+                    - link "Materialization" [ref=e151] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/materialization
+                  - listitem [ref=e152]:
+                    - generic [ref=e153] [cursor=pointer]: Maps
+                    - list
+                  - listitem [ref=e158]:
+                    - link "Multithreading" [ref=e160] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/multithreading
+                  - listitem [ref=e161]:
+                    - link "Multiplayer Play Mode" [ref=e163] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/mppm
+                  - listitem [ref=e164]:
+                    - generic [ref=e165] [cursor=pointer]: Navigation
+                    - list
+                  - listitem [ref=e170]:
+                    - generic [ref=e171] [cursor=pointer]: Physics
+                    - list
+                  - listitem [ref=e176]:
+                    - generic [ref=e177] [cursor=pointer]: Player
+                    - list
+                  - listitem [ref=e182]:
+                    - link "Prediction Culling" [ref=e184] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/prediction-culling
+                  - listitem [ref=e185]:
+                    - link "Profiling" [ref=e187] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/profiling
+                  - listitem [ref=e188]:
+                    - link "Quantum Project" [ref=e190] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/quantum-project
+                  - listitem [ref=e191]:
+                    - generic:
+                      - link "Replays":
+                        - /url: /quantum/v3/manual/replay
+                  - listitem [ref=e192]:
+                    - link "RNG Session" [ref=e194] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/rngsession
+                  - listitem [ref=e195]:
+                    - generic [ref=e196] [cursor=pointer]: Sample Menu
+                    - list
+                  - listitem [ref=e201]:
+                    - link "Webhooks" [ref=e203] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/webhooks
+                  - listitem [ref=e204]:
+                    - link "WebGL" [ref=e206] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/webgl
+              - listitem [ref=e207]:
+                - generic [ref=e208] [cursor=pointer]: Concepts And Patterns
+                - list
+              - listitem [ref=e213]:
+                - generic [ref=e214] [cursor=pointer]: Consoles
+                - list
+              - listitem [ref=e219]:
+                - generic [ref=e220] [cursor=pointer]: Gaming Circle
+                - list
+              - listitem [ref=e225]:
+                - generic [ref=e226] [cursor=pointer]: Reference
+                - list
+              - listitem [ref=e231]:
+                - generic [ref=e232] [cursor=pointer]: Video Tutorials
+                - list
+          - listitem [ref=e237]
+          - listitem [ref=e238]:
+            - link "PUN UNITY" [ref=e239] [cursor=pointer]:
+              - /url: /pun/current/getting-started/pun-intro
+          - listitem [ref=e244]:
+            - link "REALTIME C#" [ref=e245] [cursor=pointer]:
+              - /url: /realtime/v5/realtime-intro
+          - listitem [ref=e250]:
+            - link "REALTIME CORE" [ref=e251] [cursor=pointer]:
+              - /url: /realtime-core/v6/realtime-core-intro
+          - listitem [ref=e256]
+          - listitem [ref=e257]:
+            - link "CHAT" [ref=e258] [cursor=pointer]:
+              - /url: /chat/current/getting-started/chat-intro
+          - listitem [ref=e263]:
+            - link "VOICE" [ref=e264] [cursor=pointer]:
+              - /url: /voice/v2/getting-started/voice-intro
+          - listitem [ref=e269]:
+            - link "VIDEO" [ref=e270] [cursor=pointer]:
+              - /url: /video/v2/video-intro
+          - listitem [ref=e275]
+          - listitem [ref=e276]:
+            - link "SERVER" [ref=e277] [cursor=pointer]:
+              - /url: /server/v5/getting-started/photon-server-in-5min
+          - listitem [ref=e282]
+          - listitem [ref=e283]:
+            - link "TOURNAMENT SDK" [ref=e284] [cursor=pointer]:
+              - /url: /tournamentsdk/current/overview
+          - listitem [ref=e289]
+          - listitem [ref=e290]:
+            - link "EXTENDED REALITY" [ref=e291] [cursor=pointer]:
+              - /url: /arvr/current/extended-reality-overview
+          - listitem [ref=e296]
+          - listitem [ref=e297]:
+            - link "BOLT (DISCONTINUED)" [ref=e298] [cursor=pointer]:
+              - /url: /bolt/current/getting-started/overview
+      - generic [ref=e303]:
+        - generic [ref=e305]:
+          - generic [ref=e306]:
+            - generic [ref=e308]:
+              - textbox "Search" [ref=e309]
+              - button [ref=e310] [cursor=pointer]
+            - generic "Light / Dark" [ref=e314]:
+              - checkbox [ref=e315] [cursor=pointer]
+          - generic [ref=e316]:
+            - generic [ref=e317]:
+              - text: "This document is about:"
+              - strong [ref=e318]: QUANTUM 3
+            - generic [ref=e319] [cursor=pointer]: SWITCH TO
+        - generic [ref=e323]:
+          - heading "Replays" [level=1] [ref=e324]
+          - heading "Introduction" [level=2] [ref=e325]
+          - paragraph [ref=e326]: This documentation explains how to save and play back deterministic Quantum simulation replays.
+          - paragraph [ref=e327]: Replays are re-runs of the game simulation using the same libraries, game assets, configurations and user input from a recorded session. They can also be used to start a second simulation that is slightly in the past to, for example, perform a kill-cam replay. The application doesn't have to be the same one or even run on the same platform, but it has to be built with the same game and Quantum dlls. Optionally checksums can be recorded with and verified during playback.
+          - paragraph [ref=e328]: "Running a Quantum replay requires four parts:"
+          - list [ref=e329]:
+            - listitem [ref=e330]:
+              - strong [ref=e331]: An application build with the same version of game and Quantum libraries
+              - list [ref=e332]:
+                - listitem [ref=e333]: QuantumDeterministic.dll and Quantum.Engine.dll
+                - listitem [ref=e334]: Quantum.Simulation.dll
+            - listitem [ref=e335]:
+              - strong [ref=e336]: The game assets
+              - list [ref=e337]:
+                - listitem [ref=e338]: The Quantum asset database (DB)
+                - listitem [ref=e339]: The Look-up-tables files (LUT)
+            - listitem [ref=e340]:
+              - strong [ref=e341]: The game session specific configuration files
+              - list [ref=e342]:
+                - listitem [ref=e343]: SimulationConfig
+                - listitem [ref=e344]: RuntimeConfig
+            - listitem [ref=e345]:
+              - strong [ref=e346]: The game session specific input history
+          - heading "How To Save A Replay" [level=2] [ref=e347]
+          - heading "Unity" [level=3] [ref=e348]
+          - paragraph [ref=e349]:
+            - text: Before starting Quantum, set the
+            - code [ref=e350]: RecordingFlags
+            - text: to either
+            - code [ref=e351]: Input
+            - text: or
+            - code [ref=e352]: All
+            - text: .
+          - paragraph [ref=e353]: C#
+          - code [ref=e355]:
+            - text: "["
+            - generic [ref=e356]: Flags
+            - text: "] public enum RecordingFlags { None = 0, // records nothing, default setting Input = 1 << 0, // records input Checksums = 1 << 1, // records checksums (must be enabled) All = Input | Checksums // recorded input and checksum }"
+          - list [ref=e357]:
+            - listitem [ref=e358]:
+              - text: Use the inspector
+              - code [ref=e359]: enum
+              - text: field of the
+              - code [ref=e360]: QuantumRunnerLocalDebug
+              - text: or
+          - figure "RunnerLocalDebug" [ref=e361]:
+            - img "RunnerLocalDebug"
+          - list [ref=e363]:
+            - listitem [ref=e364]:
+              - text: Use the inspector
+              - code [ref=e365]: enum
+              - text: field in the
+              - code [ref=e366]: QuantumMenuUIController.ConnectArgs
+              - text: when using the Quantum menu or
+          - figure "Menu UI Controller" [ref=e367]:
+            - img "Menu UI Controller"
+          - list [ref=e369]:
+            - listitem [ref=e370]:
+              - text: Set the flags on the
+              - code [ref=e371]: SessionRunner.Arguments
+              - text: when calling
+              - code [ref=e372]: SessionRunner.Start()
+              - text: or
+          - figure "SessionRunner.Arguments" [ref=e373]:
+            - img "SessionRunner.Arguments"
+          - list [ref=e375]:
+            - listitem [ref=e376]:
+              - text: Alternatively the input recording can also be started manually using
+              - code [ref=e377]: QuantumGame.StartRecordingInput()
+              - text: .
+          - paragraph [ref=e378]: "PS: Input recording in general will create managed memory allocations."
+          - paragraph [ref=e379]:
+            - strong [ref=e380]: Start
+            - text: the game, then save the replay by selecting one of Unity Editor menu options below. The exported file can either include the asset db for convenience or exclude the asset db to keep the replay files size small. The default replay file location is
+            - code [ref=e381]: Assets/QuantumUser/Replays
+            - text: . The default name consists of the current loaded map name and the datetime. It may export a second file with the
+            - code [ref=e382]: "-DB"
+            - text: postfix for the excluded asset db.
+          - paragraph [ref=e383]:
+            - code [ref=e384]: Quantum > Export > Replay (Include Asset DB)
+          - paragraph [ref=e385]:
+            - code [ref=e386]: Quantum > Export > Replay (Exclude Asset DB)
+          - paragraph [ref=e387]: "Alternatively, create and save the replay file manually in code:"
+          - paragraph [ref=e388]: C#
+          - code [ref=e390]:
+            - generic [ref=e391]: var
+            - text: "replay = quantumGame.GetRecordedReplay(includeChecksums: true, includeDb: false); File.WriteAllText(\"replay.json\", JsonUtility.ToJson(replay));"
+          - paragraph [ref=e392]: "Alternatively export the asset db in code:"
+          - paragraph [ref=e393]: C#
+          - code [ref=e395]:
+            - text: using (
+            - generic [ref=e396]: var
+            - text: "file = File.Create(\"db.json\")) { quantumGame.AssetSerializer.SerializeAssets(file, quantumGame.ResourceManager.LoadAllAssets().ToArray()); }"
+          - heading "Webhook" [level=3] [ref=e397]
+          - paragraph [ref=e398]: To save a replay from a session running on the Quantum Public Cloud the replay webhooks must be set up and point to a custom backend.
+          - list [ref=e399]:
+            - listitem [ref=e400]:
+              - link "Quantum Webhook - ReplayStart" [ref=e401] [cursor=pointer]:
+                - /url: /quantum/v3/manual/webhooks#replaystart
+            - listitem [ref=e402]:
+              - link "Quantum Webhook - ReplayChunk" [ref=e403] [cursor=pointer]:
+                - /url: /quantum/v3/manual/webhooks#replaychunk
+          - paragraph [ref=e404]:
+            - text: The start WebRequest comes with the
+            - code [ref=e405]: SessionConfig
+            - text: and
+            - code [ref=e406]: RuntimeConfig
+            - text: configuration files. The chunks will arrive frequently until
+            - code [ref=e407]: IsLast
+            - text: is finally
+            - code [ref=e408]: "true"
+            - text: ", representing the streaming input from all players."
+          - paragraph [ref=e409]:
+            - text: To make the replays playable in Unity, either serialize them in JSON into a
+            - code [ref=e410]: QuantumReplayFile
+            - text: class or create another data structure to store the required data.
+          - heading "How To Run A Replay" [level=2] [ref=e411]
+          - heading "Unity" [level=3] [ref=e412]
+          - paragraph [ref=e413]:
+            - text: Instead of the
+            - code [ref=e414]: QuantumRunnerLocalDebug
+            - text: script use the
+            - code [ref=e415]: QuantumRunnerLocalReplay
+            - text: script to start a local game using a replay. Drag and drop the recorded file into the
+            - code [ref=e416]: Replay File
+            - text: field of the inspector. If the default file naming convention is used it will detect and set the asset
+            - code [ref=e417]: Database File
+            - text: automatically. Press play.
+          - figure "RunnerLocalReplay" [ref=e418]:
+            - img "RunnerLocalReplay"
+          - paragraph [ref=e420]: The script follows a few steps to load a replay file, set up and configure arguments and start the Quantum session. The process is similar to what the .Net application runner does and can be used to create custom replay starting logic.
+          - paragraph [ref=e421]: "Step 1: Deserialize the replay file."
+          - paragraph [ref=e422]: C#
+          - code [ref=e424]:
+            - generic [ref=e425]: var
+            - text: replayFile = JsonUtility.
+            - generic [ref=e426]:
+              - text: FromJson
+              - generic [ref=e427]: <QuantumReplayFile>
+            - text: (ReplayFile.text);
+          - paragraph [ref=e428]: "Step 2: Create an input provider from the replay file. It will automatically create the correct provider based on if the input is delta compressed or if it uses raw inputs."
+          - paragraph [ref=e429]: C#
+          - code [ref=e431]: _replayInputProvider = replayFile.CreateInputProvider();
+          - paragraph [ref=e432]:
+            - text: "Step 3: Create the"
+            - code [ref=e433]: SessionRunner
+            - text: arguments. For example, decode the binary
+            - code [ref=e434]: RuntimeConfig
+            - text: ", set the simulation to"
+            - code [ref=e435]: DeterministicGameMode.Replay
+            - text: mode.
+            - code [ref=e436]: InitialTick
+            - text: and
+            - code [ref=e437]: FrameData
+            - text: are only required if the replay does not start from the beginning.
+          - paragraph [ref=e438]: C#
+          - code [ref=e440]:
+            - generic [ref=e441]: var
+            - text: serializer = new QuantumUnityJsonSerializer();
+            - generic [ref=e442]: var
+            - text: runtimeConfig = serializer.
+            - generic [ref=e443]:
+              - text: ConfigFromByteArray
+              - generic [ref=e444]: <RuntimeConfig>
+            - text: "(replayFile.RuntimeConfigData.Decode(), compressed: true);"
+            - generic [ref=e445]: var
+            - text: arguments = new
+            - generic [ref=e446]: SessionRunner.Arguments
+            - text: "{ RunnerFactory = QuantumRunnerUnityFactory.DefaultFactory, RuntimeConfig = runtimeConfig, SessionConfig = replayFile.DeterministicConfig, ReplayProvider = _replayInputProvider, GameMode = DeterministicGameMode.Replay, RunnerId = \"LOCALREPLAY\", PlayerCount = replayFile.DeterministicConfig.PlayerCount, InstantReplaySettings = InstantReplayConfig, InitialTick = replayFile.InitialTick, FrameData = replayFile.InitialFrameData, DeltaTimeType = DeltaTypeType };"
+          - paragraph [ref=e447]:
+            - text: "Step 4: Use the asset database saved with the replay or an external asset database source or do not set a different"
+            - code [ref=e448]: ResourceManager
+            - text: at all.
+          - paragraph [ref=e449]: C#
+          - code [ref=e451]:
+            - generic [ref=e452]: var
+            - text: "assets = replayFile.AssetDatabaseData?.Decode(); if (DatabaseFile != null) { assets = DatabaseFile.bytes; }"
+            - generic [ref=e453]: var
+            - text: "serializer = new QuantumUnityJsonSerializer(); if (assets?.Length > 0) { _resourceAllocator = new QuantumUnityNativeAllocator(); _resourceManager = new ResourceManagerStatic(serializer.AssetsFromByteArray(assets), new QuantumUnityNativeAllocator()); arguments.ResourceManager = _resourceManager; }"
+          - paragraph [ref=e454]: "Step 5: Finally, start the game."
+          - paragraph [ref=e455]: C#
+          - code [ref=e457]: _runner = QuantumRunner.StartGame(arguments);
+          - paragraph [ref=e458]: Optionally start verifying a list of checksums and log out checksum mismatches.
+          - paragraph [ref=e459]: C#
+          - code [ref=e461]: _runner.Game.StartVerifyingChecksums(replayFile.Checksums);
+          - heading ".Net Application" [level=3] [ref=e462]
+          - paragraph [ref=e463]:
+            - text: Create or update the .Net simulation project by selecting the
+            - code [ref=e464]: QuantumDotnetBuildSettings
+            - text: asset and pressing
+            - code [ref=e465]: Generate Dotnet Project
+            - text: .
+          - paragraph [ref=e466]:
+            - text: Open and compile the solution file under
+            - code [ref=e467]: Assets/../Quantum.Dotnet/Quantum.Dotnet.sln
+            - text: .
+          - paragraph [ref=e468]: Start the runner from the command line accordingly.
+          - paragraph
+          - code [ref=e470]: "Quantum.Dotnet\\Quantum.Runner.Dotnet\\bin\\Debug> .\\Quantum.Runner.exe --help Description: Main method to start a Quantum runner. Usage: Quantum.Runner [options] Options: --replay-path <replay-path> Path to the Quantum replay json file. --lut-path <lut-path> Path to the LUT folder. --db-path <db-path> Optionally an extra path to the Quantum database json file. --checksum-path <checksum-path> Optionally an extra path to the checksum file. --version Show version information -?, -h, --help Show help and usage information"
+          - paragraph [ref=e471]: "For example:"
+          - paragraph
+          - code [ref=e473]: Quantum.Dotnet\Quantum.Runner.Dotnet\bin\Debug>.\Quantum.Runner.exe --replay-path ..\..\..\..\Assets\QuantumUser\Replays\MapTestNavMeshAgents-2024-06-17-14-19-46.json --lut-path ..\..\..\..\Assets\Photon\Quantum\Resources\LUT
+          - paragraph [ref=e474]:
+            - strong [ref=e475]: "Caveat:"
+            - text: Recorded checksums in Unity are not compatible with the ones generated in the Dotnet runner. Activate
+            - code [ref=e476]: ChecksumCrossPlatformDeterminism
+            - text: in the SessionConfig to validate recorded checksums on different platforms.
+          - heading "PlayerIsLocal()" [level=2] [ref=e477]
+          - paragraph [ref=e478]:
+            - text: The PlayerIsLocal-check on
+            - code [ref=e479]: Quantum.Game.Session
+            - text: is good for numerous view control for example camera, audio and VFX focus.
+            - strong [ref=e480]: But
+            - text: it won't work for replays.
+          - paragraph [ref=e481]: Replays captured online using the webhook for example will never have this information.
+          - paragraph [ref=e482]: To support replays it is better to always wrap the PlayerIsLocal-check into checking the session game mode first.
+          - paragraph [ref=e483]: C#
+          - code [ref=e485]:
+            - text: "public class CustomViewContext :"
+            - generic [ref=e486]: MonoBehaviour, IQuantumViewContext
+            - text: "{ private PlayerRef _focusedPlayer; public"
+            - generic [ref=e487]: bool
+            - text: "IsFocusedPlayer(QuantumGame game, PlayerRef player) { if (game.Session.GameMode == DeterministicGameMode.Replay) { return player == _focusedPlayer; } return game.PlayerIsLocal(player); } }"
+          - heading "QuantumReplayFile API" [level=2] [ref=e488]
+          - paragraph [ref=e489]:
+            - text: The
+            - code [ref=e490]: QuantumReplayFile
+            - text: holds all relevant data to run a Quantum replay and can be serialized in JSON.
+          - paragraph [ref=e491]:
+            - text: The replay has to include a valid input history saved as
+            - code [ref=e492]: InputHistoryDeltaCompressed
+            - text: or
+            - code [ref=e493]: InputHistoryLegacy
+            - text: . The former is much more files size friendly and is the only mode that input is streamed from the Photon Public Cloud.
+          - paragraph [ref=e494]:
+            - text: The
+            - code [ref=e495]: RuntimeConfigData
+            - text: is stored in a binary serialized form (Quantum.AssetSerializer) like the data that is received during replay streaming.
+          - paragraph [ref=e496]:
+            - text: The replay may include a serialized (AssetSerializer) asset db
+            - code [ref=e497]: AssetDatabaseData
+            - text: for convenience, which should be omitted in production environments where file size is an issue.
+          - paragraph [ref=e498]: The replay may contain recorded checksums that can be verified at runtime as a development feature.
+          - paragraph [ref=e499]:
+            - text: The
+            - code [ref=e500]: QuantumJsonFriendlyDataBlob
+            - text: is a wrapper around storing binary data in JSON to work around the problem that Unity JSON tools only serialize byte arrays verbosely.
+          - paragraph [ref=e501]: C#
+          - code [ref=e503]:
+            - text: "public class QuantumReplayFile { // Delta compressed binary input history, this is the same that is send over replay webhooks for example. public QuantumJsonFriendlyDataBlob InputHistoryDeltaCompressed; // Full verbose input used in Quantum 2.1, which is still functional, but has only fringe use cases. public"
+            - generic [ref=e504]: DeterministicTickInputSet[]
+            - text: "InputHistoryLegacy; // Binary serialized RuntimeConfig. // Use AssetSerializer.ConfigToByteArray(runtimeConfig, compress: true) /// </summary> public QuantumJsonFriendlyDataBlob RuntimeConfigData; /// The session config. public DeterministicSessionConfig DeterministicConfig; /// The last tick of the input. public"
+            - generic [ref=e505]: int
+            - text: LastTick; /// The initial tick to start from, requires <see cref="InitialFrameData"/> to be set. public
+            - generic [ref=e506]: int
+            - text: InitialTick; /// Optional frame data to start the replay with. This is used for save games for example. public
+            - generic [ref=e507]: byte[]
+            - text: "InitialFrameData; /// Optional checksums. Omit this for replays in production environments. public ChecksumFile Checksums; /// Optional serialized asset database. Omit this for replays in production environments. /// Use AssetSerializer.SerializeAssets(stream, ResourceManager.LoadAllAssets().ToArray() public QuantumJsonFriendlyDataBlob AssetDatabaseData; }"
+          - paragraph [ref=e508]: C#
+          - code [ref=e510]:
+            - text: "public class QuantumJsonFriendlyDataBlob { /// The byte array is saved as is. public"
+            - generic [ref=e511]: byte[]
+            - text: Binary; /// The byte array is saved as Base64 text. public
+            - generic [ref=e512]: string
+            - text: Base64; /// Both Binary and Base64 can be GZip compressed. public
+            - generic [ref=e513]: bool
+            - text: "IsCompressed; }"
+          - heading "Instant Replays" [level=2] [ref=e514]
+          - paragraph [ref=e515]:
+            - text: We provide a script which demonstrates how to do instant replays, like kill-cam replays which happen during the game, in an auxiliary QuantumRunner, and then gets back to the default runner once the instant replay is over. To use it, just add the Unity component called
+            - code [ref=e516]: QuantumInstantReplayDemo
+            - text: to a Game Object, do the setup (set playback speed, replay length, etc.) and then, during gameplay, hit the Start and Stop buttons.
+          - figure "Instant Replay Image" [ref=e517]:
+            - img "Instant Replay Image"
+          - paragraph [ref=e519]:
+            - text: Last updated on
+            - time [ref=e520]: 25/09/2026
+          - link "Back to top" [ref=e521] [cursor=pointer]:
+            - /url: "#"
+      - list [ref=e523]:
+        - list [ref=e524]:
+          - listitem [ref=e525]:
+            - link "Introduction" [ref=e526] [cursor=pointer]:
+              - /url: "#introduction"
+          - listitem [ref=e527]:
+            - link "How To Save A Replay" [ref=e528] [cursor=pointer]:
+              - /url: "#how-to-save-a-replay"
+          - list [ref=e529]:
+            - listitem [ref=e530]:
+              - link "Unity" [ref=e531] [cursor=pointer]:
+                - /url: "#unity"
+            - listitem [ref=e532]:
+              - link "Webhook" [ref=e533] [cursor=pointer]:
+                - /url: "#webhook"
+          - listitem [ref=e534]:
+            - link "How To Run A Replay" [ref=e535] [cursor=pointer]:
+              - /url: "#how-to-run-a-replay"
+          - list [ref=e536]:
+            - listitem [ref=e537]:
+              - link "Unity" [ref=e538] [cursor=pointer]:
+                - /url: "#unity-1"
+            - listitem [ref=e539]:
+              - link ".Net Application" [ref=e540] [cursor=pointer]:
+                - /url: "#net-application"
+          - listitem [ref=e541]:
+            - link "PlayerIsLocal()" [ref=e542] [cursor=pointer]:
+              - /url: "#playerislocal"
+          - listitem [ref=e543]:
+            - link "QuantumReplayFile API" [ref=e544] [cursor=pointer]:
+              - /url: "#quantumreplayfile-api"
+          - listitem [ref=e545]:
+            - link "Instant Replays" [ref=e546] [cursor=pointer]:
+              - /url: "#instant-replays"
+  - contentinfo [ref=e547]:
+    - generic [ref=e548]:
+      - generic [ref=e549]:
+        - img "Photon" [ref=e550]
+        - generic [ref=e551]: We Make Multiplayer Simple
+      - generic [ref=e552]:
+        - generic [ref=e553]:
+          - generic [ref=e554]:
+            - heading "Products" [level=5] [ref=e555]
+            - list [ref=e556]:
+              - listitem [ref=e557]:
+                - link "Fusion" [ref=e558] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/fusion
+              - listitem [ref=e559]:
+                - link "Quantum" [ref=e560] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/quantum
+              - listitem [ref=e561]:
+                - link "Realtime" [ref=e562] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/realtime
+              - listitem [ref=e563]:
+                - link "Chat" [ref=e564] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/chat
+              - listitem [ref=e565]:
+                - link "Voice" [ref=e566] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/voice
+              - listitem [ref=e567]:
+                - link "PUN" [ref=e568] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/pun
+              - listitem [ref=e569]:
+                - link "Tournament" [ref=e570] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/tournament
+          - generic [ref=e571]:
+            - heading "Support" [level=5] [ref=e572]
+            - list [ref=e573]:
+              - listitem [ref=e574]:
+                - link "Gaming Circle" [ref=e575] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/gaming
+              - listitem [ref=e576]:
+                - link "Industries Circle" [ref=e577] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/industries
+              - listitem [ref=e578]:
+                - link "Circle Discord" [ref=e579] [cursor=pointer]:
+                  - /url: https://doc.photonengine.com/quantum/v3/gaming-circle/circle-discord
+        - generic [ref=e581]:
+          - heading "Documentation" [level=5] [ref=e582]
+          - list [ref=e583]:
+            - listitem [ref=e584]:
+              - link "Fusion" [ref=e585] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/fusion/v2/fusion-intro
+            - listitem [ref=e586]:
+              - link "Quantum" [ref=e587] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/quantum/v3/quantum-intro
+            - listitem [ref=e588]:
+              - link "Realtime" [ref=e589] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/realtime/v5/realtime-intro
+            - listitem [ref=e590]:
+              - link "Chat" [ref=e591] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/chat/current/getting-started/chat-intro
+            - listitem [ref=e592]:
+              - link "Voice" [ref=e593] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/voice/v2/getting-started/voice-intro
+            - listitem [ref=e594]:
+              - link "PUN" [ref=e595] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/pun/v2/getting-started/pun-intro
+            - listitem [ref=e596]:
+              - link "Bolt" [ref=e597] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/bolt/current/getting-started/overview
+            - listitem [ref=e598]:
+              - link "Server" [ref=e599] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/server/v5/getting-started/photon-server-in-5min
+            - listitem [ref=e600]:
+              - link "VR | AR | MR" [ref=e601] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/arvr/current/meta-quest/quest-intro
+        - generic [ref=e602]:
+          - generic [ref=e603]:
+            - heading "About Us" [level=5] [ref=e604]
+            - list [ref=e605]:
+              - listitem [ref=e606]:
+                - link "Contact Us" [ref=e607] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/contact
+              - listitem [ref=e608]:
+                - link "Compliance" [ref=e609] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/compliance
+              - listitem [ref=e610]:
+                - link "Blog" [ref=e611] [cursor=pointer]:
+                  - /url: https://blog.photonengine.com/
+          - generic [ref=e612]:
+            - heading "Resources" [level=5] [ref=e613]
+            - list [ref=e614]:
+              - listitem [ref=e615]:
+                - link "Dashboard" [ref=e616] [cursor=pointer]:
+                  - /url: https://dashboard.photonengine.com
+              - listitem [ref=e617]:
+                - link "Samples" [ref=e618] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/samples
+              - listitem [ref=e619]:
+                - link "SDK Downloads" [ref=e620] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/sdks#fusion
+              - listitem [ref=e621]:
+                - link "Cloud Status" [ref=e622] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/status
+        - generic [ref=e624]:
+          - heading "Languages" [level=5] [ref=e625]
+          - list [ref=e626]:
+            - listitem [ref=e627]:
+              - link "English" [ref=e628] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/quantum/v3/manual/replay
+            - listitem [ref=e629]:
+              - link "日本語" [ref=e630] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/ja-jp/quantum/v3/manual/replay
+            - listitem [ref=e631]:
+              - link "한국어" [ref=e632] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/ko-kr/quantum/v3/manual/replay
+            - listitem [ref=e633]:
+              - link "简体中文" [ref=e634] [cursor=pointer]:
+                - /url: https://www.vibrantlink.com
+            - listitem [ref=e635]:
+              - link "繁体中文" [ref=e636] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/zh-tw/quantum/v3/manual/replay
+      - generic [ref=e637]:
+        - generic [ref=e638]:
+          - link "Public Discord" [ref=e639] [cursor=pointer]:
+            - /url: https://dashboard.photonengine.com/discord/joinphotonengine
+          - link "YouTube" [ref=e643] [cursor=pointer]:
+            - /url: https://www.youtube.com/c/photonengine
+          - link "LinkedIn" [ref=e647] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/photonengine
+        - generic [ref=e651]:
+          - link "Terms" [ref=e652] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms
+          - link "Regulatory" [ref=e653] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/regulatory
+          - link "Privacy Policy" [ref=e654] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/privacyandcookiepolicy
+          - link "Privacy" [ref=e655] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/gdpr
+          - link "Code of Conduct" [ref=e656] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/codeofconduct
+          - generic [ref=e657] [cursor=pointer]: Cookie Settings

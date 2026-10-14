@@ -1,0 +1,436 @@
+- generic [active] [ref=f12e1]:
+  - navigation [ref=f12e2]:
+    - generic [ref=f12e4]:
+      - link [ref=f12e5] [cursor=pointer]:
+        - /url: https://www.photonengine.com
+        - img "Photon logo" [ref=f12e6]
+        - img "Photon logo" [ref=f12e7]
+      - button "PRODUCTS" [ref=f12e8] [cursor=pointer]
+      - generic [ref=f12e11]:
+        - link "Samples" [ref=f12e12] [cursor=pointer]:
+          - /url: https://www.photonengine.com/samples
+        - link "SDKs" [ref=f12e13] [cursor=pointer]:
+          - /url: https://www.photonengine.com/sdks#quantum
+        - link "Documentation":
+          - /url: https://doc.photonengine.com/quantum/v3/quantum-intro
+        - link "Sign In" [ref=f12e16] [cursor=pointer]:
+          - /url: "#"
+      - button [ref=f12e17] [cursor=pointer]
+  - main [ref=f12e22]:
+    - generic [ref=f12e23]:
+      - navigation [ref=f12e25]:
+        - list [ref=f12e26]:
+          - listitem [ref=f12e27]:
+            - link "PHOTON" [ref=f12e28] [cursor=pointer]:
+              - /url: /photon/current/getting-started
+          - listitem [ref=f12e33]
+          - listitem [ref=f12e34]:
+            - link "FUSION CORE" [ref=f12e35] [cursor=pointer]:
+              - /url: /fusion-core/v3/fusion-core-intro
+          - listitem [ref=f12e40]:
+            - link "FUSION UNITY" [ref=f12e41] [cursor=pointer]:
+              - /url: /fusion/v2/fusion-intro
+          - listitem [ref=f12e46]:
+            - link "FUSION UNREAL" [ref=f12e47] [cursor=pointer]:
+              - /url: /fusion-unreal/v3/fusion-intro
+          - listitem [ref=f12e52]:
+            - link "FUSION GODOT" [ref=f12e53] [cursor=pointer]:
+              - /url: /fusion-godot/v3-shared-authority/fusion-intro
+          - listitem [ref=f12e58]:
+            - generic [ref=f12e59] [cursor=pointer]: QUANTUM UNITY
+            - list:
+              - listitem [ref=f12e64]:
+                - generic:
+                  - link "Quantum Intro":
+                    - /url: /quantum/v3/quantum-intro
+              - listitem [ref=f12e65]:
+                - generic [ref=f12e66] [cursor=pointer]: Getting Started
+                - list
+              - listitem [ref=f12e71]:
+                - generic [ref=f12e72] [cursor=pointer]: Tutorials
+                - list
+              - listitem [ref=f12e77]:
+                - generic [ref=f12e78] [cursor=pointer]: Game Samples
+                - list
+              - listitem [ref=f12e83]:
+                - generic [ref=f12e84] [cursor=pointer]: Technical Samples
+                - list
+              - listitem [ref=f12e89]:
+                - generic [ref=f12e90] [cursor=pointer]: Addons
+                - list
+              - listitem [ref=f12e95]:
+                - generic [ref=f12e96] [cursor=pointer]: Manual
+                - list
+              - listitem [ref=f12e101]:
+                - generic [ref=f12e102] [cursor=pointer]: Concepts And Patterns
+                - list
+              - listitem [ref=f12e107]:
+                - generic [ref=f12e108] [cursor=pointer]: Consoles
+                - list
+              - listitem [ref=f12e113]:
+                - generic [ref=f12e114] [cursor=pointer]: Gaming Circle
+                - list
+              - listitem [ref=f12e119]:
+                - generic [ref=f12e120] [cursor=pointer]: Reference
+                - list
+              - listitem [ref=f12e125]:
+                - generic [ref=f12e126] [cursor=pointer]: Video Tutorials
+                - list
+          - listitem [ref=f12e131]
+          - listitem [ref=f12e132]:
+            - link "PUN UNITY" [ref=f12e133] [cursor=pointer]:
+              - /url: /pun/current/getting-started/pun-intro
+          - listitem [ref=f12e138]:
+            - link "REALTIME C#" [ref=f12e139] [cursor=pointer]:
+              - /url: /realtime/v5/realtime-intro
+          - listitem [ref=f12e144]:
+            - link "REALTIME CORE" [ref=f12e145] [cursor=pointer]:
+              - /url: /realtime-core/v6/realtime-core-intro
+          - listitem [ref=f12e150]
+          - listitem [ref=f12e151]:
+            - link "CHAT" [ref=f12e152] [cursor=pointer]:
+              - /url: /chat/current/getting-started/chat-intro
+          - listitem [ref=f12e157]:
+            - link "VOICE" [ref=f12e158] [cursor=pointer]:
+              - /url: /voice/v2/getting-started/voice-intro
+          - listitem [ref=f12e163]:
+            - link "VIDEO" [ref=f12e164] [cursor=pointer]:
+              - /url: /video/v2/video-intro
+          - listitem [ref=f12e169]
+          - listitem [ref=f12e170]:
+            - link "SERVER" [ref=f12e171] [cursor=pointer]:
+              - /url: /server/v5/getting-started/photon-server-in-5min
+          - listitem [ref=f12e176]
+          - listitem [ref=f12e177]:
+            - link "TOURNAMENT SDK" [ref=f12e178] [cursor=pointer]:
+              - /url: /tournamentsdk/current/overview
+          - listitem [ref=f12e183]
+          - listitem [ref=f12e184]:
+            - link "EXTENDED REALITY" [ref=f12e185] [cursor=pointer]:
+              - /url: /arvr/current/extended-reality-overview
+          - listitem [ref=f12e190]
+          - listitem [ref=f12e191]:
+            - link "BOLT (DISCONTINUED)" [ref=f12e192] [cursor=pointer]:
+              - /url: /bolt/current/getting-started/overview
+      - generic [ref=f12e197]:
+        - generic [ref=f12e199]:
+          - generic [ref=f12e200]:
+            - generic [ref=f12e202]:
+              - textbox "Search" [ref=f12e203]
+              - button [ref=f12e204] [cursor=pointer]
+            - generic "Light / Dark" [ref=f12e208]:
+              - checkbox [ref=f12e209] [cursor=pointer]
+          - generic [ref=f12e210]:
+            - generic [ref=f12e211]:
+              - text: "This document is about:"
+              - strong [ref=f12e212]: QUANTUM 3
+            - generic [ref=f12e213] [cursor=pointer]: SWITCH TO
+        - generic [ref=f12e217]:
+          - heading "Quantum 3 Intro" [level=1] [ref=f12e218]
+          - heading "Overview" [level=2] [ref=f12e219]
+          - paragraph [ref=f12e220]: Quantum is a high-performance deterministic ECS (Entity Component System) framework for online multiplayer games made with Unity, for up to 128 players.
+          - paragraph [ref=f12e221]: Using predict/rollback networking, it is both ideal for latency-sensitive online games like sports games, fighting games, & FPS and also robust when faced with larger latency network connections.
+          - paragraph [ref=f12e222]:
+            - text: Quantum is free for development. Start building today, launch a game and pay only when its success grows beyond our free tier.
+            - link "Quantum's pricing" [ref=f12e223] [cursor=pointer]:
+              - /url: https://www.photonengine.com/quantum/pricing
+            - text: enables small titles to grow big.
+          - figure "Quantum helps developers write clean code. It decouples simulation logic (Quantum ECS) from the view/presentation (Unity), and takes care of the network implementations specifics (predict/rollback + transport layer + game agnostic server logic)." [ref=f12e224]:
+            - img "Quantum helps developers write clean code. It decouples simulation logic (Quantum ECS) from the view/presentation (Unity), and takes care of the network implementations specifics (predict/rollback + transport layer + game agnostic server logic)." [ref=f12e225]
+          - paragraph [ref=f12e227]: "The state-of-the-art tech stack is composed of the following pieces:"
+          - list [ref=f12e228]:
+            - listitem [ref=f12e229]: Server-managed predict/rollback simulation core.
+            - listitem [ref=f12e230]: Sparse-set ECS memory model and API.
+            - listitem [ref=f12e231]: Complete set of deterministic libraries (math, 2D and 3D physics, navigation, animation, bots, etc.).
+            - listitem [ref=f12e232]: Rich Unity editor integration and tooling.
+          - paragraph [ref=f12e233]: All built on top of mature and industry-proven existing Photon products and infrastructure (photon realtime transport layer, photon server plugin to host server logic, etc.);
+          - heading "Predict / Rollback Networking" [level=3] [ref=f12e234]
+          - paragraph [ref=f12e235]: In deterministic systems, game clients only exchange player input with the simulation running locally on all clients.
+          - paragraph [ref=f12e236]: Game clients are free to advance the simulation locally using input prediction, and an advanced rollback system takes care of restoring game state and re-simulating any mispredictions. The developer defines the player inputs which will be distributed to all clients and doesn’t write any other networking code.
+          - paragraph [ref=f12e237]: Quantum uses a game-agnostic authoritative server component, running on our photon servers, to synchronize clocks and manage input latency. Clients never need to wait for a slower client or a client with a worse network connection as they would in lockstep networking.
+          - paragraph [ref=f12e238]: This server component can be extended to integrate with customer hosted back-end systems, e.g. matchmaking, player services, authoritative ‘referee’ simulation.
+          - figure "In Quantum, input exchange is managed via game-agnostic server logic." [ref=f12e239]:
+            - img "In Quantum, input exchange is managed via game-agnostic server logic." [ref=f12e240]
+          - paragraph [ref=f12e242]: The Quantum client library communicates with Quantum server and runs local simulation, performing all input prediction and rollbacks.
+          - paragraph [ref=f12e243]: "Custom game code is written by the developer as an isolated, pure C# simulation, using the Quantum ECS, which is decoupled from Unity. Quantum's interface offers a great range of deterministic APIs that can be reused in any game. For example: vector math, 2D and 3D physics engines, navigation pathfinder, animation, bots."
+          - heading "Entity Component System" [level=2] [ref=f12e244]
+          - paragraph [ref=f12e245]: To enable all the simulation code to be high-performance out of the box, Quantum is based on a high performance sparse-set Entity Component System (ECS) model.
+          - paragraph [ref=f12e246]: The key to Quantum's performance is the use of pointer-based C# code combined with its custom heap allocator. The simulation code allocates no C# heap memory at runtime and creates no garbage.
+          - paragraph [ref=f12e247]: Even including the re-simulations caused by input mispredictions, which are inherent to the predict/rollback approach, the goal is to leave most of the CPU budget for the view/rendering code, i.e. Unity.
+          - heading "Code Generation" [level=3] [ref=f12e248]
+          - paragraph [ref=f12e249]: In Quantum, all gameplay data (game state) is kept either in the sparse-set ECS data structures (entities and components) or in our custom heap-allocator (dynamic collections and custom data), as blittable memory-aligned C# structs.
+          - paragraph [ref=f12e250]: Pointer-based C# is used by Quantum, for performance. Complexity and boiler-plate code is hidden from the developer by using a simple domain specific language (DSL), called Qtn, to automatically generate C# code for game data.
+          - paragraph [ref=f12e251]: Qtn
+          - code [ref=f12e253]: "// components define reusable game state data groups component Resources { Int32 Mana; FP Health; }"
+          - paragraph [ref=f12e254]: Structs, C-style unions, enums, flags, bitsets, lists, and dictionaries, etc, can also be defined and used.
+          - paragraph [ref=f12e255]: "The auto-generated API makes it easy to query and modify the game state with comprehensive functions to iterate, modify, create or destroy entities (based on their components):"
+          - paragraph [ref=f12e256]: C#
+          - code [ref=f12e258]:
+            - generic [ref=f12e259]: var
+            - text: es = frame.
+            - generic [ref=f12e260]:
+              - text: Filter
+              - generic [ref=f12e261]: <Transform3D, Resources>
+            - text: (); // sets the entity ref and pointers to the components while (es.NextUnsafe(out
+            - generic [ref=f12e262]: var
+            - text: entity, out
+            - generic [ref=f12e263]: var
+            - text: transform, out
+            - generic [ref=f12e264]: var
+            - text: "resources)) { transform->Position += FPVector3.Forward * frame.DeltaTime; }"
+          - heading "Stateless Systems" [level=3] [ref=f12e265]
+          - paragraph [ref=f12e266]: While Quantum's DSL covers data definition, there needs to be a way to organize the custom game logic that will update this game state.
+          - paragraph [ref=f12e267]: Customer game logic is written by implementing Systems, which are stateless pieces of logic that will be executed every tick update by Quantum's client simulation loop. All the game state is stored in the Frame, which is passed into the Update() function.
+          - paragraph [ref=f12e268]: C#
+          - code [ref=f12e270]:
+            - text: "public unsafe class LogicSystem :"
+            - generic [ref=f12e271]: SystemMainThread
+            - text: "{ public override"
+            - generic [ref=f12e272]: void
+            - text: "Update(Frame frame) { // customer game logic here // (frame is a reference for the generated game state container). } }"
+          - heading "Quantum and Unity" [level=2] [ref=f12e273]
+          - paragraph [ref=f12e274]: "Since Quantum and Unity are decoupled, communication into and out of the Quantum Simulation is well defined:"
+          - figure "Quantum Inputs and Outputs" [ref=f12e275]:
+            - img "Quantum Inputs and Outputs"
+          - heading "Asset Database" [level=3] [ref=f12e277]
+          - paragraph [ref=f12e278]:
+            - text: Unity is known for its flexible editor and asset pipeline.
+            - link "Assets are defined in Quantum" [ref=f12e279] [cursor=pointer]:
+              - /url: /quantum/v3/manual/assets/assets-simulation
+            - text: ", then may be"
+            - link "created within Unity" [ref=f12e280] [cursor=pointer]:
+              - /url: /quantum/v3/manual/assets/assets-unity
+            - text: "specifically to be shared with Quantum, allowing game and level designers to work as flexibly as they normally would in Unity:"
+          - figure "Example of a Quantum Asset for a character which is created & modified in the Unity Editor." [ref=f12e281]:
+            - img "Example of a Quantum Asset for a character which is created & modified in the Unity Editor."
+          - paragraph [ref=f12e283]: These assets are also available in the Unity code, of course.
+          - heading "Input" [level=3] [ref=f12e284]
+          - paragraph [ref=f12e285]:
+            - link "Input" [ref=f12e286] [cursor=pointer]:
+              - /url: /quantum/v3/manual/input
+            - text: must be defined and is sent to the server and distributed to all game clients every tick. This would typically be the subset of keyboard or controller buttons and mouse or controller stick positions required by the game.
+          - heading "Commands" [level=3] [ref=f12e287]
+          - paragraph [ref=f12e288]:
+            - link "Commands" [ref=f12e289] [cursor=pointer]:
+              - /url: /quantum/v3/manual/commands
+            - text: are intended for occasional actions. They are only sent when required.
+          - heading "Events" [level=3] [ref=f12e290]
+          - paragraph [ref=f12e291]:
+            - link "Events" [ref=f12e292] [cursor=pointer]:
+              - /url: /quantum/v3/manual/quantum-ecs/game-events
+            - text: are a way to transfer information from the Quantum simulation to the Unity view.
+          - heading "Full Simulation State" [level=3] [ref=f12e293]
+          - paragraph [ref=f12e294]:
+            - text: The full simulation state from Quantum is observable from Unity. Common cases, for example synchronizing the transforms of GameObjects to their corresponding Entities in Quantum, we support out of the box.
+            - link "See Entity Prototypes" [ref=f12e295] [cursor=pointer]:
+              - /url: /quantum/v3/manual/entity-prototypes
+            - text: . For game-specific items e.g. character health this can be simply read from the simulation state for the game to display.
+          - heading "Where to go next" [level=2] [ref=f12e296]
+          - paragraph [ref=f12e297]:
+            - text: To get started with Quantum we strongly recommend beginning with the
+            - link "Asteroids Tutorial" [ref=f12e298] [cursor=pointer]:
+              - /url: /quantum/v3/tutorials/asteroids/1-overview
+            - text: . This tutorial teaches you all the necessary basics to get started with Quantum.
+          - paragraph [ref=f12e299]:
+            - text: For a video tutorial there is also the
+            - link "Complete Course to Quantum 3" [ref=f12e300] [cursor=pointer]:
+              - /url: /quantum/v3/tutorials/video-tutorial
+            - text: stream.
+          - paragraph [ref=f12e301]:
+            - text: To dive right in at a more advanced level we recommend the first pages you should read in the manual are the ones covering the Quantum
+            - link "DSL" [ref=f12e302] [cursor=pointer]:
+              - /url: /quantum/v3/manual/quantum-ecs/dsl
+            - text: (Domain Specific Language) and the
+            - link "Entity Prototypes" [ref=f12e303] [cursor=pointer]:
+              - /url: /quantum/v3/manual/entity-prototypes
+            - text: . These are at the core of programming the simulation and designing the view, respectively.
+          - paragraph [ref=f12e304]:
+            - text: Alternatively there are many
+            - link "Game Samples" [ref=f12e305] [cursor=pointer]:
+              - /url: /quantum/v3/game-samples/platform-shooter-2d/overview
+            - text: to download.
+          - paragraph [ref=f12e306]:
+            - text: Last updated on
+            - time [ref=f12e307]: 21/07/2026
+          - link "Back to top" [ref=f12e308] [cursor=pointer]:
+            - /url: "#"
+      - list [ref=f12e310]:
+        - list [ref=f12e311]:
+          - listitem [ref=f12e312]:
+            - link "Overview" [ref=f12e313] [cursor=pointer]:
+              - /url: "#overview"
+          - list [ref=f12e314]:
+            - listitem [ref=f12e315]:
+              - link "Predict / Rollback Networking" [ref=f12e316] [cursor=pointer]:
+                - /url: "#predict-rollback-networking"
+          - listitem [ref=f12e317]:
+            - link "Entity Component System" [ref=f12e318] [cursor=pointer]:
+              - /url: "#entity-component-system"
+          - list [ref=f12e319]:
+            - listitem [ref=f12e320]:
+              - link "Code Generation" [ref=f12e321] [cursor=pointer]:
+                - /url: "#code-generation"
+            - listitem [ref=f12e322]:
+              - link "Stateless Systems" [ref=f12e323] [cursor=pointer]:
+                - /url: "#stateless-systems"
+          - listitem [ref=f12e324]:
+            - link "Quantum and Unity" [ref=f12e325] [cursor=pointer]:
+              - /url: "#quantum-and-unity"
+          - list [ref=f12e326]:
+            - listitem [ref=f12e327]:
+              - link "Asset Database" [ref=f12e328] [cursor=pointer]:
+                - /url: "#asset-database"
+            - listitem [ref=f12e329]:
+              - link "Input" [ref=f12e330] [cursor=pointer]:
+                - /url: "#input"
+            - listitem [ref=f12e331]:
+              - link "Commands" [ref=f12e332] [cursor=pointer]:
+                - /url: "#commands"
+            - listitem [ref=f12e333]:
+              - link "Events" [ref=f12e334] [cursor=pointer]:
+                - /url: "#events"
+            - listitem [ref=f12e335]:
+              - link "Full Simulation State" [ref=f12e336] [cursor=pointer]:
+                - /url: "#full-simulation-state"
+          - listitem [ref=f12e337]:
+            - link "Where to go next" [ref=f12e338] [cursor=pointer]:
+              - /url: "#where-to-go-next"
+  - contentinfo [ref=f12e339]:
+    - generic [ref=f12e340]:
+      - generic [ref=f12e341]:
+        - img "Photon" [ref=f12e342]
+        - generic [ref=f12e343]: We Make Multiplayer Simple
+      - generic [ref=f12e344]:
+        - generic [ref=f12e345]:
+          - generic [ref=f12e346]:
+            - heading "Products" [level=5] [ref=f12e347]
+            - list [ref=f12e348]:
+              - listitem [ref=f12e349]:
+                - link "Fusion" [ref=f12e350] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/fusion
+              - listitem [ref=f12e351]:
+                - link "Quantum" [ref=f12e352] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/quantum
+              - listitem [ref=f12e353]:
+                - link "Realtime" [ref=f12e354] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/realtime
+              - listitem [ref=f12e355]:
+                - link "Chat" [ref=f12e356] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/chat
+              - listitem [ref=f12e357]:
+                - link "Voice" [ref=f12e358] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/voice
+              - listitem [ref=f12e359]:
+                - link "PUN" [ref=f12e360] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/pun
+              - listitem [ref=f12e361]:
+                - link "Tournament" [ref=f12e362] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/tournament
+          - generic [ref=f12e363]:
+            - heading "Support" [level=5] [ref=f12e364]
+            - list [ref=f12e365]:
+              - listitem [ref=f12e366]:
+                - link "Gaming Circle" [ref=f12e367] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/gaming
+              - listitem [ref=f12e368]:
+                - link "Industries Circle" [ref=f12e369] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/industries
+              - listitem [ref=f12e370]:
+                - link "Circle Discord" [ref=f12e371] [cursor=pointer]:
+                  - /url: https://doc.photonengine.com/quantum/v3/gaming-circle/circle-discord
+        - generic [ref=f12e373]:
+          - heading "Documentation" [level=5] [ref=f12e374]
+          - list [ref=f12e375]:
+            - listitem [ref=f12e376]:
+              - link "Fusion" [ref=f12e377] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/fusion/v2/fusion-intro
+            - listitem [ref=f12e378]:
+              - link "Quantum" [ref=f12e379] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/quantum/v3/quantum-intro
+            - listitem [ref=f12e380]:
+              - link "Realtime" [ref=f12e381] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/realtime/v5/realtime-intro
+            - listitem [ref=f12e382]:
+              - link "Chat" [ref=f12e383] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/chat/current/getting-started/chat-intro
+            - listitem [ref=f12e384]:
+              - link "Voice" [ref=f12e385] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/voice/v2/getting-started/voice-intro
+            - listitem [ref=f12e386]:
+              - link "PUN" [ref=f12e387] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/pun/v2/getting-started/pun-intro
+            - listitem [ref=f12e388]:
+              - link "Bolt" [ref=f12e389] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/bolt/current/getting-started/overview
+            - listitem [ref=f12e390]:
+              - link "Server" [ref=f12e391] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/server/v5/getting-started/photon-server-in-5min
+            - listitem [ref=f12e392]:
+              - link "VR | AR | MR" [ref=f12e393] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/arvr/current/meta-quest/quest-intro
+        - generic [ref=f12e394]:
+          - generic [ref=f12e395]:
+            - heading "About Us" [level=5] [ref=f12e396]
+            - list [ref=f12e397]:
+              - listitem [ref=f12e398]:
+                - link "Contact Us" [ref=f12e399] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/contact
+              - listitem [ref=f12e400]:
+                - link "Compliance" [ref=f12e401] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/compliance
+              - listitem [ref=f12e402]:
+                - link "Blog" [ref=f12e403] [cursor=pointer]:
+                  - /url: https://blog.photonengine.com/
+          - generic [ref=f12e404]:
+            - heading "Resources" [level=5] [ref=f12e405]
+            - list [ref=f12e406]:
+              - listitem [ref=f12e407]:
+                - link "Dashboard" [ref=f12e408] [cursor=pointer]:
+                  - /url: https://dashboard.photonengine.com
+              - listitem [ref=f12e409]:
+                - link "Samples" [ref=f12e410] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/samples
+              - listitem [ref=f12e411]:
+                - link "SDK Downloads" [ref=f12e412] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/sdks#fusion
+              - listitem [ref=f12e413]:
+                - link "Cloud Status" [ref=f12e414] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/status
+        - generic [ref=f12e416]:
+          - heading "Languages" [level=5] [ref=f12e417]
+          - list [ref=f12e418]:
+            - listitem [ref=f12e419]:
+              - link "English" [ref=f12e420] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/quantum/v3/quantum-intro
+            - listitem [ref=f12e421]:
+              - link "日本語" [ref=f12e422] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/ja-jp/quantum/v3/quantum-intro
+            - listitem [ref=f12e423]:
+              - link "한국어" [ref=f12e424] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/ko-kr/quantum/v3/quantum-intro
+            - listitem [ref=f12e425]:
+              - link "简体中文" [ref=f12e426] [cursor=pointer]:
+                - /url: https://www.vibrantlink.com
+            - listitem [ref=f12e427]:
+              - link "繁体中文" [ref=f12e428] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/zh-tw/quantum/v3/quantum-intro
+      - generic [ref=f12e429]:
+        - generic [ref=f12e430]:
+          - link "Public Discord" [ref=f12e431] [cursor=pointer]:
+            - /url: https://dashboard.photonengine.com/discord/joinphotonengine
+          - link "YouTube" [ref=f12e435] [cursor=pointer]:
+            - /url: https://www.youtube.com/c/photonengine
+          - link "LinkedIn" [ref=f12e439] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/photonengine
+        - generic [ref=f12e443]:
+          - link "Terms" [ref=f12e444] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms
+          - link "Regulatory" [ref=f12e445] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/regulatory
+          - link "Privacy Policy" [ref=f12e446] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/privacyandcookiepolicy
+          - link "Privacy" [ref=f12e447] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/gdpr
+          - link "Code of Conduct" [ref=f12e448] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/codeofconduct
+          - generic [ref=f12e449] [cursor=pointer]: Cookie Settings

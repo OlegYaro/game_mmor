@@ -1,0 +1,752 @@
+- generic [active] [ref=f4e1]:
+  - navigation [ref=f4e2]:
+    - generic [ref=f4e4]:
+      - link [ref=f4e5] [cursor=pointer]:
+        - /url: https://www.photonengine.com
+        - img "Photon logo" [ref=f4e6]
+        - img "Photon logo" [ref=f4e7]
+      - button "PRODUCTS" [ref=f4e8] [cursor=pointer]
+      - generic [ref=f4e11]:
+        - link "Samples" [ref=f4e12] [cursor=pointer]:
+          - /url: https://www.photonengine.com/samples
+        - link "SDKs" [ref=f4e13] [cursor=pointer]:
+          - /url: https://www.photonengine.com/sdks#quantum
+        - link "Documentation":
+          - /url: https://doc.photonengine.com/quantum/v3/quantum-intro
+        - link "Sign In" [ref=f4e16] [cursor=pointer]:
+          - /url: "#"
+      - button [ref=f4e17] [cursor=pointer]
+  - main [ref=f4e22]:
+    - generic [ref=f4e23]:
+      - navigation [ref=f4e25]:
+        - list [ref=f4e26]:
+          - listitem [ref=f4e27]:
+            - link "PHOTON" [ref=f4e28] [cursor=pointer]:
+              - /url: /photon/current/getting-started
+          - listitem [ref=f4e33]
+          - listitem [ref=f4e34]:
+            - link "FUSION CORE" [ref=f4e35] [cursor=pointer]:
+              - /url: /fusion-core/v3/fusion-core-intro
+          - listitem [ref=f4e40]:
+            - link "FUSION UNITY" [ref=f4e41] [cursor=pointer]:
+              - /url: /fusion/v2/fusion-intro
+          - listitem [ref=f4e46]:
+            - link "FUSION UNREAL" [ref=f4e47] [cursor=pointer]:
+              - /url: /fusion-unreal/v3/fusion-intro
+          - listitem [ref=f4e52]:
+            - link "FUSION GODOT" [ref=f4e53] [cursor=pointer]:
+              - /url: /fusion-godot/v3-shared-authority/fusion-intro
+          - listitem [ref=f4e58]:
+            - generic [ref=f4e59] [cursor=pointer]: QUANTUM UNITY
+            - list:
+              - listitem [ref=f4e64]:
+                - link "Quantum Intro" [ref=f4e66] [cursor=pointer]:
+                  - /url: /quantum/v3/quantum-intro
+              - listitem [ref=f4e67]:
+                - generic [ref=f4e68] [cursor=pointer]: Getting Started
+                - list
+              - listitem [ref=f4e73]:
+                - generic [ref=f4e74] [cursor=pointer]: Tutorials
+                - list
+              - listitem [ref=f4e79]:
+                - generic [ref=f4e80] [cursor=pointer]: Game Samples
+                - list
+              - listitem [ref=f4e85]:
+                - generic [ref=f4e86] [cursor=pointer]: Technical Samples
+                - list
+              - listitem [ref=f4e91]:
+                - generic [ref=f4e92] [cursor=pointer]: Addons
+                - list
+              - listitem [ref=f4e97]:
+                - generic [ref=f4e98] [cursor=pointer]: Manual
+                - list:
+                  - listitem [ref=f4e103]:
+                    - generic [ref=f4e104] [cursor=pointer]: Quantum ECS
+                    - list:
+                      - listitem [ref=f4e109]:
+                        - link "DSL (game state)" [ref=f4e111] [cursor=pointer]:
+                          - /url: /quantum/v3/manual/quantum-ecs/dsl
+                      - listitem [ref=f4e112]:
+                        - link "Systems (game logic)" [ref=f4e114] [cursor=pointer]:
+                          - /url: /quantum/v3/manual/quantum-ecs/systems
+                      - listitem [ref=f4e115]:
+                        - link "Components" [ref=f4e117] [cursor=pointer]:
+                          - /url: /quantum/v3/manual/quantum-ecs/components
+                      - listitem [ref=f4e118]:
+                        - link "Events & Callbacks" [ref=f4e120] [cursor=pointer]:
+                          - /url: /quantum/v3/manual/quantum-ecs/game-events
+                      - listitem [ref=f4e121]:
+                        - generic:
+                          - link "Fixed Point":
+                            - /url: /quantum/v3/manual/quantum-ecs/fixed-point
+                  - listitem [ref=f4e122]:
+                    - link "Animation" [ref=f4e124] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/animation
+                  - listitem [ref=f4e125]:
+                    - generic [ref=f4e126] [cursor=pointer]: Assets
+                    - list
+                  - listitem [ref=f4e131]:
+                    - link "Cheat Protection" [ref=f4e133] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/cheat-protection
+                  - listitem [ref=f4e134]:
+                    - link "Commands" [ref=f4e136] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/commands
+                  - listitem [ref=f4e137]:
+                    - link "Configuration Files" [ref=f4e139] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/config-files
+                  - listitem [ref=f4e140]:
+                    - link "Entity Prototypes" [ref=f4e142] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/entity-prototypes
+                  - listitem [ref=f4e143]:
+                    - link "Entity View" [ref=f4e145] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/entityview
+                  - listitem [ref=f4e146]:
+                    - link "Entity View Component" [ref=f4e148] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/entity-view-component
+                  - listitem [ref=f4e149]:
+                    - link "Frames" [ref=f4e151] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/frames
+                  - listitem [ref=f4e152]:
+                    - generic [ref=f4e153] [cursor=pointer]: Game Session
+                    - list
+                  - listitem [ref=f4e158]:
+                    - link "Input" [ref=f4e160] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/input
+                  - listitem [ref=f4e161]:
+                    - link "Materialization" [ref=f4e163] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/materialization
+                  - listitem [ref=f4e164]:
+                    - generic [ref=f4e165] [cursor=pointer]: Maps
+                    - list
+                  - listitem [ref=f4e170]:
+                    - link "Multithreading" [ref=f4e172] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/multithreading
+                  - listitem [ref=f4e173]:
+                    - link "Multiplayer Play Mode" [ref=f4e175] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/mppm
+                  - listitem [ref=f4e176]:
+                    - generic [ref=f4e177] [cursor=pointer]: Navigation
+                    - list
+                  - listitem [ref=f4e182]:
+                    - generic [ref=f4e183] [cursor=pointer]: Physics
+                    - list
+                  - listitem [ref=f4e188]:
+                    - generic [ref=f4e189] [cursor=pointer]: Player
+                    - list
+                  - listitem [ref=f4e194]:
+                    - link "Prediction Culling" [ref=f4e196] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/prediction-culling
+                  - listitem [ref=f4e197]:
+                    - link "Profiling" [ref=f4e199] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/profiling
+                  - listitem [ref=f4e200]:
+                    - link "Quantum Project" [ref=f4e202] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/quantum-project
+                  - listitem [ref=f4e203]:
+                    - link "Replays" [ref=f4e205] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/replay
+                  - listitem [ref=f4e206]:
+                    - link "RNG Session" [ref=f4e208] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/rngsession
+                  - listitem [ref=f4e209]:
+                    - generic [ref=f4e210] [cursor=pointer]: Sample Menu
+                    - list
+                  - listitem [ref=f4e215]:
+                    - link "Webhooks" [ref=f4e217] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/webhooks
+                  - listitem [ref=f4e218]:
+                    - link "WebGL" [ref=f4e220] [cursor=pointer]:
+                      - /url: /quantum/v3/manual/webgl
+              - listitem [ref=f4e221]:
+                - generic [ref=f4e222] [cursor=pointer]: Concepts And Patterns
+                - list
+              - listitem [ref=f4e227]:
+                - generic [ref=f4e228] [cursor=pointer]: Consoles
+                - list
+              - listitem [ref=f4e233]:
+                - generic [ref=f4e234] [cursor=pointer]: Gaming Circle
+                - list
+              - listitem [ref=f4e239]:
+                - generic [ref=f4e240] [cursor=pointer]: Reference
+                - list
+              - listitem [ref=f4e245]:
+                - generic [ref=f4e246] [cursor=pointer]: Video Tutorials
+                - list
+          - listitem [ref=f4e251]
+          - listitem [ref=f4e252]:
+            - link "PUN UNITY" [ref=f4e253] [cursor=pointer]:
+              - /url: /pun/current/getting-started/pun-intro
+          - listitem [ref=f4e258]:
+            - link "REALTIME C#" [ref=f4e259] [cursor=pointer]:
+              - /url: /realtime/v5/realtime-intro
+          - listitem [ref=f4e264]:
+            - link "REALTIME CORE" [ref=f4e265] [cursor=pointer]:
+              - /url: /realtime-core/v6/realtime-core-intro
+          - listitem [ref=f4e270]
+          - listitem [ref=f4e271]:
+            - link "CHAT" [ref=f4e272] [cursor=pointer]:
+              - /url: /chat/current/getting-started/chat-intro
+          - listitem [ref=f4e277]:
+            - link "VOICE" [ref=f4e278] [cursor=pointer]:
+              - /url: /voice/v2/getting-started/voice-intro
+          - listitem [ref=f4e283]:
+            - link "VIDEO" [ref=f4e284] [cursor=pointer]:
+              - /url: /video/v2/video-intro
+          - listitem [ref=f4e289]
+          - listitem [ref=f4e290]:
+            - link "SERVER" [ref=f4e291] [cursor=pointer]:
+              - /url: /server/v5/getting-started/photon-server-in-5min
+          - listitem [ref=f4e296]
+          - listitem [ref=f4e297]:
+            - link "TOURNAMENT SDK" [ref=f4e298] [cursor=pointer]:
+              - /url: /tournamentsdk/current/overview
+          - listitem [ref=f4e303]
+          - listitem [ref=f4e304]:
+            - link "EXTENDED REALITY" [ref=f4e305] [cursor=pointer]:
+              - /url: /arvr/current/extended-reality-overview
+          - listitem [ref=f4e310]
+          - listitem [ref=f4e311]:
+            - link "BOLT (DISCONTINUED)" [ref=f4e312] [cursor=pointer]:
+              - /url: /bolt/current/getting-started/overview
+      - generic [ref=f4e317]:
+        - generic [ref=f4e319]:
+          - generic [ref=f4e320]:
+            - generic [ref=f4e322]:
+              - textbox "Search" [ref=f4e323]
+              - button [ref=f4e324] [cursor=pointer]
+            - generic "Light / Dark" [ref=f4e328]:
+              - checkbox [ref=f4e329] [cursor=pointer]
+          - generic [ref=f4e330]:
+            - generic [ref=f4e331]:
+              - text: "This document is about:"
+              - strong [ref=f4e332]: QUANTUM 3
+            - generic [ref=f4e333] [cursor=pointer]: SWITCH TO
+        - generic [ref=f4e337]:
+          - generic [ref=f4e338]: This page has not been upgraded to Quantum 3.0 yet. The information may be out of date.
+          - heading "Fixed Point" [level=1] [ref=f4e344]
+          - heading "Introduction" [level=2] [ref=f4e345]
+          - paragraph [ref=f4e346]:
+            - text: In Quantum the
+            - code [ref=f4e347]: FP
+            - text: struct (Fixed Point) completely replaces all usages of
+            - code [ref=f4e348]: floats
+            - text: and
+            - code [ref=f4e349]: doubles
+            - text: to ensure cross-platform determinism. It offers versions of common math data structures like FPVector2, FPVector3, FPMatrix, FPQuaternion, RNGSession, FPBounds2, etc. All systems in Quantum, including physics and navigation, exclusively use
+            - code [ref=f4e350]: FP
+            - text: values in their computations.
+          - paragraph [ref=f4e351]:
+            - text: The fixed-point type implemented in Quantum is
+            - code [ref=f4e352]: Q48.16
+            - text: . It has proved to a good balance between precision and performance with a bias towards the latter.
+          - paragraph [ref=f4e353]:
+            - text: Internally
+            - code [ref=f4e354]: FP
+            - text: uses one long to represent the combined fixed-point number (whole number + decimal part); the long value can be accessed and set via
+            - code [ref=f4e355]: FP.RawValue
+            - text: .
+          - paragraph [ref=f4e356]:
+            - text: Quantum's FP Math uses carefully tuned look up tables for fast trigonometric and square root functions (see
+            - code [ref=f4e357]: Assets/Photon/Quantum/Resources/LUT
+            - text: ).
+          - heading "Parsing FPs" [level=2] [ref=f4e358]
+          - paragraph [ref=f4e359]:
+            - text: The representable
+            - code [ref=f4e360]: FP
+            - text: fraction is limited and never as accurate as a
+            - code [ref=f4e361]: double
+            - text: . Parsing is an approximation and will round to the nearest possible
+            - code [ref=f4e362]: FP
+            - text: "precision. This is reflected in:"
+          - list [ref=f4e363]:
+            - listitem [ref=f4e364]:
+              - text: parsing an
+              - code [ref=f4e365]: FP
+              - text: as the
+              - code [ref=f4e366]: float
+              - code [ref=f4e367]: 1.1f
+              - text: and then converting back to
+              - code [ref=f4e368]: float
+              - text: possibly resulting in
+              - code [ref=f4e369]: 1.09999999f
+              - text: ; and,
+            - listitem [ref=f4e370]:
+              - text: different parsing methods yielding different results on the same machine.
+              - paragraph [ref=f4e371]: C#
+              - code [ref=f4e373]: FP.FromFloat_UNSAFE(1.1f).RawValue != FP.FromString("1.1").RawValue
+          - heading "TLDR" [level=3] [ref=f4e374]
+          - list [ref=f4e375]:
+            - listitem [ref=f4e376]: Use from float only during edit time, never inside the simulation or at runtime.
+            - listitem [ref=f4e377]: It is best to convert from raw whenever possible.
+          - heading "FP.FromFloat_UNSAFE()" [level=3] [ref=f4e378]
+          - paragraph [ref=f4e379]:
+            - text: Converting from
+            - code [ref=f4e380]: float
+            - text: is not deterministic due to rounding errors and should
+            - strong [ref=f4e381]: never
+            - text: be done inside the simulation. Doing such a conversion in the simulation will cause desyncs 100% of the time.
+          - paragraph [ref=f4e382]:
+            - text: However, it can be used during
+            - strong [ref=f4e383]: edit
+            - text: or
+            - strong [ref=f4e384]: build time
+            - text: ", when the converted (FP) data is first created and then shared with everyone."
+            - strong [ref=f4e385]: "IMPORTANT:"
+            - text: Data generated this way on
+            - strong [ref=f4e386]: different
+            - text: machines may not be compatible.
+          - paragraph [ref=f4e387]: C#
+          - code [ref=f4e389]:
+            - generic [ref=f4e390]: var
+            - text: v = FP.FromFloat_UNSAFE(1.1f);
+          - heading "FP.FromString_UNSAFE()" [level=3] [ref=f4e391]
+          - paragraph [ref=f4e392]:
+            - text: This will internally parse the
+            - code [ref=f4e393]: string
+            - text: as a float and then convert to
+            - code [ref=f4e394]: FP
+            - text: . All caveats from
+            - code [ref=f4e395]: FromFloat_UNSAFE()
+            - text: apply here as well.
+          - paragraph [ref=f4e396]: C#
+          - code [ref=f4e398]:
+            - generic [ref=f4e399]: var
+            - text: v = FP.FromFloat_UNSAFE("1.1");
+          - heading "FP.FromString()" [level=3] [ref=f4e400]
+          - paragraph [ref=f4e401]: This is deterministic and therefore safe to use anywhere but may not be the most performant option. A typical use case is balancing information (patch) that clients load from a server and then use to update data in Quantum assets.
+          - paragraph [ref=f4e402]: Be aware of the string locale! It only parses English number formatting for decimals and requires a dot (e.g. 1000.01f).
+          - paragraph [ref=f4e403]: C#
+          - code [ref=f4e405]:
+            - generic [ref=f4e406]: var
+            - text: v = FP.FromFloat("1.1");
+          - heading "FP.FromRaw()" [level=3] [ref=f4e407]
+          - paragraph [ref=f4e408]: This is secure and fast as it mimics the internal representation.
+          - paragraph [ref=f4e409]: C#
+          - code [ref=f4e411]:
+            - generic [ref=f4e412]: var
+            - text: v = FP.FromRaw(72089);
+          - paragraph [ref=f4e413]: This snippet can be used to create a FP converter window in Unity for convient conversion.
+          - paragraph [ref=f4e414]: C#
+          - code [ref=f4e416]:
+            - text: using System; using UnityEditor; using
+            - generic [ref=f4e417]: Photon.Deterministic
+            - text: "; public class FPConverter :"
+            - generic [ref=f4e418]: EditorWindow
+            - text: "{ private"
+            - generic [ref=f4e419]: float
+            - text: _f; private FP _fp; [
+            - generic [ref=f4e420]:
+              - text: MenuItem
+              - generic [ref=f4e421]: ("Quantum/FP Converter")
+            - text: "] public static"
+            - generic [ref=f4e422]: void
+            - text: "ShowWindow() { GetWindow(typeof(FPConverter), false, \"FP Converter\"); } public virtual"
+            - generic [ref=f4e423]: void
+            - text: "OnGUI() { _f = EditorGUILayout.FloatField(\"Input\", _f); try { _fp = FP.FromFloat_UNSAFE(_f);"
+            - generic [ref=f4e424]: var
+            - text: f = _fp.AsFloat;
+            - generic [ref=f4e425]: var
+            - text: "rect = EditorGUILayout.GetControlRect(true); EditorGUI.FloatField(rect, \"Output FP\", f); QuantumEditorGUI.Overlay(rect, \"(FP)\"); EditorGUILayout.LongField(\"Output Raw\", _fp.RawValue); } catch (OverflowException e) { EditorGUILayout.LabelField(\"Out of range\"); } } }"
+          - heading "Const Variables" [level=2] [ref=f4e426]
+          - paragraph [ref=f4e433]:
+            - text: The
+            - code [ref=f4e434]: FP._1_10
+            - text: syntax can not be extended or generated.
+          - paragraph [ref=f4e435]:
+            - code [ref=f4e436]: FP
+            - text: is a struct and can therefore not be used as a constant. It is, however, possible to hard-code and use "
+            - code [ref=f4e437]: FP
+            - text: "\" values in"
+            - code [ref=f4e438]: const
+            - text: "variables:"
+          - list [ref=f4e439]:
+            - listitem [ref=f4e440]:
+              - text: Combine pre-defined
+              - code [ref=f4e441]: FP._1
+              - code [ref=f4e442]: static
+              - text: getters or
+              - code [ref=f4e443]: FP.Raw._1
+              - code [ref=f4e444]: const
+              - text: variables.
+          - paragraph [ref=f4e445]: C#
+          - code [ref=f4e447]: FP foo = FP._1 + FP._0_10; // or foo.RawValue = FP.Raw._1 + FP.Raw._0_10;
+          - paragraph [ref=f4e448]: C#
+          - code [ref=f4e450]:
+            - text: const
+            - generic [ref=f4e451]: long
+            - text: MagicNumber = FP.Raw._1 + FP.Raw._0_10; FP foo = default; foo.RawValue = MagicNumber; // or foo = FP.FromRaw(MagicNumber);
+          - list [ref=f4e452]:
+            - listitem [ref=f4e453]: Convert the specific float once to FP and save the raw value as a constant
+          - paragraph [ref=f4e454]: C#
+          - code [ref=f4e456]:
+            - text: const
+            - generic [ref=f4e457]: long
+            - text: MagicNumber = 72089; // 1.1
+            - generic [ref=f4e458]: var
+            - text: foo = FP.FromRaw(MagicNumber); // or foo.RawValue = MagicNumber;
+          - list [ref=f4e459]:
+            - listitem [ref=f4e460]: Create the constant inside the Quantum DSL
+          - paragraph
+          - code [ref=f4e462]: "#define FPConst 1.1"
+          - paragraph [ref=f4e463]: "Then use like this:"
+          - paragraph [ref=f4e464]: C#
+          - code [ref=f4e466]:
+            - generic [ref=f4e467]: var
+            - text: foo = default(FP); foo += Constants.FPConst; // or foo.RawValue += Constants.Raw.FPConst;
+          - paragraph [ref=f4e468]: "It will generate code to represent the constant in the following way:"
+          - paragraph [ref=f4e469]: C#
+          - code [ref=f4e471]:
+            - text: "public static unsafe partial class Constants { public const Int32 PLAYER_COUNT = 8; /// <summary>1.100006</summary> public static FP FPConst { ["
+            - generic [ref=f4e472]:
+              - text: MethodImpl
+              - generic [ref=f4e473]: (MethodImplOptions.AggressiveInlining)
+            - text: "] get { FP result; result.RawValue = 72090; return result; } } public static unsafe partial class Raw { /// <summary>1.100006</summary> public const Int64 FPConst = 72090; } }"
+          - list [ref=f4e474]:
+            - listitem [ref=f4e475]:
+              - text: Define
+              - code [ref=f4e476]: readonly
+              - code [ref=f4e477]: static
+              - text: variables in the class.
+          - paragraph [ref=f4e478]: C#
+          - code [ref=f4e480]: private readonly static FP MagicNumber = FP._1 + FP._0_10;
+          - paragraph [ref=f4e481]:
+            - text: There is a performance penalty compared to
+            - code [ref=f4e482]: const
+            - text: variables and don't forget to mark
+            - code [ref=f4e483]: readonly
+            - text: because randomly changing the value during runtime could lead to desyncs.
+          - heading "Casting" [level=2] [ref=f4e484]
+          - paragraph [ref=f4e485]:
+            - text: Implicit casting to
+            - code [ref=f4e486]: FP
+            - text: from
+            - code [ref=f4e487]: int
+            - text: ","
+            - code [ref=f4e488]: uint
+            - text: ","
+            - code [ref=f4e489]: short
+            - text: ","
+            - code [ref=f4e490]: ushort
+            - text: ","
+            - code [ref=f4e491]: byte
+            - text: ","
+            - code [ref=f4e492]: sbyte
+            - text: is allowed and safe.
+          - paragraph [ref=f4e493]: C#
+          - code [ref=f4e495]: FP v = (FP)1; FP v = 1;
+          - paragraph [ref=f4e496]:
+            - text: Explicit casting from
+            - code [ref=f4e497]: FP
+            - text: to
+            - code [ref=f4e498]: float
+            - text: or
+            - code [ref=f4e499]: double
+            - text: is possible, but obviously should not be used inside the simulation.
+          - paragraph [ref=f4e500]: C#
+          - code [ref=f4e502]:
+            - generic [ref=f4e503]: var
+            - text: v = (double)FP._1;
+            - generic [ref=f4e504]: var
+            - text: v = (float)FP._1;
+          - paragraph [ref=f4e505]: Casting to integer and back is safe though.
+          - paragraph [ref=f4e506]: C#
+          - code [ref=f4e508]: FP v = (FP)(int)FP._1;
+          - paragraph [ref=f4e509]:
+            - text: Unsafe casts are marked as
+            - code [ref=f4e510]: "[obsolete]"
+            - text: and will cause a
+            - code [ref=f4e511]: InvalidOperationException
+            - text: .
+          - paragraph [ref=f4e512]: C#
+          - code [ref=f4e514]: FP v = 1.1f; // ERROR FP v = 1.1d; // ERROR
+          - heading "Inlining" [level=2] [ref=f4e515]
+          - paragraph [ref=f4e516]:
+            - text: All low-level Quantum systems use manual inlined
+            - code [ref=f4e517]: FP
+            - text: arithmetic to extract every ounce of performance possible. Fixed point math uses integer division and multiplication. To achieve this, the result or dividend are bit-shifted by the FP-Precision (16) before or after the calculation.
+          - paragraph [ref=f4e518]: C#
+          - code [ref=f4e520]:
+            - generic [ref=f4e521]: var
+            - text: v = parameter * FP._0_01; // inlined integer math FP v = default; v.RawValue = (parameter.RawValue * FP._0_01.RawValue) >> FPLut.PRECISION;
+          - paragraph [ref=f4e522]: C#
+          - code [ref=f4e524]:
+            - generic [ref=f4e525]: var
+            - text: v = parameter / FP._0_01; // inlined integer math FP v = default; v.RawValue = (parameter.RawValue << FPLut.PRECISION) / FP._0_01.RawValue;
+          - heading "Overflow" [level=2] [ref=f4e526]
+          - paragraph [ref=f4e527]:
+            - code [ref=f4e528]: FP.UseableMax
+            - text: represents the highest
+            - code [ref=f4e529]: FP
+            - text: number that can be multiplied with itself and not cause an overflow (exceeding
+            - code [ref=f4e530]: long
+            - text: range).
+          - paragraph
+          - code [ref=f4e532]: "FP.UseableMax Decimal: 32767.9999847412 Raw: 2147483647 Binary: 1111111111111111111111111111111 = 31 bit"
+          - paragraph
+          - code [ref=f4e534]: "FP.UseableMin Decimal: -32768 Raw: -2147483648 Binary: 10000000000000000000000000000000 = 32 bit"
+          - heading "Precision" [level=2] [ref=f4e535]
+          - paragraph [ref=f4e536]:
+            - text: The general
+            - code [ref=f4e537]: FP
+            - text: precision is decent when the numbers are kept within a certain range
+            - code [ref=f4e538]: (0.01..1000)
+            - text: . FP-math related precision problems usually produce inaccurate results and tend to make systems (based on math) unstable. A very common case is to multiply very high or small numbers and than returning to the original range by division for example. The resulting numbers lose precision.
+          - paragraph [ref=f4e539]:
+            - text: Another example is this method excerpt from
+            - code [ref=f4e540]: ClosestDistanceToTriangle
+            - text: . Where
+            - code [ref=f4e541]: t0
+            - text: is calculated from multiplying two dot products with each other, where a dot-product is already also a result of multiplications. This is a problem when very accurate results are expected. A way to mitigate this issue is shifting the values artificially before the calculation then shift the result back. This will work when the ranges of the input are somewhat known.
+          - paragraph [ref=f4e542]: C#
+          - code [ref=f4e544]:
+            - generic [ref=f4e545]: var
+            - text: diff = p - v0;
+            - generic [ref=f4e546]: var
+            - text: edge0 = v1 - v0;
+            - generic [ref=f4e547]: var
+            - text: edge1 = v2 - v0;
+            - generic [ref=f4e548]: var
+            - text: a00 = Dot(edge0, edge0);
+            - generic [ref=f4e549]: var
+            - text: a01 = Dot(edge0, edge1);
+            - generic [ref=f4e550]: var
+            - text: a11 = Dot(edge1, edge1);
+            - generic [ref=f4e551]: var
+            - text: b0 = -Dot(diff, edge0);
+            - generic [ref=f4e552]: var
+            - text: b1 = -Dot(diff, edge1);
+            - generic [ref=f4e553]: var
+            - text: t0 = a01 * b1 - a11 * b0;
+            - generic [ref=f4e554]: var
+            - text: t1 = a01 * b0 - a00 * b1; // ... closestPoint = v0 + t0 * edge0 + t1 * edge1;
+          - heading "FPAnimationCurves" [level=2] [ref=f4e555]
+          - paragraph [ref=f4e556]: Unity comes with a set of tools which are useful to express some values in the form of curves. It comes with a custom editor for such curves, which are then serialised and can be used in runtime in order to evaluate the value of the curve in some specific point.
+          - paragraph [ref=f4e557]: There are many situations where curves can be used, such as expressing steering information when implementing vehicles, the utility value during the decision making for an AI agent (as done in Bot SDK's Utility Theory), getting the multiplier value for some attack's damage, and so on.
+          - paragraph [ref=f4e558]:
+            - text: The Quantum SDK already comes with its own implementation of an animation curve, named
+            - code [ref=f4e559]: FPAnimationCurve
+            - text: ", evaluated as FPs. This custom type, when inspected directly on Data Assets and Components in Unity, are drawn with Unity's default Animation Curve editors, whose data are then internally baked into the deterministic type."
+          - heading "Polling data from an FPAnimationCurve" [level=3] [ref=f4e560]
+          - paragraph [ref=f4e561]: "The code needed to poll some data from a curve, with Quantum code, is very similar to the Unity's version:"
+          - paragraph [ref=f4e562]: C#
+          - code [ref=f4e564]: // This returns the pre-baked value, interpolated accordingly to the curve's configuration such as it's key points, curve's resolution, tangets modes, etc FP myValue = myCurve.Evaluate(FP._0_50);
+          - heading "Creating FPAnimationCurves directly on the simulation" [level=3] [ref=f4e565]
+          - paragraph [ref=f4e566]: "Here are the snippets to create a deterministic animation curve from scratch, directly on the simulation:"
+          - paragraph [ref=f4e567]: C#
+          - code [ref=f4e569]:
+            - text: "// Creating a simple, linear curve with five key points // Change the parameter as prefered public static class FPAnimationCurveUtils { public static FPAnimationCurve CreateLinearCurve("
+            - generic [ref=f4e570]: FPAnimationCurve.WrapMode
+            - text: preWrapMode,
+            - generic [ref=f4e571]: FPAnimationCurve.WrapMode
+            - text: "postWrapMode) { return new FPAnimationCurve { Samples = new FP[5] { FP._0, FP._0_25, FP._0_50, FP._0_75, FP._1 }, PostWrapMode = (int)postWrapMode, PreWrapMode = (int)preWrapMode, StartTime = 0, EndTime = 1, Resolution = 32 }; } }"
+          - paragraph [ref=f4e572]: C#
+          - code [ref=f4e574]:
+            - text: // Storing a curve into a local variable
+            - generic [ref=f4e575]: var
+            - text: "curve = FPAnimationCurveUtils.CreateLinearCurve(FPAnimationCurve.WrapMode.Clamp, FPAnimationCurve.WrapMode.Clamp); // It can also be used directly to pre-initialise a curve in an asset public unsafe partial class CollectibleData { public FPAnimationCurve myCurve = FPAnimationCurveUtils.CreateLinearCurve(FPAnimationCurve.WrapMode.Clamp, FPAnimationCurve.WrapMode.Clamp); }"
+          - heading "Baking Unity's AnimationCurve into a FPAnimationCurve" [level=3] [ref=f4e576]
+          - paragraph [ref=f4e577]:
+            - text: The snippets needed for converting a regular Unity
+            - code [ref=f4e578]: AnimationCurve
+            - text: into an
+            - code [ref=f4e579]: FPAnimationCurve
+            - text: can be found
+            - link "HERE" [ref=f4e580] [cursor=pointer]:
+              - /url: /quantum/v3/concepts-and-patterns/animation-curves-baking
+            - text: .
+          - paragraph [ref=f4e581]:
+            - text: Last updated on
+            - time [ref=f4e582]: 25/09/2026
+          - link "Back to top" [ref=f4e583] [cursor=pointer]:
+            - /url: "#"
+      - list [ref=f4e585]:
+        - list [ref=f4e586]:
+          - listitem [ref=f4e587]:
+            - link "Introduction" [ref=f4e588] [cursor=pointer]:
+              - /url: "#introduction"
+          - listitem [ref=f4e589]:
+            - link "Parsing FPs" [ref=f4e590] [cursor=pointer]:
+              - /url: "#parsing-fps"
+          - list [ref=f4e591]:
+            - listitem [ref=f4e592]:
+              - link "TLDR" [ref=f4e593] [cursor=pointer]:
+                - /url: "#tldr"
+            - listitem [ref=f4e594]:
+              - link "FP.FromFloat_UNSAFE()" [ref=f4e595] [cursor=pointer]:
+                - /url: "#fp.fromfloat_unsafe"
+            - listitem [ref=f4e596]:
+              - link "FP.FromString_UNSAFE()" [ref=f4e597] [cursor=pointer]:
+                - /url: "#fp.fromstring_unsafe"
+            - listitem [ref=f4e598]:
+              - link "FP.FromString()" [ref=f4e599] [cursor=pointer]:
+                - /url: "#fp.fromstring"
+            - listitem [ref=f4e600]:
+              - link "FP.FromRaw()" [ref=f4e601] [cursor=pointer]:
+                - /url: "#fp.fromraw"
+          - listitem [ref=f4e602]:
+            - link "Const Variables" [ref=f4e603] [cursor=pointer]:
+              - /url: "#const-variables"
+          - listitem [ref=f4e604]:
+            - link "Casting" [ref=f4e605] [cursor=pointer]:
+              - /url: "#casting"
+          - listitem [ref=f4e606]:
+            - link "Inlining" [ref=f4e607] [cursor=pointer]:
+              - /url: "#inlining"
+          - listitem [ref=f4e608]:
+            - link "Overflow" [ref=f4e609] [cursor=pointer]:
+              - /url: "#overflow"
+          - listitem [ref=f4e610]:
+            - link "Precision" [ref=f4e611] [cursor=pointer]:
+              - /url: "#precision"
+          - listitem [ref=f4e612]:
+            - link "FPAnimationCurves" [ref=f4e613] [cursor=pointer]:
+              - /url: "#fpanimationcurves"
+          - list [ref=f4e614]:
+            - listitem [ref=f4e615]:
+              - link "Polling data from an FPAnimationCurve" [ref=f4e616] [cursor=pointer]:
+                - /url: "#polling-data-from-an-fpanimationcurve"
+            - listitem [ref=f4e617]:
+              - link "Creating FPAnimationCurves directly on the simulation" [ref=f4e618] [cursor=pointer]:
+                - /url: "#creating-fpanimationcurves-directly-on-the-simulation"
+            - listitem [ref=f4e619]:
+              - link "Baking Unity's AnimationCurve into a FPAnimationCurve" [ref=f4e620] [cursor=pointer]:
+                - /url: "#baking-unitys-animationcurve-into-a-fpanimationcurve"
+  - contentinfo [ref=f4e621]:
+    - generic [ref=f4e622]:
+      - generic [ref=f4e623]:
+        - img "Photon" [ref=f4e624]
+        - generic [ref=f4e625]: We Make Multiplayer Simple
+      - generic [ref=f4e626]:
+        - generic [ref=f4e627]:
+          - generic [ref=f4e628]:
+            - heading "Products" [level=5] [ref=f4e629]
+            - list [ref=f4e630]:
+              - listitem [ref=f4e631]:
+                - link "Fusion" [ref=f4e632] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/fusion
+              - listitem [ref=f4e633]:
+                - link "Quantum" [ref=f4e634] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/quantum
+              - listitem [ref=f4e635]:
+                - link "Realtime" [ref=f4e636] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/realtime
+              - listitem [ref=f4e637]:
+                - link "Chat" [ref=f4e638] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/chat
+              - listitem [ref=f4e639]:
+                - link "Voice" [ref=f4e640] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/voice
+              - listitem [ref=f4e641]:
+                - link "PUN" [ref=f4e642] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/pun
+              - listitem [ref=f4e643]:
+                - link "Tournament" [ref=f4e644] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/tournament
+          - generic [ref=f4e645]:
+            - heading "Support" [level=5] [ref=f4e646]
+            - list [ref=f4e647]:
+              - listitem [ref=f4e648]:
+                - link "Gaming Circle" [ref=f4e649] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/gaming
+              - listitem [ref=f4e650]:
+                - link "Industries Circle" [ref=f4e651] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/industries
+              - listitem [ref=f4e652]:
+                - link "Circle Discord" [ref=f4e653] [cursor=pointer]:
+                  - /url: https://doc.photonengine.com/quantum/v3/gaming-circle/circle-discord
+        - generic [ref=f4e655]:
+          - heading "Documentation" [level=5] [ref=f4e656]
+          - list [ref=f4e657]:
+            - listitem [ref=f4e658]:
+              - link "Fusion" [ref=f4e659] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/fusion/v2/fusion-intro
+            - listitem [ref=f4e660]:
+              - link "Quantum" [ref=f4e661] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/quantum/v3/quantum-intro
+            - listitem [ref=f4e662]:
+              - link "Realtime" [ref=f4e663] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/realtime/v5/realtime-intro
+            - listitem [ref=f4e664]:
+              - link "Chat" [ref=f4e665] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/chat/current/getting-started/chat-intro
+            - listitem [ref=f4e666]:
+              - link "Voice" [ref=f4e667] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/voice/v2/getting-started/voice-intro
+            - listitem [ref=f4e668]:
+              - link "PUN" [ref=f4e669] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/pun/v2/getting-started/pun-intro
+            - listitem [ref=f4e670]:
+              - link "Bolt" [ref=f4e671] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/bolt/current/getting-started/overview
+            - listitem [ref=f4e672]:
+              - link "Server" [ref=f4e673] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/server/v5/getting-started/photon-server-in-5min
+            - listitem [ref=f4e674]:
+              - link "VR | AR | MR" [ref=f4e675] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/arvr/current/meta-quest/quest-intro
+        - generic [ref=f4e676]:
+          - generic [ref=f4e677]:
+            - heading "About Us" [level=5] [ref=f4e678]
+            - list [ref=f4e679]:
+              - listitem [ref=f4e680]:
+                - link "Contact Us" [ref=f4e681] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/contact
+              - listitem [ref=f4e682]:
+                - link "Compliance" [ref=f4e683] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/compliance
+              - listitem [ref=f4e684]:
+                - link "Blog" [ref=f4e685] [cursor=pointer]:
+                  - /url: https://blog.photonengine.com/
+          - generic [ref=f4e686]:
+            - heading "Resources" [level=5] [ref=f4e687]
+            - list [ref=f4e688]:
+              - listitem [ref=f4e689]:
+                - link "Dashboard" [ref=f4e690] [cursor=pointer]:
+                  - /url: https://dashboard.photonengine.com
+              - listitem [ref=f4e691]:
+                - link "Samples" [ref=f4e692] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/samples
+              - listitem [ref=f4e693]:
+                - link "SDK Downloads" [ref=f4e694] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/sdks#fusion
+              - listitem [ref=f4e695]:
+                - link "Cloud Status" [ref=f4e696] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/status
+        - generic [ref=f4e698]:
+          - heading "Languages" [level=5] [ref=f4e699]
+          - list [ref=f4e700]:
+            - listitem [ref=f4e701]:
+              - link "English" [ref=f4e702] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/quantum/v3/manual/quantum-ecs/fixed-point
+            - listitem [ref=f4e703]:
+              - link "日本語" [ref=f4e704] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/ja-jp/quantum/v3/manual/quantum-ecs/fixed-point
+            - listitem [ref=f4e705]:
+              - link "한국어" [ref=f4e706] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/ko-kr/quantum/v3/manual/quantum-ecs/fixed-point
+            - listitem [ref=f4e707]:
+              - link "简体中文" [ref=f4e708] [cursor=pointer]:
+                - /url: https://www.vibrantlink.com
+            - listitem [ref=f4e709]:
+              - link "繁体中文" [ref=f4e710] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/zh-tw/quantum/v3/manual/quantum-ecs/fixed-point
+      - generic [ref=f4e711]:
+        - generic [ref=f4e712]:
+          - link "Public Discord" [ref=f4e713] [cursor=pointer]:
+            - /url: https://dashboard.photonengine.com/discord/joinphotonengine
+          - link "YouTube" [ref=f4e717] [cursor=pointer]:
+            - /url: https://www.youtube.com/c/photonengine
+          - link "LinkedIn" [ref=f4e721] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/photonengine
+        - generic [ref=f4e725]:
+          - link "Terms" [ref=f4e726] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms
+          - link "Regulatory" [ref=f4e727] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/regulatory
+          - link "Privacy Policy" [ref=f4e728] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/privacyandcookiepolicy
+          - link "Privacy" [ref=f4e729] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/gdpr
+          - link "Code of Conduct" [ref=f4e730] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/codeofconduct
+          - generic [ref=f4e731] [cursor=pointer]: Cookie Settings

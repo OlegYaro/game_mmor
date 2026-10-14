@@ -1,0 +1,557 @@
+- generic [active] [ref=f8e1]:
+  - navigation [ref=f8e2]:
+    - generic [ref=f8e4]:
+      - link [ref=f8e5] [cursor=pointer]:
+        - /url: https://www.photonengine.com
+        - img "Photon logo" [ref=f8e6]
+        - img "Photon logo" [ref=f8e7]
+      - button "PRODUCTS" [ref=f8e8] [cursor=pointer]
+      - generic [ref=f8e11]:
+        - link "Samples" [ref=f8e12] [cursor=pointer]:
+          - /url: https://www.photonengine.com/samples
+        - link "SDKs" [ref=f8e13] [cursor=pointer]:
+          - /url: https://www.photonengine.com/sdks#quantum
+        - link "Documentation":
+          - /url: https://doc.photonengine.com/quantum/v3/quantum-intro
+        - link "Sign In" [ref=f8e16] [cursor=pointer]:
+          - /url: "#"
+      - button [ref=f8e17] [cursor=pointer]
+  - main [ref=f8e22]:
+    - generic [ref=f8e23]:
+      - navigation [ref=f8e25]:
+        - list [ref=f8e26]:
+          - listitem [ref=f8e27]:
+            - link "PHOTON" [ref=f8e28] [cursor=pointer]:
+              - /url: /photon/current/getting-started
+          - listitem [ref=f8e33]
+          - listitem [ref=f8e34]:
+            - link "FUSION CORE" [ref=f8e35] [cursor=pointer]:
+              - /url: /fusion-core/v3/fusion-core-intro
+          - listitem [ref=f8e40]:
+            - link "FUSION UNITY" [ref=f8e41] [cursor=pointer]:
+              - /url: /fusion/v2/fusion-intro
+          - listitem [ref=f8e46]:
+            - link "FUSION UNREAL" [ref=f8e47] [cursor=pointer]:
+              - /url: /fusion-unreal/v3/fusion-intro
+          - listitem [ref=f8e52]:
+            - link "FUSION GODOT" [ref=f8e53] [cursor=pointer]:
+              - /url: /fusion-godot/v3-shared-authority/fusion-intro
+          - listitem [ref=f8e58]:
+            - generic [ref=f8e59] [cursor=pointer]: QUANTUM UNITY
+            - list:
+              - listitem [ref=f8e64]:
+                - link "Quantum Intro" [ref=f8e66] [cursor=pointer]:
+                  - /url: /quantum/v2/quantum-intro
+              - listitem [ref=f8e67]:
+                - generic [ref=f8e68] [cursor=pointer]: Getting Started
+                - list
+              - listitem [ref=f8e73]:
+                - generic [ref=f8e74] [cursor=pointer]: Quantum 100
+                - list
+              - listitem [ref=f8e79]:
+                - generic [ref=f8e80] [cursor=pointer]: Game Samples
+                - list
+              - listitem [ref=f8e85]:
+                - generic [ref=f8e86] [cursor=pointer]: Technical Samples
+                - list
+              - listitem [ref=f8e91]:
+                - generic [ref=f8e92] [cursor=pointer]: Addons
+                - list
+              - listitem [ref=f8e97]:
+                - generic [ref=f8e98] [cursor=pointer]: Manual
+                - list:
+                  - listitem [ref=f8e103]:
+                    - generic [ref=f8e104] [cursor=pointer]: Quantum ECS
+                    - list
+                  - listitem [ref=f8e109]:
+                    - link "Animation" [ref=f8e111] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/animation
+                  - listitem [ref=f8e112]:
+                    - generic [ref=f8e113] [cursor=pointer]: Assets
+                    - list
+                  - listitem [ref=f8e118]:
+                    - generic:
+                      - link "Cheat Protection":
+                        - /url: /quantum/v2/manual/cheat-protection
+                  - listitem [ref=f8e119]:
+                    - link "Commands" [ref=f8e121] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/commands
+                  - listitem [ref=f8e122]:
+                    - link "Configuration Files" [ref=f8e124] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/config-files
+                  - listitem [ref=f8e125]:
+                    - generic [ref=f8e126] [cursor=pointer]: Custom Server Plugin
+                    - list
+                  - listitem [ref=f8e131]:
+                    - link "Entity Prototypes" [ref=f8e133] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/entity-prototypes
+                  - listitem [ref=f8e134]:
+                    - link "Entity View" [ref=f8e136] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/entityview
+                  - listitem [ref=f8e137]:
+                    - link "Frames" [ref=f8e139] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/frames
+                  - listitem [ref=f8e140]:
+                    - generic [ref=f8e141] [cursor=pointer]: Game Session
+                    - list
+                  - listitem [ref=f8e146]:
+                    - link "Git Ignore Files" [ref=f8e148] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/gitignore
+                  - listitem [ref=f8e149]:
+                    - link "Input" [ref=f8e151] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/input
+                  - listitem [ref=f8e152]:
+                    - link "Materialization" [ref=f8e154] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/materialization
+                  - listitem [ref=f8e155]:
+                    - link "Map Baking" [ref=f8e157] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/map-baking
+                  - listitem [ref=f8e158]:
+                    - link "Multi-Client Runner" [ref=f8e160] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/multiclient
+                  - listitem [ref=f8e161]:
+                    - link "Multithreading" [ref=f8e163] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/multithreading
+                  - listitem [ref=f8e164]:
+                    - generic [ref=f8e165] [cursor=pointer]: Navigation
+                    - list
+                  - listitem [ref=f8e170]:
+                    - generic [ref=f8e171] [cursor=pointer]: Physics
+                    - list
+                  - listitem [ref=f8e176]:
+                    - generic [ref=f8e177] [cursor=pointer]: Player
+                    - list
+                  - listitem [ref=f8e182]:
+                    - link "Prediction Culling" [ref=f8e184] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/prediction-culling
+                  - listitem [ref=f8e185]:
+                    - link "Profiling" [ref=f8e187] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/profiling
+                  - listitem [ref=f8e188]:
+                    - link "Quantum Project" [ref=f8e190] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/quantum-project
+                  - listitem [ref=f8e191]:
+                    - link "Replays" [ref=f8e193] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/replay
+                  - listitem [ref=f8e194]:
+                    - link "RNG Session" [ref=f8e196] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/rngsession
+                  - listitem [ref=f8e197]:
+                    - link "WebGL" [ref=f8e199] [cursor=pointer]:
+                      - /url: /quantum/v2/manual/webgl
+              - listitem [ref=f8e200]:
+                - generic [ref=f8e201] [cursor=pointer]: Concepts And Patterns
+                - list
+              - listitem [ref=f8e206]:
+                - generic [ref=f8e207] [cursor=pointer]: Consoles
+                - list
+              - listitem [ref=f8e212]:
+                - generic [ref=f8e213] [cursor=pointer]: Gaming Circle
+                - list
+              - listitem [ref=f8e218]:
+                - generic [ref=f8e219] [cursor=pointer]: Reference
+                - list
+          - listitem [ref=f8e224]
+          - listitem [ref=f8e225]:
+            - link "PUN UNITY" [ref=f8e226] [cursor=pointer]:
+              - /url: /pun/current/getting-started/pun-intro
+          - listitem [ref=f8e231]:
+            - link "REALTIME C#" [ref=f8e232] [cursor=pointer]:
+              - /url: /realtime/v5/realtime-intro
+          - listitem [ref=f8e237]:
+            - link "REALTIME CORE" [ref=f8e238] [cursor=pointer]:
+              - /url: /realtime-core/v6/realtime-core-intro
+          - listitem [ref=f8e243]
+          - listitem [ref=f8e244]:
+            - link "CHAT" [ref=f8e245] [cursor=pointer]:
+              - /url: /chat/current/getting-started/chat-intro
+          - listitem [ref=f8e250]:
+            - link "VOICE" [ref=f8e251] [cursor=pointer]:
+              - /url: /voice/v2/getting-started/voice-intro
+          - listitem [ref=f8e256]:
+            - link "VIDEO" [ref=f8e257] [cursor=pointer]:
+              - /url: /video/v2/video-intro
+          - listitem [ref=f8e262]
+          - listitem [ref=f8e263]:
+            - link "SERVER" [ref=f8e264] [cursor=pointer]:
+              - /url: /server/v5/getting-started/photon-server-in-5min
+          - listitem [ref=f8e269]
+          - listitem [ref=f8e270]:
+            - link "TOURNAMENT SDK" [ref=f8e271] [cursor=pointer]:
+              - /url: /tournamentsdk/current/overview
+          - listitem [ref=f8e276]
+          - listitem [ref=f8e277]:
+            - link "EXTENDED REALITY" [ref=f8e278] [cursor=pointer]:
+              - /url: /arvr/current/extended-reality-overview
+          - listitem [ref=f8e283]
+          - listitem [ref=f8e284]:
+            - link "BOLT (DISCONTINUED)" [ref=f8e285] [cursor=pointer]:
+              - /url: /bolt/current/getting-started/overview
+      - generic [ref=f8e290]:
+        - generic [ref=f8e292]:
+          - generic [ref=f8e293]:
+            - generic [ref=f8e295]:
+              - textbox "Search" [ref=f8e296]
+              - button [ref=f8e297] [cursor=pointer]
+            - generic "Light / Dark" [ref=f8e301]:
+              - checkbox [ref=f8e302] [cursor=pointer]
+          - generic [ref=f8e303]:
+            - generic [ref=f8e304]:
+              - text: "This document is about:"
+              - strong [ref=f8e305]: QUANTUM 2
+            - generic [ref=f8e306] [cursor=pointer]: SWITCH TO
+        - generic [ref=f8e310]:
+          - heading "Cheat Protection" [level=1] [ref=f8e311]
+          - heading "Introduction" [level=2] [ref=f8e312]
+          - paragraph [ref=f8e313]: Security and cheat-protection are important aspects of online multiplayer games. Quantum's determinism offers unique features to address them. This page dives into the details on the built-in protection and offers best-practices to create production-ready online games with Photon Quantum.
+          - paragraph [ref=f8e314]: It is crucial for developers to be aware of all security related issues and the steps to mitigated those as well as at which time these should be taken. Although it is possible to run the full simulation on the server, it extremely rare this is sensible from a practical and cost perspective.
+          - list [ref=f8e315]:
+            - listitem [ref=f8e316]: Running servers is costly especially when the game does not generate revenue, yet.
+            - listitem [ref=f8e317]: In a most cases cheaters only make up a very small portion of the user base.
+            - listitem [ref=f8e318]: Making a game 100% cheat proof is an utopian idea, even keeping just one step ahead of them is a huge task.
+            - listitem [ref=f8e319]: There are game genres which rely on as much security as possible.
+          - paragraph [ref=f8e326]:
+            - text: "The single most important advice is: write the game"
+            - strong [ref=f8e327]: now
+            - text: and add these more complex safety checks
+            - strong [ref=f8e328]: incrementally
+            - text: . It is perfectly viable to go live without a custom server and be successful.
+          - paragraph [ref=f8e329]: "In the documentation the following terms are used:"
+          - list [ref=f8e330]:
+            - listitem [ref=f8e331]:
+              - text: a
+              - strong [ref=f8e332]: game backend
+              - text: refers to online services created and hosted by the customer;
+            - listitem [ref=f8e333]:
+              - text: a
+              - strong [ref=f8e334]: custom server (/plugin)
+              - text: refers to a customer-customized Quantum plugin hosted by Photon; and,
+            - listitem [ref=f8e335]:
+              - strong [ref=f8e336]: Quantum Public Cloud
+              - text: refers to non-customized Quantum servers hosted by Photon.
+          - heading "Cheat Protection By Determinism" [level=2] [ref=f8e337]
+          - paragraph [ref=f8e338]:
+            - text: The huge upside of a deterministic game, even without the server running the simulation, is its cheat-robustness; if one player modifies their client, for example by changing their character's speed, it will
+            - strong [ref=f8e339]: not affect any other player
+            - text: . They might notice the cheating player behaving strangely (e.g. continuously bumping into a wall) but otherwise their experience remains untainted.
+          - paragraph [ref=f8e340]: "The reason for this is simple: each client deterministically runs the complete simulation locally and only shares input with other clients."
+          - heading "Trustable Match Results" [level=2] [ref=f8e341]
+          - paragraph [ref=f8e342]: A match result is used to update the player progression in a game backend. In the most secure scenarios this is done from the server where the game logic ran.
+          - paragraph [ref=f8e343]: However, there are a few iterations possible to secure the results in a cost-efficient way before going towards an authoritative game server.
+          - table [ref=f8e344]:
+            - rowgroup [ref=f8e348]:
+              - row [ref=f8e349]:
+                - rowheader "Prototyping" [ref=f8e350]
+                - cell "Clients push their individual results to the developers game backend. This is good for prototyping and games can also launch with this setup. Having a data structure which can be filled with the results to be sent to a backend is the first thing to have." [ref=f8e351]
+              - row [ref=f8e352]:
+                - rowheader "Majority Vote" [ref=f8e353]
+                - cell "Clients push the match result individually but the backend choses the result based on a majority vote. Outliers that send (potentially) tampered data can be identified. There is no need to wait for a confirmation on the clients, just display them their result right away and save the progression only _after_ having had it validated on the backend." [ref=f8e354]
+              - row [ref=f8e355]:
+                - rowheader "Resimulation Replays" [ref=f8e356]
+                - cell "If there is no agreement via the majority vote or a statistical evaluation smell, flag the match for a revalidation and collect the input history of the players. With the input history, the config files and the asset database the Quantum simulation can run outside Unity to recheck the result (replay). See the quantum-console-runner project in the Quantum SDK and read the following section on how to access the replay data." [ref=f8e357]
+              - row [ref=f8e358]:
+                - rowheader "Self-Hosted Spectators Referee" [ref=f8e359]
+                - cell "Use a referee spectator, a .Net application, which can connect to live matches and run the simulation simultaneously, then submit the final results from it rather than letting the players send it." [ref=f8e360]
+              - row [ref=f8e361]:
+                - rowheader "Custom Quantum Server" [ref=f8e362]
+                - cell "Run the simulation on the server and submit its result (see the quantum-custom-plugin SDK)." [ref=f8e363]
+          - heading "How To Access The Replay Data" [level=3] [ref=f8e364]
+          - paragraph [ref=f8e365]:
+            - emphasis [ref=f8e366]: Quantum 2.1 and earlier
+          - list [ref=f8e367]:
+            - listitem [ref=f8e368]: Request to be send by a client
+            - listitem [ref=f8e369]: Send from the Self-Hosted Spectators Referee
+            - listitem [ref=f8e370]: Send from the Custom Quantum Server
+          - paragraph [ref=f8e371]:
+            - emphasis [ref=f8e372]: Quantum 3.0. (planned)
+          - list [ref=f8e373]:
+            - listitem [ref=f8e374]: Configurable webhook for Quantum Public Cloud users to stream the verified input history to another backend
+          - heading "Self-Hosted Spectators Referee" [level=3] [ref=f8e375]
+          - paragraph [ref=f8e376]:
+            - text: The Quantum simulation can be joined as a
+            - code [ref=f8e377]: spectator
+            - text: ; a spectator is a client which can connect to the server and run the full game without the ability of sending input. This can be used to start and initialize the game from a trusted source.
+          - list [ref=f8e378]:
+            - listitem [ref=f8e379]: Create a spectator application (runs outside Unity).
+            - listitem [ref=f8e380]: Run it anywhere to communicate securely with the game backend to start and prepare a Photon room.
+            - listitem [ref=f8e381]: Start a Quantum game.
+            - listitem [ref=f8e382]: Let other clients late-join the simulation (see the quantum-console-spectator project in the Quantum SDK).
+          - paragraph [ref=f8e389]: Adding another, artificial client to the Photon Room for spectating purposes will increase the CCU count, which is the basis for the server cost. This might be a problem for games with low player counts (1vs1) as increases the CCU count perceptibly.
+          - heading "Custom Quantum Server" [level=3] [ref=f8e390]
+          - paragraph [ref=f8e391]: "Running custom code on the Quantum server requires renting Photon Enterprise servers. It will enable authority over the following aspects:"
+          - list [ref=f8e392]:
+            - listitem [ref=f8e393]:
+              - text: Option to run the
+              - strong [ref=f8e394]: game simulation on the server
+              - text: "to:"
+              - list [ref=f8e395]:
+                - listitem [ref=f8e396]:
+                  - text: Have a trusting source for
+                  - strong [ref=f8e397]: game results
+                - listitem [ref=f8e398]:
+                  - text: Enable
+                  - strong [ref=f8e399]: server snapshots
+                  - text: (are send by clients when using the Public Quantum Cloud)
+            - listitem [ref=f8e400]:
+              - text: Option to inject
+              - strong [ref=f8e401]: server controlled secrets
+              - text: into the game (server command)
+            - listitem [ref=f8e402]:
+              - text: Option to intercept and
+              - strong [ref=f8e403]: replace
+              - code [ref=f8e404]: DeterministicConfig
+              - text: ","
+              - code [ref=f8e405]: RuntimeConfig
+              - text: and
+              - code [ref=f8e406]: RuntimePlayer
+            - listitem [ref=f8e407]:
+              - text: Option to
+              - strong [ref=f8e408]: save validated replays
+          - heading "Protect Client-Controlled Game Configs" [level=2] [ref=f8e409]
+          - paragraph [ref=f8e410]:
+            - text: Two important
+            - strong [ref=f8e411]: shared configuration files are sent by the clients
+            - text: "in the beginning of a match:"
+            - code [ref=f8e412]: DeterministicConfig
+            - text: (Quantum settings) and
+            - code [ref=f8e413]: RuntimeConfig
+            - text: (game settings). The server will accept the first ones (DeterministicConfig, RuntimeConfig) it receives which is more or less random in the most cases.
+          - paragraph [ref=f8e414]:
+            - text: "Clients also sending another config which is describing the player loadout:"
+            - code [ref=f8e415]: RuntimePlayer
+            - text: . To verify it against the player progression saved on a backend a custom Quantum server plugin is required.
+          - table [ref=f8e416]:
+            - rowgroup [ref=f8e420]:
+              - row [ref=f8e421]:
+                - rowheader "Public Quantum Cloud" [ref=f8e422]
+                - cell [ref=f8e423]:
+                  - text: Chooses a random source for
+                  - code [ref=f8e424]: DeterministicConfig
+                  - text: and
+                  - code [ref=f8e425]: RuntimeConfig
+              - row [ref=f8e426]:
+                - rowheader "Custom Quantum Server" [ref=f8e427]
+                - cell "All configs can be intercepted and replaced after retrieving it from the developers backend" [ref=f8e428]
+              - row [ref=f8e429]:
+                - rowheader "Dashboard (coming in Quantum 3.0)" [ref=f8e430]
+                - cell [ref=f8e431]:
+                  - code [ref=f8e432]: DeterministicConfig
+                  - text: can be forced on Public Cloud server by associating it with an AppId inside the Photon dashboard.
+              - row [ref=f8e433]:
+                - rowheader "Webhooks (coming in Quantum 3.0)" [ref=f8e434]
+                - cell [ref=f8e435]:
+                  - code [ref=f8e436]: RuntimeConfig
+                  - text: and
+                  - code [ref=f8e437]: RuntimePlayer
+                  - text: can be verified by the developers backend calling a
+                  - code [ref=f8e438]: webrequest
+                  - text: configured on the Photon dashboard.
+          - heading "Custom Authentication" [level=2] [ref=f8e439]
+          - paragraph [ref=f8e440]:
+            - text: We do not offer an authentication service nor a player database ourselves but we absolutely recommend to add a proprietary or third-party
+            - strong [ref=f8e441]: authentication service
+            - text: .
+          - paragraph [ref=f8e442]:
+            - link "Photon Realtime Custom Authentication" [ref=f8e443] [cursor=pointer]:
+              - /url: /realtime/current/connection-and-authentication/authentication/custom-authentication
+          - heading "Determinism As A Drawback" [level=2] [ref=f8e444]
+          - paragraph [ref=f8e445]: While Determinism has a lot of advantages, it comes with a few notable drawbacks inherent to this type of technology.
+          - heading "Perfect Information Problem" [level=3] [ref=f8e446]
+          - paragraph [ref=f8e447]:
+            - text: With Quantum every client has access to all information required to simulation the game locally (apart from other players' input). This means
+            - strong [ref=f8e448]: client controlled secrets
+            - text: used in a card game and Fog Of War-like features
+            - strong [ref=f8e449]: are easily hackable
+            - text: .
+          - paragraph [ref=f8e450]:
+            - text: There are also fringe cases which let clients "guess" a
+            - strong [ref=f8e451]: next random number
+            - text: or the ability to
+            - strong [ref=f8e452]: create bots
+            - text: .
+          - heading "Detecting Cheaters Using Checksums" [level=3] [ref=f8e453]
+          - paragraph [ref=f8e454]: It is not recommended to use Quantum checksum detection for live games as a way to detect cheaters.
+          - list [ref=f8e455]:
+            - listitem [ref=f8e456]: Checksum calculation is expensive and could lead to hiccups; and,
+            - listitem [ref=f8e457]:
+              - text: The build-in mechanism stops the simulation for
+              - strong [ref=f8e458]: every
+              - text: client in the game session immediately.
+          - link "Back to top" [ref=f8e459] [cursor=pointer]:
+            - /url: "#"
+      - list [ref=f8e461]:
+        - list [ref=f8e462]:
+          - listitem [ref=f8e463]:
+            - link "Introduction" [ref=f8e464] [cursor=pointer]:
+              - /url: "#introduction"
+          - listitem [ref=f8e465]:
+            - link "Cheat Protection By Determinism" [ref=f8e466] [cursor=pointer]:
+              - /url: "#cheat-protection-by-determinism"
+          - listitem [ref=f8e467]:
+            - link "Trustable Match Results" [ref=f8e468] [cursor=pointer]:
+              - /url: "#trustable-match-results"
+          - list [ref=f8e469]:
+            - listitem [ref=f8e470]:
+              - link "How To Access The Replay Data" [ref=f8e471] [cursor=pointer]:
+                - /url: "#how-to-access-the-replay-data"
+            - listitem [ref=f8e472]:
+              - link "Self-Hosted Spectators Referee" [ref=f8e473] [cursor=pointer]:
+                - /url: "#self-hosted-spectators-referee"
+            - listitem [ref=f8e474]:
+              - link "Custom Quantum Server" [ref=f8e475] [cursor=pointer]:
+                - /url: "#custom-quantum-server"
+          - listitem [ref=f8e476]:
+            - link "Protect Client-Controlled Game Configs" [ref=f8e477] [cursor=pointer]:
+              - /url: "#protect-client-controlled-game-configs"
+          - listitem [ref=f8e478]:
+            - link "Custom Authentication" [ref=f8e479] [cursor=pointer]:
+              - /url: "#custom-authentication"
+          - listitem [ref=f8e480]:
+            - link "Determinism As A Drawback" [ref=f8e481] [cursor=pointer]:
+              - /url: "#determinism-as-a-drawback"
+          - list [ref=f8e482]:
+            - listitem [ref=f8e483]:
+              - link "Perfect Information Problem" [ref=f8e484] [cursor=pointer]:
+                - /url: "#perfect-information-problem"
+            - listitem [ref=f8e485]:
+              - link "Detecting Cheaters Using Checksums" [ref=f8e486] [cursor=pointer]:
+                - /url: "#detecting-cheaters-using-checksums"
+  - contentinfo [ref=f8e487]:
+    - generic [ref=f8e488]:
+      - generic [ref=f8e489]:
+        - img "Photon" [ref=f8e490]
+        - generic [ref=f8e491]: We Make Multiplayer Simple
+      - generic [ref=f8e492]:
+        - generic [ref=f8e493]:
+          - generic [ref=f8e494]:
+            - heading "Products" [level=5] [ref=f8e495]
+            - list [ref=f8e496]:
+              - listitem [ref=f8e497]:
+                - link "Fusion" [ref=f8e498] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/fusion
+              - listitem [ref=f8e499]:
+                - link "Quantum" [ref=f8e500] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/quantum
+              - listitem [ref=f8e501]:
+                - link "Realtime" [ref=f8e502] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/realtime
+              - listitem [ref=f8e503]:
+                - link "Chat" [ref=f8e504] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/chat
+              - listitem [ref=f8e505]:
+                - link "Voice" [ref=f8e506] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/voice
+              - listitem [ref=f8e507]:
+                - link "PUN" [ref=f8e508] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/pun
+              - listitem [ref=f8e509]:
+                - link "Tournament" [ref=f8e510] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/tournament
+          - generic [ref=f8e511]:
+            - heading "Support" [level=5] [ref=f8e512]
+            - list [ref=f8e513]:
+              - listitem [ref=f8e514]:
+                - link "Gaming Circle" [ref=f8e515] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/gaming
+              - listitem [ref=f8e516]:
+                - link "Industries Circle" [ref=f8e517] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/industries
+              - listitem [ref=f8e518]:
+                - link "Circle Discord" [ref=f8e519] [cursor=pointer]:
+                  - /url: https://doc.photonengine.com/quantum/v3/gaming-circle/circle-discord
+        - generic [ref=f8e521]:
+          - heading "Documentation" [level=5] [ref=f8e522]
+          - list [ref=f8e523]:
+            - listitem [ref=f8e524]:
+              - link "Fusion" [ref=f8e525] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/fusion/v2/fusion-intro
+            - listitem [ref=f8e526]:
+              - link "Quantum" [ref=f8e527] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/quantum/v3/quantum-intro
+            - listitem [ref=f8e528]:
+              - link "Realtime" [ref=f8e529] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/realtime/v5/realtime-intro
+            - listitem [ref=f8e530]:
+              - link "Chat" [ref=f8e531] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/chat/current/getting-started/chat-intro
+            - listitem [ref=f8e532]:
+              - link "Voice" [ref=f8e533] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/voice/v2/getting-started/voice-intro
+            - listitem [ref=f8e534]:
+              - link "PUN" [ref=f8e535] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/pun/v2/getting-started/pun-intro
+            - listitem [ref=f8e536]:
+              - link "Bolt" [ref=f8e537] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/bolt/current/getting-started/overview
+            - listitem [ref=f8e538]:
+              - link "Server" [ref=f8e539] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/server/v5/getting-started/photon-server-in-5min
+            - listitem [ref=f8e540]:
+              - link "VR | AR | MR" [ref=f8e541] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/arvr/current/meta-quest/quest-intro
+        - generic [ref=f8e542]:
+          - generic [ref=f8e543]:
+            - heading "About Us" [level=5] [ref=f8e544]
+            - list [ref=f8e545]:
+              - listitem [ref=f8e546]:
+                - link "Contact Us" [ref=f8e547] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/contact
+              - listitem [ref=f8e548]:
+                - link "Compliance" [ref=f8e549] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/compliance
+              - listitem [ref=f8e550]:
+                - link "Blog" [ref=f8e551] [cursor=pointer]:
+                  - /url: https://blog.photonengine.com/
+          - generic [ref=f8e552]:
+            - heading "Resources" [level=5] [ref=f8e553]
+            - list [ref=f8e554]:
+              - listitem [ref=f8e555]:
+                - link "Dashboard" [ref=f8e556] [cursor=pointer]:
+                  - /url: https://dashboard.photonengine.com
+              - listitem [ref=f8e557]:
+                - link "Samples" [ref=f8e558] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/samples
+              - listitem [ref=f8e559]:
+                - link "SDK Downloads" [ref=f8e560] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/sdks#fusion
+              - listitem [ref=f8e561]:
+                - link "Cloud Status" [ref=f8e562] [cursor=pointer]:
+                  - /url: https://www.photonengine.com/status
+        - generic [ref=f8e564]:
+          - heading "Languages" [level=5] [ref=f8e565]
+          - list [ref=f8e566]:
+            - listitem [ref=f8e567]:
+              - link "English" [ref=f8e568] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/quantum/v2/manual/cheat-protection
+            - listitem [ref=f8e569]:
+              - link "日本語" [ref=f8e570] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/ja-jp/quantum/v2/manual/cheat-protection
+            - listitem [ref=f8e571]:
+              - link "한국어" [ref=f8e572] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/ko-kr/quantum/v2/manual/cheat-protection
+            - listitem [ref=f8e573]:
+              - link "简体中文" [ref=f8e574] [cursor=pointer]:
+                - /url: https://www.vibrantlink.com
+            - listitem [ref=f8e575]:
+              - link "繁体中文" [ref=f8e576] [cursor=pointer]:
+                - /url: https://doc.photonengine.com/zh-tw/quantum/v2/manual/cheat-protection
+      - generic [ref=f8e577]:
+        - generic [ref=f8e578]:
+          - link "Public Discord" [ref=f8e579] [cursor=pointer]:
+            - /url: https://dashboard.photonengine.com/discord/joinphotonengine
+          - link "YouTube" [ref=f8e583] [cursor=pointer]:
+            - /url: https://www.youtube.com/c/photonengine
+          - link "LinkedIn" [ref=f8e587] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/photonengine
+        - generic [ref=f8e591]:
+          - link "Terms" [ref=f8e592] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms
+          - link "Regulatory" [ref=f8e593] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/regulatory
+          - link "Privacy Policy" [ref=f8e594] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/privacyandcookiepolicy
+          - link "Privacy" [ref=f8e595] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/gdpr
+          - link "Code of Conduct" [ref=f8e596] [cursor=pointer]:
+            - /url: https://www.photonengine.com/terms/codeofconduct
+          - generic [ref=f8e597] [cursor=pointer]: Cookie Settings
