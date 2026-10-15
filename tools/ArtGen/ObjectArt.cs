@@ -11,7 +11,7 @@ public static class ObjectArt
 
     /// <summary>Object ids in atlas order.</summary>
     public static readonly IReadOnlyList<string> Ids =
-        ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker", "coal", "ore_vein", "coal_vein"];
+        ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker", "coal", "ore_vein", "coal_vein", "hero"];
 
     private static readonly Rgba Black = new(20, 20, 24);
     private static readonly Rgba White = new(250, 250, 250);
@@ -34,10 +34,39 @@ public static class ObjectArt
             case "coal": Coal(c); break;
             case "ore_vein": Vein(c, Rgba.Hex(0x5A5E6B), Rgba.Hex(0xE8892B), Rgba.Hex(0x4DA6FF)); break;
             case "coal_vein": Vein(c, Rgba.Hex(0x1C1C22), Rgba.Hex(0xF2C230), Rgba.Hex(0xE8E8F0)); break;
+            case "hero": Hero(c); break;
             default: throw new ArgumentException("Unknown object id " + id, nameof(id));
         }
 
         return c;
+    }
+
+    // Static front-facing figure, feet on the ground centre (16, 24): head with hair, tunic with belt, arms, legs, boots, sword.
+    private static void Hero(Canvas c)
+    {
+        Rgba skin = Rgba.Hex(0xF1C27D);
+        Rgba cloth = Rgba.Hex(0x3A6EEA);
+        Rgba pants = Rgba.Hex(0x39476B);
+        Rgba boots = Rgba.Hex(0x4A3320);
+        Rgba hair = Rgba.Hex(0x5B3A1E);
+        Rgba steel = Rgba.Hex(0xC9CED6);
+
+        c.FillAndOutline([new Pt(13, 19), new Pt(16, 19), new Pt(16, 25), new Pt(13, 25)], boots, boots.Scale(45));
+        c.FillAndOutline([new Pt(16, 19), new Pt(19, 19), new Pt(19, 25), new Pt(16, 25)], boots, boots.Scale(45));
+        c.FillAndOutline([new Pt(13, 17), new Pt(16, 17), new Pt(16, 22), new Pt(13, 22)], pants, pants.Scale(45));
+        c.FillAndOutline([new Pt(16, 17), new Pt(19, 17), new Pt(19, 22), new Pt(16, 22)], pants, pants.Scale(45));
+        c.FillAndOutline([new Pt(9, 10), new Pt(12, 10), new Pt(12, 18), new Pt(9, 18)], skin, skin.Scale(45));
+        c.FillAndOutline([new Pt(20, 10), new Pt(23, 10), new Pt(23, 18), new Pt(20, 18)], skin, skin.Scale(45));
+        c.FillAndOutline([new Pt(11, 10), new Pt(21, 10), new Pt(21, 18), new Pt(11, 18)], cloth, cloth.Scale(45));
+        c.FillRect(12, 15, 8, 1, Rgba.Hex(0x7C521F));
+        c.FillRect(15, 15, 2, 1, Rgba.Hex(0xF2C230));
+        c.Line(25, 8, 25, 18, steel);
+        c.Line(26, 9, 26, 17, steel.Scale(70));
+        c.FillRect(24, 18, 3, 1, Rgba.Hex(0x7C521F));
+        c.FillAndOutline([new Pt(14, 2), new Pt(18, 2), new Pt(20, 4), new Pt(20, 8), new Pt(18, 10), new Pt(14, 10), new Pt(12, 8), new Pt(12, 4)], skin, skin.Scale(45));
+        c.FillPolygon([new Pt(13, 4), new Pt(14, 3), new Pt(18, 3), new Pt(19, 4), new Pt(19, 6), new Pt(13, 6)], hair);
+        c.Set(14, 7, Black);
+        c.Set(17, 7, Black);
     }
 
     private static void Tree(Canvas c)

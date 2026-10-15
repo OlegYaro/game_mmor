@@ -12,7 +12,7 @@ public sealed class AtlasTests
 {
     private static readonly string[] _biomes = ["meadow", "forest", "mountain", "wasteland"];
     private static readonly string[] _objectIds =
-        ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker", "coal", "ore_vein", "coal_vein"];
+        ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker", "coal", "ore_vein", "coal_vein", "hero"];
 
     [Fact]
     public void GenerationIsDeterministic()
@@ -22,6 +22,7 @@ public sealed class AtlasTests
 
         Assert.True(a.TilesPng.AsSpan().SequenceEqual(b.TilesPng));
         Assert.True(a.ObjectsPng.AsSpan().SequenceEqual(b.ObjectsPng));
+        Assert.True(a.BuildingsPng.AsSpan().SequenceEqual(b.BuildingsPng));
         Assert.Equal(a.AtlasJson, b.AtlasJson);
         Assert.Equal(a.SchemaJson, b.SchemaJson);
     }
@@ -77,7 +78,7 @@ public sealed class AtlasTests
     public void CellsAreInsideTheAtlasAndDoNotOverlap()
     {
         ArtOutput art = ArtGenerator.Generate();
-        Dictionary<string, Canvas> atlases = new() { ["tiles"] = art.Tiles, ["objects"] = art.Objects };
+        Dictionary<string, Canvas> atlases = new() { ["tiles"] = art.Tiles, ["objects"] = art.Objects, ["buildings"] = art.Buildings };
 
         foreach (IGrouping<string, AtlasCell> group in art.Cells.GroupBy(c => c.Atlas))
         {
@@ -103,6 +104,83 @@ public sealed class AtlasTests
     }
 
     [Fact]
+    public void BuildingSpecsMatchTheBuildingData()
+    {
+        using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(TestPaths.Data, "buildings", "buildings.json")));
+        JsonElement[] items = doc.RootElement.GetProperty("items").EnumerateArray().ToArray();
+
+        Assert.Equal(items.Select(i => i.GetProperty("id").GetString()).Order(StringComparer.Ordinal), BuildingArt.All.Select(b => b.Id).Order(StringComparer.Ordinal));
+        foreach (JsonElement item in items)
+        {
+            string id = item.GetProperty("id").GetString()!;
+            BuildingSpec spec = BuildingArt.All.Single(b => b.Id == id);
+            JsonElement footprint = item.GetProperty("footprint");
+            Assert.Equal((footprint.GetProperty("width").GetInt32(), footprint.GetProperty("height").GetInt32()), (spec.Width, spec.Height));
+            Assert.Equal(item.GetProperty("levels").GetArrayLength(), spec.Levels);
+        }
+    }
+
+    [Fact]
+    public void EveryBuildingLevelAndStageHasAFrameOfTheRightSize()
+    {
+        ArtOutput art = ArtGenerator.Generate();
+        Dictionary<string, AtlasCell> byId = art.Cells.ToDictionary(c => c.Id, StringComparer.Ordinal);
+        int expected = 0;
+        foreach (BuildingSpec b in BuildingArt.All)
+        {
+            for (int level = 1; level <= b.Levels; level++)
+            {
+                for (int stage = 0; stage < 4; stage++)
+                {
+                    expected++;
+                    string id = $"{b.Id}_l{level}_s{stage}";
+                    Assert.True(byId.TryGetValue(id, out AtlasCell? cell), id + " is missing");
+                    int sum = b.Width + b.Height;
+                    Assert.Equal("buildings", cell.Atlas);
+                    Assert.Equal("building", cell.Kind);
+                    Assert.Equal(16 * sum, cell.W);
+                    Assert.Equal((8 * sum) + b.Rise, cell.H);
+                    Assert.Equal((cell.W / 2, cell.H - 1), (cell.OriginX, cell.OriginY));
+                    Assert.Equal((0, stage), (cell.Height, cell.Variant));
+
+                    // The origin (bottom corner of the footprint diamond) is painted and nothing is clipped at the frame's top row.
+                    Assert.NotEqual(0, art.Buildings.Get(cell.X + cell.OriginX, cell.Y + cell.OriginY).A);
+                    for (int x = 0; x < cell.W; x++)
+                    {
+                        Assert.Equal(0, art.Buildings.Get(cell.X + x, cell.Y).A);
+                    }
+                }
+            }
+        }
+
+        Assert.Equal(expected, art.Cells.Count(c => c.Kind == "building"));
+    }
+
+    [Fact]
+    public void BuildingStagesAndLevelsLookDifferent()
+    {
+        foreach (BuildingSpec b in BuildingArt.All)
+        {
+            for (int level = 1; level <= b.Levels; level++)
+            {
+                byte[][] stages = Enumerable.Range(0, 4).Select(s => BuildingArt.Draw(b, level, s).Pixels).ToArray();
+                for (int i = 0; i < 4; i++)
+                {
+                    for (int j = i + 1; j < 4; j++)
+                    {
+                        Assert.False(stages[i].AsSpan().SequenceEqual(stages[j]), $"{b.Id} level {level}: stages {i} and {j} are identical");
+                    }
+                }
+            }
+
+            for (int level = 2; level <= b.Levels; level++)
+            {
+                Assert.False(BuildingArt.Draw(b, level - 1, 3).Pixels.AsSpan().SequenceEqual(BuildingArt.Draw(b, level, 3).Pixels), $"{b.Id} levels {level - 1} and {level} are identical");
+            }
+        }
+    }
+
+    [Fact]
     public void TableJsonMatchesTheCells()
     {
         ArtOutput art = ArtGenerator.Generate();
@@ -122,13 +200,18 @@ public sealed class AtlasTests
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void PngDecodesAndChunkCrcsAreValid(bool tiles)
+    [InlineData("tiles")]
+    [InlineData("objects")]
+    [InlineData("buildings")]
+    public void PngDecodesAndChunkCrcsAreValid(string atlas)
     {
         ArtOutput art = ArtGenerator.Generate();
-        byte[] png = tiles ? art.TilesPng : art.ObjectsPng;
-        Canvas canvas = tiles ? art.Tiles : art.Objects;
+        (byte[] png, Canvas canvas) = atlas switch
+        {
+            "tiles" => (art.TilesPng, art.Tiles),
+            "objects" => (art.ObjectsPng, art.Objects),
+            _ => (art.BuildingsPng, art.Buildings),
+        };
 
         Assert.True(png.AsSpan(0, 8).SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }));
         int pos = 8;
@@ -179,6 +262,7 @@ public sealed class AtlasTests
         ArtOutput art = ArtGenerator.Generate();
         AssertFile(ArtGenerator.TilesPath, art.TilesPng);
         AssertFile(ArtGenerator.ObjectsPath, art.ObjectsPng);
+        AssertFile(ArtGenerator.BuildingsPath, art.BuildingsPng);
         AssertFile(ArtGenerator.TablePath, new System.Text.UTF8Encoding(false).GetBytes(art.AtlasJson));
         AssertFile(ArtGenerator.SchemaPath, new System.Text.UTF8Encoding(false).GetBytes(art.SchemaJson));
     }

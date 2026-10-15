@@ -12,6 +12,7 @@ if (args.Length >= 2 && args[0] == "preview")
 ArtOutput art = ArtGenerator.Generate();
 Write(ArtGenerator.TilesPath, art.TilesPng);
 Write(ArtGenerator.ObjectsPath, art.ObjectsPng);
+Write(ArtGenerator.BuildingsPath, art.BuildingsPng);
 // UTF-8 without BOM, LF endings on every OS.
 Write(ArtGenerator.TablePath, new System.Text.UTF8Encoding(false).GetBytes(art.AtlasJson));
 Write(ArtGenerator.SchemaPath, new System.Text.UTF8Encoding(false).GetBytes(art.SchemaJson));
