@@ -32,6 +32,8 @@ public sealed class SchemaTests
 
         Assert.True(checkedFiles >= 9);
         Assert.Equal("fog.schema.json", Core.Content.ContentCategories.Find("balance/fog.json")!.SchemaFileName);
+        Assert.Equal("hero.schema.json", Core.Content.ContentCategories.Find("balance/hero.json")!.SchemaFileName);
+        Assert.Equal("construction.schema.json", Core.Content.ContentCategories.Find("balance/construction.json")!.SchemaFileName);
         Assert.Equal("balance.schema.json", Core.Content.ContentCategories.Find("balance/time.json")!.SchemaFileName);
         Assert.Equal("relations.schema.json", Core.Content.ContentCategories.Find("balance/relations.json")!.SchemaFileName);
         Assert.Equal("eras.schema.json", Core.Content.ContentCategories.Find("eras/eras.json")!.SchemaFileName);

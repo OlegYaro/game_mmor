@@ -15,6 +15,8 @@ namespace Core.Content;
 [JsonSerializable(typeof(TimeBalanceFile))]
 [JsonSerializable(typeof(FogBalanceFile))]
 [JsonSerializable(typeof(SaveBalanceFile))]
+[JsonSerializable(typeof(HeroBalanceFile))]
+[JsonSerializable(typeof(ConstructionBalanceFile))]
 [JsonSerializable(typeof(RelationModifierFile))]
 [JsonSerializable(typeof(BuildingFile))]
 [JsonSerializable(typeof(EraFile))]

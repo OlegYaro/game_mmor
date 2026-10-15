@@ -1,0 +1,28 @@
+{
+  "$schema": "../schema/hero.schema.json",
+  "items": [
+    {
+      "id": "hero",
+      "provisional": true,
+      "attack": 2,
+      "defense": 2,
+      "spellPower": 1,
+      "knowledge": 1,
+      "health": 100,
+      "stamina": 100,
+      "stepTicks": 3,
+      "sprintPermille": 1500,
+      "sprintStaminaDrain": 2,
+      "staminaRegen": 1,
+      "interactionRange": 2,
+      "gathering": [
+        { "source": "tree", "item": "wood", "ticksPerAction": 50, "yieldPerAction": 10 },
+        { "source": "rock", "item": "stone", "ticksPerAction": 80, "yieldPerAction": 10 },
+        { "source": "berry_bush", "item": "berries", "ticksPerAction": 20, "yieldPerAction": 3 }
+      ],
+      "backpackStacks": 30,
+      "equipmentSlots": [ "head", "body", "hands", "legs", "weapon", "shield", "ring1", "ring2", "amulet" ],
+      "startItems": []
+    }
+  ]
+}

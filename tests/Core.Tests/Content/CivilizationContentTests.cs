@@ -10,7 +10,7 @@ public sealed class CivilizationContentTests
 {
     private static readonly string[] _files =
     [
-        "balance/time.json", "balance/fog.json", "balance/saves.json", "worldgen/world.json", "items/basic.json",
+        "balance/time.json", "balance/fog.json", "balance/saves.json", "balance/hero.json", "balance/construction.json", "worldgen/world.json", "items/basic.json",
         "eras/eras.json", "races/races.json", "professions/professions.json", "balance/relations.json", "buildings/buildings.json",
     ];
 
@@ -154,7 +154,11 @@ public sealed class CivilizationContentTests
         Assert.False(house.OutsideTerritory);
         Assert.Equal(3, house.Levels.Count);
         Assert.Equal([2, 3, 4], house.Levels.Select(l => l.Capacity));
-        Assert.Equal(["camp", "village", "town"], house.Levels.Select(l => l.Requirements.Single().Value));
+        Assert.All(house.Levels, l => Assert.Empty(l.Requirements)); // the era requirement is lifted for M2 (no residents before M3)
+        Assert.Equal(["camp", "village"], storage.Levels.Select(l => l.Requirements.Single().Value));
+        Assert.Equal([false, true, true], catalog.Buildings.Select(b => b.Rotatable));
+        Assert.Equal([33, 33, 33, 40, 33, 40], catalog.Buildings.SelectMany(b => b.Levels).Select(l => l.MoveTicks));
+        Assert.All(catalog.Buildings.SelectMany(b => b.Levels), l => Assert.Equal(Math.Max(1, l.BuildTicks / 3), l.MoveTicks));
 
         Assert.Equal(2, storage.Levels.Count);
         Assert.Equal([20, 40], storage.Levels.Select(l => l.Storage));
@@ -193,6 +197,92 @@ public sealed class CivilizationContentTests
         ContentLoadResult valid = LoadWith("buildings/buildings.json", items =>
             Item(items, "storage")["levels"]![0]!["requirements"] = JsonNode.Parse("""[ { "kind": "specialist", "value": "blacksmith" } ]"""));
         Assert.NotNull(valid.Catalog);
+    }
+
+    [Fact]
+    [Trait("Req", "FR-HERO-01")]
+    public void HeroBalanceLoadsWithAgreedStartValues()
+    {
+        HeroBalanceDef hero = RealCatalog().Hero;
+
+        Assert.True(hero.Provisional);
+        Assert.Equal((2, 2, 1, 1), (hero.Attack, hero.Defense, hero.SpellPower, hero.Knowledge));
+        Assert.Equal((100, 100), (hero.Health, hero.Stamina));
+        Assert.Equal((3, 1500, 2, 1, 2), (hero.StepTicks, hero.SprintPermille, hero.SprintStaminaDrain, hero.StaminaRegen, hero.InteractionRange));
+        Assert.Equal(
+            [new GatherDef("tree", "wood", 50, 10), new GatherDef("rock", "stone", 80, 10), new GatherDef("berry_bush", "berries", 20, 3)],
+            hero.Gathering);
+        Assert.Equal(30, hero.BackpackStacks);
+        Assert.Equal(HeroBalanceDef.AllSlots, hero.EquipmentSlots);
+        Assert.Equal(["head", "body", "hands", "legs", "weapon", "shield", "ring1", "ring2", "amulet"], hero.EquipmentSlots);
+        Assert.Empty(hero.StartItems);
+    }
+
+    [Fact]
+    [Trait("Req", "FR-BUILD-01")]
+    public void ConstructionBalanceLoadsWithRefundShares()
+    {
+        ConstructionBalanceDef construction = RealCatalog().Construction;
+
+        Assert.True(construction.Provisional);
+        Assert.Equal(750, construction.DemolishRefundPermille);
+        Assert.Equal(1000, construction.CancelRefundPermille);
+
+        ContentLoadResult tooMuch = LoadWith("balance/construction.json", items => Item(items, "construction")["demolishRefundPermille"] = 1001);
+        AssertSingleError(tooMuch, ContentErrorKind.Validation, "balance/construction.json", "$.items[0].demolishRefundPermille");
+    }
+
+    [Fact]
+    [Trait("Req", "FR-HERO-01")]
+    public void HeroReferencesAndShapeAreChecked()
+    {
+        ContentLoadResult badStart = LoadWith("balance/hero.json", items =>
+            Item(items, "hero")["startItems"] = JsonNode.Parse("""[ { "item": "gold", "count": 1 } ]"""));
+        AssertSingleError(badStart, ContentErrorKind.Reference, "balance/hero.json", "$.items[0].startItems[0].item");
+
+        ContentLoadResult notItem = LoadWith("balance/hero.json", items =>
+            Item(items, "hero")["startItems"] = JsonNode.Parse("""[ { "item": "camp", "count": 1 } ]"""));
+        AssertSingleError(notItem, ContentErrorKind.Reference, "balance/hero.json", "$.items[0].startItems[0].item");
+
+        ContentLoadResult goodStart = LoadWith("balance/hero.json", items =>
+            Item(items, "hero")["startItems"] = JsonNode.Parse("""[ { "item": "wood", "count": 5 } ]"""));
+        Assert.Equal([new ItemAmountDef("wood", 5)], goodStart.Catalog!.Hero.StartItems);
+
+        ContentLoadResult badGather = LoadWith("balance/hero.json", items =>
+            Item(items, "hero")["gathering"]![0]!["item"] = "gold");
+        AssertSingleError(badGather, ContentErrorKind.Reference, "balance/hero.json", "$.items[0].gathering[0].item");
+
+        ContentLoadResult dupGather = LoadWith("balance/hero.json", items =>
+            Item(items, "hero")["gathering"]![1]!["source"] = "tree");
+        AssertSingleError(dupGather, ContentErrorKind.Validation, "balance/hero.json", "$.items[0].gathering[1].source");
+
+        ContentLoadResult badSlot = LoadWith("balance/hero.json", items =>
+            Item(items, "hero")["equipmentSlots"]![0] = "feet");
+        AssertSingleError(badSlot, ContentErrorKind.Validation, "balance/hero.json", "$.items[0].equipmentSlots[0]");
+
+        ContentLoadResult dupSlot = LoadWith("balance/hero.json", items =>
+            Item(items, "hero")["equipmentSlots"]![1] = "head");
+        AssertSingleError(dupSlot, ContentErrorKind.Validation, "balance/hero.json", "$.items[0].equipmentSlots[1]");
+
+        ContentLoadResult slowSprint = LoadWith("balance/hero.json", items => Item(items, "hero")["sprintPermille"] = 999);
+        AssertSingleError(slowSprint, ContentErrorKind.Validation, "balance/hero.json", "$.items[0].sprintPermille");
+
+        ContentLoadResult noStep = LoadWith("balance/hero.json", items => Item(items, "hero")["stepTicks"] = 0);
+        AssertSingleError(noStep, ContentErrorKind.Validation, "balance/hero.json", "$.items[0].stepTicks");
+    }
+
+    [Fact]
+    [Trait("Req", "FR-BUILD-06")]
+    public void MoveTicksMustBePositiveAndRotatableIsRequired()
+    {
+        ContentLoadResult zero = LoadWith("buildings/buildings.json", items =>
+            Item(items, "house")["levels"]![0]!["moveTicks"] = 0);
+        AssertSingleError(zero, ContentErrorKind.Validation, "buildings/buildings.json", "$.items[1].levels[0].moveTicks");
+
+        ContentLoadResult missing = LoadWith("buildings/buildings.json", items =>
+            Item(items, "house").AsObject().Remove("rotatable"));
+        Assert.Null(missing.Catalog);
+        Assert.Contains(missing.Errors, e => e.Kind == ContentErrorKind.Parse && e.Message.Contains("rotatable", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

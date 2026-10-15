@@ -1,0 +1,11 @@
+{
+  "$schema": "../schema/construction.schema.json",
+  "items": [
+    {
+      "id": "construction",
+      "provisional": true,
+      "demolishRefundPermille": 750,
+      "cancelRefundPermille": 1000
+    }
+  ]
+}

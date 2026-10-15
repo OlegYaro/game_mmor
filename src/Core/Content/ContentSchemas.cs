@@ -26,6 +26,8 @@ public static class ContentCategories
     [
         new("balance", "fog.schema.json", ContentJsonContext.Default.FogBalanceFile, "fog.json"),
         new("balance", "saves.schema.json", ContentJsonContext.Default.SaveBalanceFile, "saves.json"),
+        new("balance", "hero.schema.json", ContentJsonContext.Default.HeroBalanceFile, "hero.json"),
+        new("balance", "construction.schema.json", ContentJsonContext.Default.ConstructionBalanceFile, "construction.json"),
         new("balance", "relations.schema.json", ContentJsonContext.Default.RelationModifierFile, "relations.json"),
         new("balance", "balance.schema.json", ContentJsonContext.Default.TimeBalanceFile),
         new("buildings", "buildings.schema.json", ContentJsonContext.Default.BuildingFile),

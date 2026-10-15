@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HeroBalanceFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "provisional": {
+            "type": "boolean",
+            "description": "True while the numbers are placeholders; balance is tuned in the M2 plan (docs/MVP.md)."
+          },
+          "attack": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "defense": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "spellPower": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "knowledge": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "health": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "stamina": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "stepTicks": {
+            "type": "integer",
+            "description": "Ticks per tile at walking speed. 3 ticks at 10 Hz is about 3.3 tiles per second, a comfortable pace on the small 32x16 tile grid.",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "sprintPermille": {
+            "type": "integer",
+            "minimum": 1000,
+            "maximum": 10000
+          },
+          "sprintStaminaDrain": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "staminaRegen": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "interactionRange": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "gathering": {
+            "type": "array",
+            "items": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "pattern": "^(tree|rock|berry_bush)$"
+                },
+                "item": {
+                  "type": "string",
+                  "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+                },
+                "ticksPerAction": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                "yieldPerAction": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                }
+              },
+              "required": [
+                "source",
+                "item",
+                "ticksPerAction",
+                "yieldPerAction"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "backpackStacks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "equipmentSlots": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": "Slot names; each of head, body, hands, legs, weapon, shield, ring1, ring2 and amulet at most once."
+          },
+          "startItems": {
+            "type": "array",
+            "items": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "item": {
+                  "type": "string",
+                  "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                }
+              },
+              "required": [
+                "item",
+                "count"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "provisional",
+          "attack",
+          "defense",
+          "spellPower",
+          "knowledge",
+          "health",
+          "stamina",
+          "stepTicks",
+          "sprintPermille",
+          "sprintStaminaDrain",
+          "staminaRegen",
+          "interactionRange",
+          "gathering",
+          "backpackStacks",
+          "equipmentSlots",
+          "startItems"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}
