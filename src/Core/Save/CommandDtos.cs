@@ -19,6 +19,10 @@ namespace Core.Save;
 [JsonDerivedType(typeof(SpawnMarkerCommandDto), SpawnMarkerCommand.KindName)]
 [JsonDerivedType(typeof(DestroyEntityCommandDto), DestroyEntityCommand.KindName)]
 [JsonDerivedType(typeof(RevealAllCommandDto), RevealAllCommand.KindName)]
+[JsonDerivedType(typeof(MoveHeroCommandDto), MoveHeroCommand.KindName)]
+[JsonDerivedType(typeof(GatherCommandDto), GatherCommand.KindName)]
+[JsonDerivedType(typeof(StopHeroCommandDto), StopHeroCommand.KindName)]
+[JsonDerivedType(typeof(GiveItemCommandDto), GiveItemCommand.KindName)]
 public abstract record CommandDto
 {
     /// <summary>JSON name of the discriminator property.</summary>
@@ -38,6 +42,10 @@ public abstract record CommandDto
             SpawnMarkerCommand c => new SpawnMarkerCommandDto(c.Position.X, c.Position.Y),
             DestroyEntityCommand c => new DestroyEntityCommandDto(c.Entity.Index, c.Entity.Generation),
             RevealAllCommand => new RevealAllCommandDto(),
+            MoveHeroCommand c => new MoveHeroCommandDto(c.X, c.Y, c.Sprint),
+            GatherCommand c => new GatherCommandDto(c.X, c.Y),
+            StopHeroCommand => new StopHeroCommandDto(),
+            GiveItemCommand c => new GiveItemCommandDto(c.Item, c.Count),
             _ => throw new NotSupportedException($"Command kind '{command.Kind}' ({command.GetType().Name}) has no CommandDto."),
         };
     }
@@ -66,4 +74,39 @@ public sealed record RevealAllCommandDto : CommandDto
 {
     /// <inheritdoc />
     public override ISimCommand ToCommand() => new RevealAllCommand();
+}
+
+/// <summary>DTO of <see cref="MoveHeroCommand"/>.</summary>
+/// <param name="X">Tile column.</param>
+/// <param name="Y">Tile row.</param>
+/// <param name="Sprint">Sprint while stamina lasts.</param>
+public sealed record MoveHeroCommandDto(int X, int Y, bool Sprint) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new MoveHeroCommand(X, Y, Sprint);
+}
+
+/// <summary>DTO of <see cref="GatherCommand"/>.</summary>
+/// <param name="X">Tile column of the node.</param>
+/// <param name="Y">Tile row of the node.</param>
+public sealed record GatherCommandDto(int X, int Y) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new GatherCommand(X, Y);
+}
+
+/// <summary>DTO of <see cref="StopHeroCommand"/>: no fields, just the kind.</summary>
+public sealed record StopHeroCommandDto : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new StopHeroCommand();
+}
+
+/// <summary>DTO of <see cref="GiveItemCommand"/>.</summary>
+/// <param name="Item">Item definition id.</param>
+/// <param name="Count">Number of items.</param>
+public sealed record GiveItemCommandDto(string Item, int Count) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new GiveItemCommand(Item, Count);
 }

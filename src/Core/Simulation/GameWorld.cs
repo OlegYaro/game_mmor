@@ -3,6 +3,9 @@ using Core.Content;
 using Core.Determinism;
 using Core.Entities;
 using Core.Fog;
+using Core.Heroes;
+using Core.Pathfinding;
+using Core.Tiles;
 using Core.WorldGen;
 
 namespace Core.Sim;
@@ -16,31 +19,51 @@ namespace Core.Sim;
 /// <param name="MapHash"><see cref="WorldMap.ComputeHash"/> of the map.</param>
 /// <param name="ExploredBits">Explored fog layer (<see cref="FogOfWar.ExploredBits"/> layout).</param>
 /// <param name="Revealers">Revealer components in ascending entity index order.</param>
+/// <param name="Heroes">Hero components in ascending entity index order (empty in saves from before M2).</param>
+/// <param name="Inventories">Inventory components in ascending entity index order.</param>
+/// <param name="Movers">Mover components in ascending entity index order.</param>
+/// <param name="Tiles">Tile changes against the generated map (<see cref="TileChanges"/>).</param>
 public sealed record WorldState(
     int MapSize,
     int GeneratorVersion,
     ulong MapHash,
     IReadOnlyList<ulong> ExploredBits,
-    IReadOnlyList<ComponentEntry<Revealer>> Revealers);
+    IReadOnlyList<ComponentEntry<Revealer>> Revealers,
+    IReadOnlyList<ComponentEntry<Hero>> Heroes,
+    IReadOnlyList<ComponentEntry<Inventory>> Inventories,
+    IReadOnlyList<ComponentEntry<Mover>> Movers,
+    TileChangesState Tiles);
 
 /// <summary>
-/// The world of a game simulation (<see cref="Simulation.CreateNewGame"/>): the generated map, the fog of war and the
-/// revealers. Simulations made with the plain constructor (the M0 core, tests) have none.
+/// The world of a game simulation (<see cref="Simulation.CreateNewGame"/>): the generated map, the tile changes, the
+/// fog of war, the revealers and the hero. Simulations made with the plain constructor (the M0 core, tests) have none.
 /// </summary>
 /// <remarks>
-/// Renderer notes: map layers are whole-map spans indexed <c>y * Size + x</c> (<see cref="WorldMap"/>,
-/// <see cref="TerrainMap"/>). The map never changes in M1 (tile diffs come in M2). Fog: <see cref="FogOfWar"/>.
+/// <para>Renderer notes: map layers are whole-map spans indexed <c>y * Size + x</c> (<see cref="WorldMap"/>,
+/// <see cref="TerrainMap"/>). The map itself never changes; what changed since generation (gathered and vanished
+/// nodes, occupied tiles) is in <see cref="Tiles"/>: read resources through <see cref="TileChanges.GetEffectiveResource"/>
+/// and <see cref="TileChanges.GetEffectiveAmount"/>, and redraw chunks whose <see cref="TileChanges.GetChunkVersion"/>
+/// grew. Fog: <see cref="FogOfWar"/>.</para>
+/// <para>Hero: <see cref="HeroEntity"/>, its <see cref="Position"/> (fixed point, updated every tick while walking, so
+/// the game interpolates between two ticks), <see cref="Heroes"/>, <see cref="Inventories"/> and <see cref="Movers"/>
+/// (the planned path). Orders are <see cref="MoveHeroCommand"/>, <see cref="GatherCommand"/> and
+/// <see cref="StopHeroCommand"/> through <see cref="Simulation.Enqueue"/>.</para>
 /// </remarks>
 public sealed class GameWorld
 {
     private readonly List<RevealSource> _sources = [];
+    private Pathfinder? _pathfinder;
 
-    internal GameWorld(WorldMap map, ulong mapHash, ComponentStore<Revealer> revealers)
+    internal GameWorld(WorldMap map, ulong mapHash, EntityWorld entities)
     {
         Map = map;
         MapHash = mapHash;
-        Revealers = revealers;
+        Revealers = entities.AddStore<Revealer>(Simulation.RevealerStoreName);
+        Heroes = entities.AddStore<Hero>(Simulation.HeroStoreName);
+        Inventories = entities.AddStore<Inventory>(Simulation.InventoryStoreName);
+        Movers = entities.AddStore<Mover>(Simulation.MoverStoreName);
         Fog = new FogOfWar(map.Size);
+        Tiles = new TileChanges(map);
     }
 
     /// <summary>The generated map (immutable).</summary>
@@ -57,6 +80,42 @@ public sealed class GameWorld
 
     /// <summary>Revealer components (store <see cref="Simulation.RevealerStoreName"/>).</summary>
     public ComponentStore<Revealer> Revealers { get; }
+
+    /// <summary>Hero components (store <see cref="Simulation.HeroStoreName"/>); exactly one in a game.</summary>
+    public ComponentStore<Hero> Heroes { get; }
+
+    /// <summary>Inventory components (store <see cref="Simulation.InventoryStoreName"/>).</summary>
+    public ComponentStore<Inventory> Inventories { get; }
+
+    /// <summary>Mover components (store <see cref="Simulation.MoverStoreName"/>).</summary>
+    public ComponentStore<Mover> Movers { get; }
+
+    /// <summary>Changes of the tiles against the generated map: resource stocks and occupancy (FR-WORLD-05).</summary>
+    public TileChanges Tiles { get; }
+
+    /// <summary>
+    /// The hero: the entity with the lowest index among those with a <see cref="Hero"/> (the only one in M2), or
+    /// <see cref="EntityId.None"/> when there is none (it was destroyed).
+    /// </summary>
+    public EntityId HeroEntity => Heroes.Count > 0 ? Heroes.Entities[0] : EntityId.None;
+
+    /// <summary>
+    /// Path search over this map with <see cref="Tiles"/> as the blocking layer (occupied tiles are impassable). Built on
+    /// first use (derived state: never saved or hashed).
+    /// </summary>
+    public Pathfinder Pathfinder
+    {
+        get
+        {
+            if (_pathfinder is null)
+            {
+                _pathfinder = new Pathfinder(new PassabilityGrid(Map.Terrain, Tiles));
+                Tiles.AttachPathfinder(_pathfinder);
+            }
+
+            return _pathfinder;
+        }
+    }
 
     /// <summary>
     /// Collects the sight circles of all revealers with a position (ascending entity index) for the current time of

@@ -7,7 +7,7 @@ using Core.WorldGen;
 
 namespace Core.Tests.Sim;
 
-/// <summary>New games: world in the simulation, start marker, fog over time, difficulty (FR-WORLD-01/06/08, FR-SAVE-05).</summary>
+/// <summary>New games: world in the simulation, the hero on the start tile, fog over time, difficulty (FR-WORLD-01/06/08, FR-SAVE-05).</summary>
 public sealed class NewGameTests
 {
     private const int Size = 64;
@@ -56,7 +56,7 @@ public sealed class NewGameTests
 
         Assert.Equal(
             [Simulation.CalendarHashName, Simulation.RngHashName, Simulation.EntitiesHashName, Simulation.ComponentsHashName,
-                Simulation.CommandsHashName, Simulation.GameHashName, Simulation.FogHashName],
+                Simulation.CommandsHashName, Simulation.GameHashName, Simulation.FogHashName, Simulation.TilesHashName],
             a.ComputeHashes().Entries.Select(e => e.Name));
         Assert.NotEqual(a.World.MapHash, NewGame(seed: 0xF07).World!.MapHash);
     }
@@ -81,7 +81,7 @@ public sealed class NewGameTests
     [Fact]
     [Trait("Req", "FR-WORLD-08")]
     [Trait("Req", "FR-WORLD-06")]
-    public void NewGameSpawnsTheStartMarkerAndAppliesInitialFog()
+    public void NewGameSpawnsTheHeroAndAppliesInitialFog()
     {
         Simulation sim = NewGame();
         GameWorld world = sim.World!;
@@ -98,7 +98,14 @@ public sealed class NewGameTests
         int disc = DiscTiles(world, start.X, start.Y, SimTestData.Real.Fog.HeroDay);
         Assert.Equal(new FogCounts(world.Fog.TileCount - disc, 0, disc), world.Fog.CountStates());
         Assert.Equal(FogState.Visible, world.Fog.GetState(start.X, start.Y));
-        Assert.Equal([Simulation.PositionStoreName, Simulation.RevealerStoreName], sim.Entities.Stores.Select(s => s.Name));
+        Assert.Equal(
+            [Simulation.PositionStoreName, Simulation.RevealerStoreName, Simulation.HeroStoreName, Simulation.InventoryStoreName, Simulation.MoverStoreName],
+            sim.Entities.Stores.Select(s => s.Name));
+        Assert.Equal(marker, world.HeroEntity);
+        Assert.Equal(Core.Heroes.Hero.FromBalance(SimTestData.Real.Hero), world.Heroes.Get(marker));
+        Assert.Equal(Core.Heroes.Mover.Idle, world.Movers.Get(marker));
+        Assert.Equal(Core.Heroes.Inventory.Create(SimTestData.Real.Hero), world.Inventories.Get(marker));
+        Assert.Equal(0, world.Tiles.ChangedResourceTiles);
     }
 
     [Fact]

@@ -37,7 +37,7 @@ public static class SaveGame
         string codec = options.Indented ? SaveFormat.CodecJson : SaveFormat.CodecBrotliJson;
         byte[] header = JsonSerializer.SerializeToUtf8Bytes(SaveMapper.ToHeader(state, codec), SaveJsonContext.Default.SaveHeader);
         SaveJsonContext context = options.Indented ? SaveJsonContext.CreateIndented() : SaveJsonContext.Default;
-        byte[] body = JsonSerializer.SerializeToUtf8Bytes(SaveMapper.ToBody(state), context.SaveBodyDto);
+        byte[] body = JsonSerializer.SerializeToUtf8Bytes(SaveMapper.ToBody(state, simulation.Content), context.SaveBodyDto);
 
         using var output = new MemoryStream();
         output.Write(header);
@@ -221,7 +221,7 @@ public static class SaveGame
         // 5. Restore; a game's map is regenerated and must hash to the saved map hash.
         try
         {
-            SimulationState state = SaveMapper.ToState(headerDto, bodyDto);
+            SimulationState state = SaveMapper.ToState(headerDto, bodyDto, content);
             Simulation simulation = Simulation.Restore(content, state, log);
             return new SaveLoadResult(simulation, headerDto, version, null);
         }

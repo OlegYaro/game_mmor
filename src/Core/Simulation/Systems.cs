@@ -53,7 +53,34 @@ internal sealed class CommandSystem : ISimSystem
 }
 
 /// <summary>
-/// Third system: recomputes the visible fog layer from the revealers and the time of day (FR-WORLD-06). Runs after
+/// Third system: walkers advance along their paths and heroes spend or regain stamina (FR-HERO-01). Runs after the
+/// commands, so an order moves the hero in the tick it executes, and before the fog, so sight follows the new position.
+/// Simulations without a world skip it.
+/// </summary>
+internal sealed class MovementSystem : ISimSystem
+{
+    public const string SystemName = "movement";
+
+    public string Name => SystemName;
+
+    public void Update(Simulation sim) => HeroRules.UpdateMovement(sim);
+}
+
+/// <summary>
+/// Fourth system: heroes standing next to their node work on it and fill the backpack (FR-HERO-02, FR-WORLD-05). Runs
+/// after the movement, so gathering starts in the tick the hero arrives. Simulations without a world skip it.
+/// </summary>
+internal sealed class GatherSystem : ISimSystem
+{
+    public const string SystemName = "gather";
+
+    public string Name => SystemName;
+
+    public void Update(Simulation sim) => HeroRules.UpdateGathering(sim);
+}
+
+/// <summary>
+/// Last system: recomputes the visible fog layer from the revealers and the time of day (FR-WORLD-06). Runs after
 /// the commands so circles reflect this tick's spawns and moves; cheap when nothing moved (one list compare).
 /// Simulations without a world skip it.
 /// </summary>

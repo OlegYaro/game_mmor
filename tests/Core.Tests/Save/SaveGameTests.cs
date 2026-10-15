@@ -464,7 +464,12 @@ public sealed class SaveGameTests
         Assert.Equal(0, (int)tree["game"]!["mapSize"]!);
         tree.Remove("game");
         tree.Remove("fog");
-        tree["components"]!.AsObject().Remove("revealer");
+        tree.Remove("tiles");
+        foreach (string store in new[] { "revealer", "hero", "inventory", "mover" })
+        {
+            tree["components"]!.AsObject().Remove(store);
+        }
+
         tree.Remove("commands", out JsonNode? commands);
         commands!.AsObject().Remove("nextSequence", out JsonNode? next);
         commands.AsObject().Add("next", next);

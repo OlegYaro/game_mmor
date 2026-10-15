@@ -24,7 +24,7 @@ public interface ISaveMigration
 public static class SaveMigrations
 {
     /// <summary>All shipped migrations, one per format step (order does not matter; the chain is resolved by version).</summary>
-    public static IReadOnlyList<ISaveMigration> All { get; } = [new SaveMigrationV1ToV2()];
+    public static IReadOnlyList<ISaveMigration> All { get; } = [new SaveMigrationV1ToV2(), new SaveMigrationV2ToV3()];
 }
 
 /// <summary>
@@ -61,6 +61,43 @@ internal sealed class SaveMigrationV1ToV2 : ISaveMigration
         body["fog"] = new JsonObject
         {
             ["exploredRuns"] = new JsonArray(),
+        };
+    }
+}
+
+/// <summary>
+/// v2 → v3 (M2, FR-WORLD-05, FR-HERO-01). Adds empty <c>components.hero</c>, <c>components.inventory</c> and
+/// <c>components.mover</c> stores and an empty <c>tiles = {resources: [], occupancy: []}</c>: v2 games had no hero and
+/// no tile changes. The hero itself needs the content's balance, so it is not created here: on load, the entity with
+/// the hero revealer (the start marker of v2) becomes the hero with default data and an empty inventory
+/// (<c>Simulation.Restore</c>). The header is unchanged. Frozen: never edit after release.
+/// </summary>
+internal sealed class SaveMigrationV2ToV3 : ISaveMigration
+{
+    /// <inheritdoc />
+    public int FromVersion => 2;
+
+    /// <inheritdoc />
+    public void Migrate(JsonObject header, JsonObject body)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        if (body["components"] is not JsonObject components)
+        {
+            throw new InvalidOperationException("v2 body has no 'components' object.");
+        }
+
+        if (body.ContainsKey("tiles") || components.ContainsKey("hero") || components.ContainsKey("inventory") || components.ContainsKey("mover"))
+        {
+            throw new InvalidOperationException("v2 body already has v3 members ('tiles' or 'components.hero', 'inventory', 'mover').");
+        }
+
+        components["hero"] = new JsonArray();
+        components["inventory"] = new JsonArray();
+        components["mover"] = new JsonArray();
+        body["tiles"] = new JsonObject
+        {
+            ["resources"] = new JsonArray(),
+            ["occupancy"] = new JsonArray(),
         };
     }
 }

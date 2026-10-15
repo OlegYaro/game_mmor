@@ -2,6 +2,7 @@ using Core.Determinism;
 using Core.Entities;
 using Core.Sim;
 using Core.Tests.Sim;
+using Core.WorldGen;
 
 namespace Core.Tests.Save;
 
@@ -60,6 +61,50 @@ internal static class SaveTestData
         sim.Step(2);
         sim.Enqueue(new RevealAllCommand());
         sim.Enqueue(new SpawnMarkerCommand(Position.FromTile(1, 1)));
+        return sim;
+    }
+
+    /// <summary>Seed of <see cref="BuildV3Sample"/>; part of the frozen save_v3.sav expectations.</summary>
+    public const ulong V3SampleSeed = 0x5A5E_0003;
+
+    /// <summary>
+    /// Script of the frozen <c>Golden/save_v3.sav</c> (first format with the hero and tile changes): a peaceful 64² game;
+    /// 40 wood and 7 berries given in tick 1; the hero gathers the nearest explored tree until its first yield, a marker
+    /// spawned in tick 1 occupies tile (2, 3), then the hero is sent sprinting 6 tiles away and the save is taken one
+    /// tick into that walk (mid-step), with a pending gather order on the same tree.
+    /// </summary>
+    public static Simulation BuildV3Sample()
+    {
+        Simulation sim = Simulation.CreateNewGame(SimTestData.Real, new NewGameOptions(V3SampleSeed, 64, Difficulty.Peaceful));
+        (int tx, int ty) = Heroes.HeroTestWorld.NearestNode(sim, ResourceKind.Tree);
+        sim.Enqueue(new GiveItemCommand("wood", 40));
+        sim.Enqueue(new GiveItemCommand("berries", 7));
+        sim.Enqueue(new SpawnMarkerCommand(Position.FromTile(2, 3)));
+        sim.Enqueue(new GatherCommand(tx, ty));
+        sim.Step();
+        Assert.True(sim.World!.Tiles.TryOccupy(2, 3, sim.Entities.Registry.AliveEntities().Last()));
+        Heroes.HeroTestWorld.StepUntil(sim, () => sim.World.Tiles.IsResourceChanged(tx, ty));
+        (int mx, int my) = Heroes.HeroTestWorld.StraightTarget(sim, 6);
+        sim.Enqueue(new MoveHeroCommand(mx, my, Sprint: true));
+        sim.Step();
+        sim.Enqueue(new GatherCommand(tx, ty));
+        return sim;
+    }
+
+    /// <summary>
+    /// A new 64² game where the hero walks (sprinting) to a node, gathers from it and is then sent elsewhere; a marker
+    /// occupies a tile. Runs <paramref name="ticks"/> ticks after the orders.
+    /// </summary>
+    public static Simulation BuildHeroGame(int ticks)
+    {
+        Simulation sim = Simulation.CreateNewGame(SimTestData.Real, new NewGameOptions(0x4E50, 64, Difficulty.Normal));
+        (int tx, int ty) = Heroes.HeroTestWorld.NearestNode(sim, ResourceKind.Tree);
+        sim.Enqueue(new GiveItemCommand("stone", 120));
+        sim.Enqueue(new SpawnMarkerCommand(Position.FromTile(4, 4)));
+        sim.Enqueue(new GatherCommand(tx, ty));
+        sim.Step();
+        Assert.True(sim.World!.Tiles.TryOccupy(4, 4, sim.Entities.Registry.AliveEntities().Last()));
+        sim.Step(ticks);
         return sim;
     }
 

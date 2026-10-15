@@ -2,6 +2,7 @@ using Core.Content;
 using Core.Determinism;
 using Core.Entities;
 using Core.Fog;
+using Core.Heroes;
 using Core.Logging;
 using Core.WorldGen;
 
@@ -19,7 +20,7 @@ namespace Core.Sim;
 /// <param name="NextCommandSequence">Sequence number the next enqueued command gets.</param>
 /// <param name="PendingCommands">Commands waiting to run, in execution order.</param>
 /// <param name="Difficulty">Difficulty; always <see cref="Difficulty.Normal"/> without a world.</param>
-/// <param name="World">The world part (map identity, explored fog, revealers), or null for a simulation without a world.</param>
+/// <param name="World">The world part (map identity, explored fog, revealers, hero, tile changes), or null for a simulation without a world.</param>
 public sealed record SimulationState(
     ulong Seed,
     long Tick,
@@ -36,9 +37,10 @@ public sealed record SimulationState(
 /// and log. <see cref="Step"/> runs one 10 Hz tick through a fixed, ordered list of systems.
 /// </summary>
 /// <remarks>
-/// <para>Two kinds exist. A game (<see cref="CreateNewGame"/>) has a <see cref="World"/>: generated map, fog of war,
-/// revealers and a difficulty; it adds the <c>game</c> and <c>fog</c> hash subsystems and the <c>revealer</c> store. A
-/// core simulation (the constructor; M0 tests and replays) has no world and keeps exactly the M0 state layout.</para>
+/// <para>Two kinds exist. A game (<see cref="CreateNewGame"/>) has a <see cref="World"/>: generated map, tile changes,
+/// fog of war, revealers, the hero and a difficulty; it adds the <c>game</c>, <c>fog</c> and <c>tiles</c> hash
+/// subsystems and the <c>revealer</c>, <c>hero</c>, <c>inventory</c> and <c>mover</c> stores. A core simulation (the
+/// constructor; M0 tests and replays) has no world and keeps exactly the M0 state layout.</para>
 /// <para><see cref="Tick"/> is the number of the last executed tick; it is 0 before the first <see cref="Step"/>.
 /// <see cref="Step"/> first increments it, then runs the systems for the new value.</para>
 /// <para>The host changes state only through <see cref="Enqueue"/>. Systems and commands make structural entity
@@ -67,11 +69,23 @@ public sealed class Simulation : IStateHashable
     /// <summary>Hash subsystem (games only): fog of war layers.</summary>
     public const string FogHashName = "fog";
 
+    /// <summary>Hash subsystem (games only): tile changes against the generated map.</summary>
+    public const string TilesHashName = "tiles";
+
     /// <summary>Name of the <see cref="Position"/> store.</summary>
     public const string PositionStoreName = "position";
 
     /// <summary>Name of the <see cref="Revealer"/> store (games only; registered after <see cref="PositionStoreName"/>).</summary>
     public const string RevealerStoreName = "revealer";
+
+    /// <summary>Name of the <see cref="Hero"/> store (games only; registered after <see cref="RevealerStoreName"/>).</summary>
+    public const string HeroStoreName = "hero";
+
+    /// <summary>Name of the <see cref="Inventory"/> store (games only; registered after <see cref="HeroStoreName"/>).</summary>
+    public const string InventoryStoreName = "inventory";
+
+    /// <summary>Name of the <see cref="Mover"/> store (games only; registered after <see cref="InventoryStoreName"/>).</summary>
+    public const string MoverStoreName = "mover";
 
     private const string EcbCategory = "ecb";
 
@@ -114,7 +128,7 @@ public sealed class Simulation : IStateHashable
         Difficulty = difficulty;
         if (map is not null)
         {
-            World = new GameWorld(map, mapHash, Entities.AddStore<Revealer>(RevealerStoreName));
+            World = new GameWorld(map, mapHash, Entities);
         }
 
         _systems = systems.ToArray();
@@ -142,7 +156,7 @@ public sealed class Simulation : IStateHashable
     /// <summary>Position components.</summary>
     public ComponentStore<Position> Positions { get; }
 
-    /// <summary>The world (map, fog, revealers) of a game; null for a core simulation.</summary>
+    /// <summary>The world (map, tile changes, fog, revealers, hero) of a game; null for a core simulation.</summary>
     public GameWorld? World { get; }
 
     /// <summary>Difficulty chosen at new game (FR-SAVE-05); <see cref="Difficulty.Normal"/> without a world.</summary>
@@ -175,6 +189,8 @@ public sealed class Simulation : IStateHashable
     /// <summary>
     /// Restores a simulation from <see cref="CaptureState"/> output (the save code maps its DTOs to this). A game's
     /// map is regenerated from the seed and must hash to <see cref="WorldState.MapHash"/>; the visible fog is recomputed.
+    /// A game state without a hero (saves from before M2) gets one: the entity with the hero revealer becomes the hero
+    /// with the balance defaults, an empty inventory and an idle mover.
     /// </summary>
     /// <exception cref="ArgumentException">The state is inconsistent.</exception>
     /// <exception cref="WorldGenMismatchException">The regenerated map differs from the saved one.</exception>
@@ -245,6 +261,7 @@ public sealed class Simulation : IStateHashable
             }
 
             sim.World.Fog.LoadExplored(state.World.ExploredBits);
+            HeroRules.Restore(sim, state.World);
         }
 
         long previousTick = state.Tick + 1;
@@ -272,9 +289,10 @@ public sealed class Simulation : IStateHashable
     }
 
     /// <summary>
-    /// Starts a new game (FR-SAVE-05, FR-WORLD-01/08): generates the world from the seed and size, spawns the start
-    /// marker (a <see cref="RevealerKind.Hero"/> revealer until the hero exists, M2) on the start tile and applies the
-    /// initial fog. The simulation is at tick 0 with an empty command queue, ready for a replay recorder.
+    /// Starts a new game (FR-SAVE-05, FR-WORLD-01/08, FR-HERO-01): generates the world from the seed and size, spawns
+    /// the hero on the start tile (position, <see cref="RevealerKind.Hero"/> revealer, <see cref="Hero"/> from the
+    /// balance, an <see cref="Inventory"/> holding the balance's start items and an idle <see cref="Mover"/>) and applies
+    /// the initial fog. The simulation is at tick 0 with an empty command queue, ready for a replay recorder.
     /// </summary>
     /// <exception cref="ArgumentException">Invalid options.</exception>
     public static Simulation CreateNewGame(ContentCatalog content, NewGameOptions options, SimLog? log = null)
@@ -287,9 +305,10 @@ public sealed class Simulation : IStateHashable
             options.Difficulty, map, map.ComputeHash());
         GameWorld world = sim.World!;
 
-        EntityId marker = sim.Entities.Create();
-        sim.Positions.Add(marker, TileCenter(map.Start.X, map.Start.Y));
-        world.Revealers.Add(marker, new Revealer(RevealerKind.Hero));
+        EntityId hero = sim.Entities.Create();
+        sim.Positions.Add(hero, TileCenter(map.Start.X, map.Start.Y));
+        world.Revealers.Add(hero, new Revealer(RevealerKind.Hero));
+        HeroRules.AddHero(sim, hero, withStartItems: true);
         sim.RefreshFog();
 
         sim.Log.Write(0, LogLevel.Info, "world", "New game: seed {seed}, map {size}, difficulty {difficulty}, start {x},{y}",
@@ -326,7 +345,8 @@ public sealed class Simulation : IStateHashable
             Difficulty,
             World is null
                 ? null
-                : new WorldState(World.Size, World.Map.Version, World.MapHash, World.Fog.CopyExplored(), World.Revealers.GetEntries()));
+                : new WorldState(World.Size, World.Map.Version, World.MapHash, World.Fog.CopyExplored(), World.Revealers.GetEntries(),
+                    World.Heroes.GetEntries(), World.Inventories.GetEntries(), World.Movers.GetEntries(), World.Tiles.CaptureState()));
     }
 
     /// <summary>Queues a command for tick <c><see cref="Tick"/> + 1</c> (also when called from inside a step).</summary>
@@ -384,7 +404,7 @@ public sealed class Simulation : IStateHashable
 
     /// <summary>
     /// Hashes of each subsystem in fixed order: calendar, rng, entities, components, commands, and for a game also
-    /// game (difficulty, map identity) and fog. The log is excluded (see <see cref="SimLog"/>).
+    /// game (difficulty, map identity), fog and tiles. The log is excluded (see <see cref="SimLog"/>).
     /// </summary>
     public SubsystemHashes ComputeHashes() => World is null
         ? _hasher.HashSubsystems(
@@ -400,7 +420,8 @@ public sealed class Simulation : IStateHashable
             (ComponentsHashName, _componentState),
             (CommandsHashName, _commandState),
             (GameHashName, _gameState),
-            (FogHashName, World.Fog));
+            (FogHashName, World.Fog),
+            (TilesHashName, World.Tiles));
 
     /// <summary>Writes the full canonical state: each subsystem of <see cref="ComputeHashes"/>, in the same order.</summary>
     public void WriteState(StateWriter writer)
@@ -415,6 +436,7 @@ public sealed class Simulation : IStateHashable
         {
             WriteGameState(writer);
             World.Fog.WriteState(writer);
+            World.Tiles.WriteState(writer);
         }
     }
 
@@ -454,6 +476,8 @@ public sealed class Simulation : IStateHashable
     [
         new ClockSystem(),
         new CommandSystem(),
+        new MovementSystem(),
+        new GatherSystem(),
         new FogSystem(),
     ];
 

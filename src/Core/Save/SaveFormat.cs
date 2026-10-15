@@ -16,9 +16,10 @@ public static class SaveFormat
     /// <remarks>
     /// v1 (M0): simulation core only. v2 (M1): adds <c>game</c> (difficulty, map size, map hash), <c>fog</c> (explored
     /// runs) and the <c>revealer</c> component store; <see cref="SaveMigrations"/> brings v1 files up to v2 as games
-    /// without a world.
+    /// without a world. v3 (M2): adds <c>tiles</c> (tile changes) and the <c>hero</c>, <c>inventory</c> and
+    /// <c>mover</c> stores; v2 files get empty ones, and their hero revealer becomes the hero on load.
     /// </remarks>
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
 
     /// <summary>
     /// Version of the world generator the save's seed must be fed to (ADR 0006), written into every new header. It is

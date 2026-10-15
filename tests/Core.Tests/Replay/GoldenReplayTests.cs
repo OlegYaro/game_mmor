@@ -187,7 +187,7 @@ public sealed class GoldenReplayTests(ITestOutputHelper output)
         Assert.True(golden.Expected.TryGet(golden.Replay.EndTick, out SubsystemHashes last));
         Assert.Equal(
             [Simulation.CalendarHashName, Simulation.RngHashName, Simulation.EntitiesHashName, Simulation.ComponentsHashName,
-                Simulation.CommandsHashName, Simulation.GameHashName, Simulation.FogHashName],
+                Simulation.CommandsHashName, Simulation.GameHashName, Simulation.FogHashName, Simulation.TilesHashName],
             last.Entries.Select(e => e.Name));
 
         ReplayPlayer first = ReplayPlayer.Start(golden.Replay, SimTestData.Real);

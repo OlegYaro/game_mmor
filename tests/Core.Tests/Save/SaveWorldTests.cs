@@ -80,8 +80,15 @@ public sealed class SaveWorldTests
         JsonObject body = Body(bytes);
 
         Assert.Equal(
-            ["tick", "rng", "entities", "components", "commands", "game", "fog"],
+            ["tick", "rng", "entities", "components", "commands", "game", "fog", "tiles"],
             body.Select(p => p.Key));
+        Assert.Equal(["position", "revealer", "hero", "inventory", "mover"], body["components"]!.AsObject().Select(p => p.Key));
+        Assert.Equal(0, (int)body["components"]!["hero"]![0]!["index"]!);
+        Assert.Equal("idle", (string?)body["components"]!["hero"]![0]!["activity"]);
+        Assert.Equal(SimTestData.Real.Hero.BackpackStacks, (int)body["components"]!["inventory"]![0]!["backpackSize"]!);
+        Assert.Empty(body["components"]!["mover"]![0]!["path"]!.AsArray());
+        Assert.Empty(body["tiles"]!["resources"]!.AsArray());
+        Assert.Empty(body["tiles"]!["occupancy"]!.AsArray());
         Assert.Equal("hard", (string?)body["game"]!["difficulty"]);
         Assert.Equal(64, (int)body["game"]!["mapSize"]!);
         Assert.Equal(sim.World!.MapHash, (ulong)body["game"]!["mapHash"]!);

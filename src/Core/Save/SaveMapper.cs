@@ -1,7 +1,10 @@
+using Core.Content;
 using Core.Determinism;
 using Core.Entities;
 using Core.Fog;
+using Core.Heroes;
 using Core.Sim;
+using Core.Tiles;
 
 namespace Core.Save;
 
@@ -24,16 +27,32 @@ internal static class SaveMapper
     /// </summary>
     public static readonly IReadOnlyList<string> RevealerKindNames = ["none", "hero", "villager", "tower"];
 
+    /// <summary>Stable save names of <see cref="HeroActivity"/>, indexed by value. Append only.</summary>
+    public static readonly IReadOnlyList<string> HeroActivityNames = ["idle", "walking", "gathering"];
+
+    /// <summary>Stable save names of <see cref="HeroStopReason"/>, indexed by value. Append only.</summary>
+    public static readonly IReadOnlyList<string> HeroStopReasonNames =
+        ["none", "arrived", "stopped", "path_blocked", "backpack_full", "depleted", "no_resource"];
+
+    /// <summary>Stable save names of <see cref="HeroOrderResult"/>, indexed by value. Append only.</summary>
+    public static readonly IReadOnlyList<string> HeroOrderResultNames =
+        ["none", "accepted", "outside_map", "unexplored", "impassable", "unreachable", "no_resource"];
+
     /// <summary>Header of a state: the world's generator version for a game, the running generator's otherwise.</summary>
     public static SaveHeader ToHeader(SimulationState state, string codec) =>
         new(SaveFormat.CurrentVersion, GameVersion, state.World?.GeneratorVersion ?? SaveFormat.WorldGenVersion, state.Seed, codec);
 
+    /// <summary>Largest inventory size a save may declare (a corrupt-file guard, far above any balance value).</summary>
+    private const int MaxInventorySlots = 4096;
+
     /// <summary>Version of this build as written into headers.</summary>
     public static string GameVersion => CoreInfo.Version.ToString(3);
 
-    public static SaveBodyDto ToBody(SimulationState state)
+    /// <summary>Builds the body of a state; <paramref name="content"/> names the items (saves hold string ids).</summary>
+    public static SaveBodyDto ToBody(SimulationState state, ContentCatalog content)
     {
         ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(content);
         if (state.RngStates.Count != RngStreamNames.Count)
         {
             throw new InvalidOperationException($"State has {state.RngStates.Count} RNG streams, the save format names {RngStreamNames.Count}.");
@@ -60,23 +79,57 @@ internal static class SaveMapper
             : world.Revealers.Select(e => new RevealerEntryDto(e.Entity.Index, e.Entity.Generation, RevealerKindName(e.Value.Kind))).ToArray();
         int tileCount = world is null ? 0 : world.MapSize * world.MapSize;
         int[] exploredRuns = world is null ? [] : FogRunLength.Encode(world.ExploredBits.ToArray(), tileCount);
+        HeroEntryDto[] heroes = world is null ? [] : world.Heroes.Select(ToDto).ToArray();
+        InventoryEntryDto[] inventories = world is null ? [] : world.Inventories.Select(e => ToDto(e, content)).ToArray();
+        MoverEntryDto[] movers = world is null ? [] : world.Movers
+            .Select(e => new MoverEntryDto(e.Entity.Index, e.Entity.Generation, e.Value.Goal, e.Value.GoalRange, e.Value.Path.ToArray(),
+                e.Value.StepIndex, e.Value.StepProgress, e.Value.Sprint))
+            .ToArray();
 
         return new SaveBodyDto(
             state.Tick,
             rng,
             new EntitiesDto(state.Entities.Generations.ToArray(), state.Entities.Alive.ToArray()),
-            new ComponentsDto(positions, revealers),
+            new ComponentsDto(positions, revealers, heroes, inventories, movers),
             new CommandQueueDto(state.NextCommandSequence, pending),
             new GameDto(DifficultyNames.ToName(state.Difficulty), world?.MapSize ?? 0, world?.MapHash ?? 0),
-            new FogDto(exploredRuns));
+            new FogDto(exploredRuns),
+            ToDto(world?.Tiles ?? TileChangesState.Empty));
     }
 
-    /// <summary>Builds the simulation state from a parsed header and body.</summary>
-    /// <exception cref="InvalidDataException">The body is structurally invalid (null entries, unknown or missing RNG streams).</exception>
-    public static SimulationState ToState(SaveHeader header, SaveBodyDto body)
+    private static HeroEntryDto ToDto(ComponentEntry<Hero> entry)
+    {
+        Hero h = entry.Value;
+        return new HeroEntryDto(entry.Entity.Index, entry.Entity.Generation, h.Attack, h.Defense, h.SpellPower, h.Knowledge, h.Health, h.Stamina,
+            NameOf(HeroActivityNames, (int)h.Activity, "hero activity"), h.TargetX, h.TargetY, h.ActionTicks,
+            NameOf(HeroStopReasonNames, (int)h.LastStop, "hero stop reason"), NameOf(HeroOrderResultNames, (int)h.LastOrder, "hero order result"));
+    }
+
+    private static InventoryEntryDto ToDto(ComponentEntry<Inventory> entry, ContentCatalog content)
+    {
+        static ItemSlotDto[] Slots(IReadOnlyList<ItemSlot> slots, ContentCatalog content) => slots
+            .Select((slot, i) => (slot, i))
+            .Where(p => !p.slot.IsEmpty)
+            .Select(p => new ItemSlotDto(p.i, content.Get(p.slot.Item).Id, p.slot.Count))
+            .ToArray();
+
+        Inventory inventory = entry.Value;
+        return new InventoryEntryDto(entry.Entity.Index, entry.Entity.Generation, inventory.Backpack.Count, Slots(inventory.Backpack, content),
+            inventory.Equipment.Count, Slots(inventory.Equipment, content));
+    }
+
+    private static TilesDto ToDto(TileChangesState tiles) => new(
+        tiles.Resources.Select(c => new ResourceChunkDto(c.ChunkX, c.ChunkY, c.Mask.ToArray(), c.Amounts.ToArray())).ToArray(),
+        tiles.Occupancy.Select(c => new OccupancyChunkDto(c.ChunkX, c.ChunkY, c.Mask.ToArray(),
+            c.Owners.Select(o => o.Index).ToArray(), c.Owners.Select(o => o.Generation).ToArray())).ToArray());
+
+    /// <summary>Builds the simulation state from a parsed header and body; <paramref name="content"/> resolves the item ids.</summary>
+    /// <exception cref="InvalidDataException">The body is structurally invalid (null entries, unknown names, items or RNG streams).</exception>
+    public static SimulationState ToState(SaveHeader header, SaveBodyDto body, ContentCatalog content)
     {
         ArgumentNullException.ThrowIfNull(header);
         ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(content);
 
         var rng = new Xoshiro256State[RngStreamNames.Count];
         var seen = new bool[rng.Length];
@@ -134,17 +187,19 @@ internal static class SaveMapper
             body.Commands.NextSequence,
             pending,
             difficulty,
-            ToWorld(header, body));
+            ToWorld(header, body, content));
     }
 
-    private static WorldState? ToWorld(SaveHeader header, SaveBodyDto body)
+    private static WorldState? ToWorld(SaveHeader header, SaveBodyDto body, ContentCatalog content)
     {
         int size = body.Game.MapSize;
+        ComponentsDto components = body.Components;
         if (size == 0)
         {
-            if (body.Game.MapHash != 0 || body.Fog.ExploredRuns.Count != 0 || body.Components.Revealer.Count != 0)
+            if (body.Game.MapHash != 0 || body.Fog.ExploredRuns.Count != 0 || components.Revealer.Count != 0 || components.Hero.Count != 0
+                || components.Inventory.Count != 0 || components.Mover.Count != 0 || body.Tiles.Resources.Count != 0 || body.Tiles.Occupancy.Count != 0)
             {
-                throw new InvalidDataException("A save without a world (mapSize 0) must have mapHash 0, no fog runs and no revealers.");
+                throw new InvalidDataException("A save without a world (mapSize 0) must have mapHash 0, no fog runs, revealers, hero components or tile changes.");
             }
 
             return null;
@@ -170,7 +225,99 @@ internal static class SaveMapper
         }
 
         ulong[] explored = FogRunLength.Decode(body.Fog.ExploredRuns, size * size);
-        return new WorldState(size, header.WorldGenVersion, body.Game.MapHash, explored, revealers);
+        return new WorldState(size, header.WorldGenVersion, body.Game.MapHash, explored, revealers,
+            components.Hero.Select(ToHero).ToArray(),
+            components.Inventory.Select(i => ToInventory(i, content)).ToArray(),
+            components.Mover.Select(ToMover).ToArray(),
+            ToTiles(body.Tiles));
+    }
+
+    private static ComponentEntry<Hero> ToHero(HeroEntryDto? h)
+    {
+        NotNull(h, "hero entry");
+        return new ComponentEntry<Hero>(new EntityId(h.Index, h.Generation), new Hero(h.Attack, h.Defense, h.SpellPower, h.Knowledge, h.Health, h.Stamina,
+            (HeroActivity)ValueOf(HeroActivityNames, h.Activity, "hero activity"), h.TargetX, h.TargetY, h.ActionTicks,
+            (HeroStopReason)ValueOf(HeroStopReasonNames, h.LastStop, "hero stop reason"),
+            (HeroOrderResult)ValueOf(HeroOrderResultNames, h.LastOrder, "hero order result")));
+    }
+
+    private static ComponentEntry<Inventory> ToInventory(InventoryEntryDto? dto, ContentCatalog content)
+    {
+        NotNull(dto, "inventory entry");
+        return new ComponentEntry<Inventory>(new EntityId(dto.Index, dto.Generation),
+            new Inventory(ToSlots(dto.BackpackSize, dto.Backpack, content), ToSlots(dto.EquipmentSize, dto.Equipment, content)));
+    }
+
+    private static ItemSlot[] ToSlots(int size, IReadOnlyList<ItemSlotDto> saved, ContentCatalog content)
+    {
+        if (size < 0 || size > MaxInventorySlots)
+        {
+            throw new InvalidDataException($"Inventory size {size} is out of range.");
+        }
+
+        var slots = new ItemSlot[size];
+        int previous = -1;
+        foreach (ItemSlotDto? slot in saved)
+        {
+            NotNull(slot, "inventory slot");
+            if (slot.Slot <= previous || slot.Slot >= size || slot.Count <= 0)
+            {
+                throw new InvalidDataException($"Inventory slot {slot.Slot} ({slot.Count} {slot.Item}) is out of order, out of range or empty.");
+            }
+
+            if (!content.TryGetId(slot.Item, out DefId item) || content.Get(item) is not ItemDef)
+            {
+                throw new InvalidDataException($"Unknown item '{slot.Item}'.");
+            }
+
+            previous = slot.Slot;
+            slots[slot.Slot] = new ItemSlot(item, slot.Count);
+        }
+
+        return slots;
+    }
+
+    private static ComponentEntry<Mover> ToMover(MoverEntryDto? m)
+    {
+        NotNull(m, "mover entry");
+        return new ComponentEntry<Mover>(new EntityId(m.Index, m.Generation),
+            new Mover(m.Goal, m.GoalRange, m.Path.ToArray(), m.StepIndex, m.StepProgress, m.Sprint));
+    }
+
+    private static TileChangesState ToTiles(TilesDto tiles)
+    {
+        var resources = new ResourceChunkState[tiles.Resources.Count];
+        for (int i = 0; i < resources.Length; i++)
+        {
+            ResourceChunkDto? c = tiles.Resources[i];
+            NotNull(c, "resource chunk");
+            resources[i] = new ResourceChunkState(c.X, c.Y, c.Mask.ToArray(), c.Amounts.ToArray());
+        }
+
+        var occupancy = new OccupancyChunkState[tiles.Occupancy.Count];
+        for (int i = 0; i < occupancy.Length; i++)
+        {
+            OccupancyChunkDto? c = tiles.Occupancy[i];
+            NotNull(c, "occupancy chunk");
+            if (c.OwnerIndices.Count != c.OwnerGenerations.Count)
+            {
+                throw new InvalidDataException("An occupancy chunk has different numbers of owner indices and generations.");
+            }
+
+            occupancy[i] = new OccupancyChunkState(c.X, c.Y, c.Mask.ToArray(),
+                c.OwnerIndices.Zip(c.OwnerGenerations, (index, generation) => new EntityId(index, generation)).ToArray());
+        }
+
+        return new TileChangesState(resources, occupancy);
+    }
+
+    private static string NameOf(IReadOnlyList<string> names, int value, string what) =>
+        (uint)value < (uint)names.Count ? names[value] : throw new InvalidOperationException($"The {what} {value} has no save name.");
+
+    private static int ValueOf(IReadOnlyList<string> names, string name, string what)
+    {
+        int value = IndexOf(names, name);
+        return value >= 0 ? value : throw new InvalidDataException($"Unknown {what} '{name}'.");
     }
 
     private static string RevealerKindName(RevealerKind kind) =>
