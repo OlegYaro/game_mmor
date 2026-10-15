@@ -7,12 +7,15 @@ namespace Game.World;
 
 /// <summary>One cell of a placeholder art atlas (<c>data/art/atlas.json</c>, ADR 0010).</summary>
 /// <param name="Id">Art id, e.g. <c>meadow_h2_v1</c> or <c>tree</c>.</param>
-/// <param name="Atlas">Atlas id (<c>tiles</c> or <c>objects</c>).</param>
-/// <param name="Kind"><c>tile</c> or <c>object</c>.</param>
+/// <param name="Atlas">Atlas id (<c>tiles</c>, <c>objects</c> or <c>buildings</c>).</param>
+/// <param name="Kind"><c>tile</c>, <c>object</c> or <c>building</c>.</param>
 /// <param name="Region">Pixel rectangle in the atlas image.</param>
-/// <param name="Origin">Pixel inside <paramref name="Region"/> that sits on the tile's ground centre.</param>
+/// <param name="Origin">
+/// Pixel inside <paramref name="Region"/> that sits on the tile's ground centre. For <c>building</c> cells it is the bottom corner
+/// of the footprint diamond (frame width / 2, frame height - 1).
+/// </param>
 /// <param name="Height">Height step the art is drawn for.</param>
-/// <param name="Variant">Variant number.</param>
+/// <param name="Variant">Variant number; for <c>building</c> cells the construction stage 0..3.</param>
 public sealed record AtlasCell(string Id, string Atlas, string Kind, Rect2I Region, Vector2I Origin, int Height, int Variant);
 
 /// <summary>One atlas image of the table.</summary>
@@ -56,6 +59,10 @@ public sealed class AtlasTable
 
     /// <summary>Looks a cell up by art id.</summary>
     public bool TryGet(string id, out AtlasCell cell) => _cells.TryGetValue(id, out cell!);
+
+    /// <summary>Looks a building frame up: <paramref name="level"/> is 1-based, <paramref name="stage"/> 0 (marking), 1 (planks), 2 (scaffolding) or 3 (finished).</summary>
+    public bool TryGetBuildingFrame(string building, int level, int stage, out AtlasCell cell) =>
+        TryGet($"{building}_l{level}_s{stage}", out cell) && cell.Kind == "building";
 
     /// <summary>Reads the table from the content data folder (<see cref="GodotContentSource.ResolveDataRoot"/>).</summary>
     public static bool TryLoad(out AtlasTable table, out string error)

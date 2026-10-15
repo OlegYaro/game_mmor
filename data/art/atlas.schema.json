@@ -34,15 +34,15 @@
         "properties": {
           "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
           "atlas": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-          "kind": { "enum": ["tile", "object"] },
+          "kind": { "enum": ["tile", "object", "building"] },
           "x": { "type": "integer", "minimum": 0 },
           "y": { "type": "integer", "minimum": 0 },
           "w": { "type": "integer", "minimum": 1 },
           "h": { "type": "integer", "minimum": 1 },
-          "originX": { "type": "integer", "minimum": 0 },
-          "originY": { "type": "integer", "minimum": 0 },
+          "originX": { "type": "integer", "minimum": 0, "description": "Cell pixel on the ground diamond centre; for kind building: x of the bottom corner of the footprint diamond (frame width / 2)." },
+          "originY": { "type": "integer", "minimum": 0, "description": "Cell pixel on the ground diamond centre; for kind building: y of the bottom corner of the footprint diamond (frame height - 1)." },
           "height": { "type": "integer", "minimum": 0, "maximum": 3 },
-          "variant": { "type": "integer", "minimum": 0 }
+          "variant": { "type": "integer", "minimum": 0, "description": "Colour variant of a tile; for kind building: construction stage 0..3 (marking, planks, scaffolding, finished)." }
         }
       }
     }
