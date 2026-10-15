@@ -40,7 +40,7 @@ public sealed class DevConsoleWorldTests
         ConsoleResult result = Console(sim).Execute("world");
 
         Assert.True(result.Success, result.Text);
-        Assert.StartsWith("seed 3846 | size 64x64 | generator v1 | difficulty hard", result.Lines[0], StringComparison.Ordinal);
+        Assert.StartsWith("seed 3846 | size 64x64 | generator v2 | difficulty hard", result.Lines[0], StringComparison.Ordinal);
         Assert.StartsWith($"start {sim.World!.Map.Start.X},{sim.World.Map.Start.Y}", result.Lines[1], StringComparison.Ordinal);
         Assert.StartsWith($"points of interest {sim.World.Map.PointsOfInterest.Count}: chest ", result.Lines[2], StringComparison.Ordinal);
         Assert.StartsWith($"settlement sites {sim.World.Map.SettlementSites.Count}: human ", result.Lines[3], StringComparison.Ordinal);

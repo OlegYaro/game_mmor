@@ -5,7 +5,7 @@ namespace Core.WorldGen.Placement;
 
 /// <summary>
 /// ADR 0006 step 8: reserved settlement sites (FR-WORLD-09). A clearing is a centre tile whose whole square footprint
-/// is buildable (B2), keeps the edge margin and has no point of interest within the clearance. Clearings are shuffled
+/// is buildable (B2) and holds no vein tile, keeps the edge margin and has no point of interest within the clearance. Clearings are shuffled
 /// once with the step's seeded stream. Factions are placed greedily, evil ones first: each tries the clearings in its
 /// preferred biome, then the rest, and takes those at least its start distance from the start (the mask that
 /// guarantees the evil distance by construction) and the spacing from every placed site.
@@ -138,7 +138,15 @@ internal sealed class SettlementStep
             poi[(point.Y * size) + point.X] = true;
         }
 
+        // A site clears the resources of its footprint; veins keep their whole stock, so no footprint covers one.
+        bool[] vein = new bool[map.TileCount];
+        for (int i = 0; i < vein.Length; i++)
+        {
+            vein[i] = WorldNames.IsVein(world.ResourceKindArray[i]);
+        }
+
         var flat = new AreaSum(buildable, size);
+        var veins = new AreaSum(vein, size);
         var points = new AreaSum(poi, size);
         int reach = half + p.PoiClearance;
         List<int> result = [];
@@ -149,6 +157,7 @@ internal sealed class SettlementStep
             for (int x = lo; x <= hi; x++)
             {
                 if (flat.Sum(x - half, y - half, x + half, y + half) == area
+                    && veins.Sum(x - half, y - half, x + half, y + half) == 0
                     && points.Sum(x - reach, y - reach, x + reach, y + reach) == 0)
                 {
                     result.Add((y * size) + x);

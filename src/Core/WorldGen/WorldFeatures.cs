@@ -21,6 +21,15 @@ public enum ResourceKind : byte
 
     /// <summary>A berry bush.</summary>
     BerryBush = 4,
+
+    /// <summary>A coal outcrop; never regrows.</summary>
+    Coal = 5,
+
+    /// <summary>A tile of an ore vein (<see cref="Vein"/>), a large deposit for a mine (P-21); never regrows.</summary>
+    OreVein = 6,
+
+    /// <summary>A tile of a coal vein (<see cref="Vein"/>), a large deposit for a mine (P-21); never regrows.</summary>
+    CoalVein = 7,
 }
 
 /// <summary>Kind of a point of interest (FR-WORLD-07, B7: the three MVP kinds from GDD §12). Values are part of the map hash.</summary>
@@ -79,6 +88,18 @@ public enum StartRelaxation : byte
 /// <param name="Y">Tile row.</param>
 public readonly record struct PointOfInterest(PoiKind Kind, int X, int Y);
 
+/// <summary>
+/// An ore or coal vein (P-21): a compact group of tiles of <see cref="Kind"/> around a centre tile, within
+/// <see cref="Radius"/> of it. Its <see cref="Stock"/> is split over its tiles in the resource layer.
+/// </summary>
+/// <param name="Kind"><see cref="ResourceKind.OreVein"/> or <see cref="ResourceKind.CoalVein"/>.</param>
+/// <param name="X">Centre tile column.</param>
+/// <param name="Y">Centre tile row.</param>
+/// <param name="Radius">Disc radius in tiles; every tile of the vein lies within it.</param>
+/// <param name="Tiles">Number of tiles of the vein.</param>
+/// <param name="Stock">Stock of the whole vein: the sum of its tiles' stocks.</param>
+public readonly record struct Vein(ResourceKind Kind, int X, int Y, int Radius, int Tiles, int Stock);
+
 /// <summary>The start tile of the hero (FR-WORLD-08).</summary>
 /// <param name="X">Tile column.</param>
 /// <param name="Y">Tile row.</param>
@@ -99,6 +120,9 @@ public static class WorldNames
     /// <summary>Pattern of point of interest kind names (also emitted into the JSON schema).</summary>
     public const string PoiKindPattern = "^(chest|ruins|lair)$";
 
+    /// <summary>Pattern of vein kind names: the resource a vein holds (also emitted into the JSON schema).</summary>
+    public const string VeinKindPattern = "^(ore|coal)$";
+
     /// <summary>Pattern of faction names (also emitted into the JSON schema).</summary>
     public const string FactionPattern = "^(human|orc)$";
 
@@ -108,13 +132,14 @@ public static class WorldNames
     /// <summary>Art id of the start marker.</summary>
     public const string StartMarkerArtId = "start_marker";
 
-    private static readonly string[] _resourceNames = ["none", "tree", "stone", "ore", "berry_bush"];
-    private static readonly string[] _resourceArtIds = ["", "tree", "rock", "ore", "berry_bush"];
+    private static readonly string[] _resourceNames = ["none", "tree", "stone", "ore", "berry_bush", "coal", "ore_vein", "coal_vein"];
+    private static readonly string[] _resourceArtIds = ["", "tree", "rock", "ore", "berry_bush", "coal", "ore_vein", "coal_vein"];
     private static readonly string[] _poiNames = ["none", "chest", "ruins", "lair"];
     private static readonly string[] _factionNames = ["none", "human", "orc"];
 
     /// <summary>Resource kinds that can appear on a generated map, in numeric order.</summary>
-    public static IReadOnlyList<ResourceKind> Resources { get; } = [ResourceKind.Tree, ResourceKind.Stone, ResourceKind.Ore, ResourceKind.BerryBush];
+    public static IReadOnlyList<ResourceKind> Resources { get; } =
+        [ResourceKind.Tree, ResourceKind.Stone, ResourceKind.Ore, ResourceKind.BerryBush, ResourceKind.Coal, ResourceKind.OreVein, ResourceKind.CoalVein];
 
     /// <summary>Point of interest kinds that can appear on a generated map, in numeric order.</summary>
     public static IReadOnlyList<PoiKind> PoiKinds { get; } = [PoiKind.Chest, PoiKind.Ruins, PoiKind.Lair];
@@ -143,6 +168,21 @@ public static class WorldNames
     /// <exception cref="ArgumentOutOfRangeException"><see cref="PoiKind.None"/> or an unknown kind.</exception>
     public static string ArtId(PoiKind kind) =>
         kind == PoiKind.None ? throw new ArgumentOutOfRangeException(nameof(kind), kind, "No art for an unassigned point.") : "poi_" + ToName(kind);
+
+    /// <summary>True for the tiles of a vein (<see cref="ResourceKind.OreVein"/>, <see cref="ResourceKind.CoalVein"/>).</summary>
+    public static bool IsVein(ResourceKind kind) => kind is ResourceKind.OreVein or ResourceKind.CoalVein;
+
+    /// <summary>Parses a vein kind name (<c>ore</c> or <c>coal</c>) into the vein tile kind; false for unknown names.</summary>
+    public static bool TryParseVein(string? name, out ResourceKind kind)
+    {
+        kind = name switch
+        {
+            "ore" => ResourceKind.OreVein,
+            "coal" => ResourceKind.CoalVein,
+            _ => ResourceKind.None,
+        };
+        return kind != ResourceKind.None;
+    }
 
     /// <summary>True for factions hostile to the player (kept away from the start, FR-WORLD-09).</summary>
     public static bool IsEvil(Faction faction) => faction == Faction.Orc;

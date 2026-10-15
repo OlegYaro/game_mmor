@@ -92,7 +92,7 @@ public sealed class SaveGoldenTests
 
         Assert.True(result.Succeeded, result.Error?.Message);
         Assert.Equal(2, result.SourceFormatVersion);
-        Assert.Equal(1, result.Header!.WorldGenVersion);
+        Assert.Equal(2, result.Header!.WorldGenVersion);
         Assert.Equal(SaveTestData.V2SampleSeed, result.Header.Seed);
 
         Simulation sim = result.Simulation!;
@@ -126,7 +126,9 @@ public sealed class SaveGoldenTests
     // Frozen together with save_v2.sav (values read once from the generated file, never from today's code).
     private static class V2Frozen
     {
-        public const string MapHash = "17f103636ce737ff";
+        // Sample refreshed again on 15.10.2026 for world generator v2 (veins, density cut, P-21): only the map hash and
+        // the header's worldGenVersion changed; the start and the fog counts stayed the same.
+        public const string MapHash = "d5da9187d3d82518";
         public const int StartX = 32;
         public const int StartY = 32;
 

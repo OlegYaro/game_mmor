@@ -11,7 +11,7 @@ public sealed class WorldNamesTests
     public void NumericValuesAreFixed()
     {
         // Part of the map hash and of future tile diffs: never renumber.
-        Assert.Equal([0, 1, 2, 3, 4], Enum.GetValues<ResourceKind>().Select(k => (int)k));
+        Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7], Enum.GetValues<ResourceKind>().Select(k => (int)k));
         Assert.Equal([0, 1, 2, 3], Enum.GetValues<PoiKind>().Select(k => (int)k));
         Assert.Equal([0, 1, 2], Enum.GetValues<Faction>().Select(k => (int)k));
         Assert.Equal([0, 1, 2, 3], Enum.GetValues<StartRelaxation>().Select(k => (int)k));
@@ -20,7 +20,8 @@ public sealed class WorldNamesTests
     [Fact]
     public void NamesRoundTrip()
     {
-        Assert.Equal(["tree", "stone", "ore", "berry_bush"], WorldNames.Resources.Select(WorldNames.ToName));
+        Assert.Equal(["tree", "stone", "ore", "berry_bush", "coal", "ore_vein", "coal_vein"], WorldNames.Resources.Select(WorldNames.ToName));
+        Assert.Equal(Enum.GetValues<ResourceKind>().Skip(1), WorldNames.Resources);
         Assert.Equal(["chest", "ruins", "lair"], WorldNames.PoiKinds.Select(WorldNames.ToName));
         Assert.Equal(["human", "orc"], WorldNames.Factions.Select(WorldNames.ToName));
         Assert.Equal("none", WorldNames.ToName(ResourceKind.None));
@@ -43,6 +44,15 @@ public sealed class WorldNamesTests
         Assert.False(WorldNames.TryParse((string?)null, out Faction noFaction));
         Assert.Equal(Faction.None, noFaction);
         Assert.False(WorldNames.TryParse("elf", out Faction _));
+
+        Assert.True(WorldNames.TryParseVein("ore", out ResourceKind ore));
+        Assert.Equal(ResourceKind.OreVein, ore);
+        Assert.True(WorldNames.TryParseVein("coal", out ResourceKind coal));
+        Assert.Equal(ResourceKind.CoalVein, coal);
+        Assert.False(WorldNames.TryParseVein("gold", out ResourceKind none));
+        Assert.Equal(ResourceKind.None, none);
+        Assert.False(WorldNames.TryParseVein(null, out ResourceKind _));
+        Assert.Equal([ResourceKind.OreVein, ResourceKind.CoalVein], Enum.GetValues<ResourceKind>().Where(WorldNames.IsVein));
     }
 
     [Fact]
@@ -78,7 +88,9 @@ public sealed class WorldNamesTests
             WorldNames.StartMarkerArtId,
         ];
 
-        Assert.Equal(["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker"], ids);
+        Assert.Equal(
+            ["tree", "rock", "ore", "berry_bush", "coal", "ore_vein", "coal_vein", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker"],
+            ids);
         Assert.All(ids, id => Assert.Contains(id, objects));
     }
 

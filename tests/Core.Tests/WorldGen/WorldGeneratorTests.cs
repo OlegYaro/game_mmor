@@ -98,7 +98,8 @@ public sealed class WorldGeneratorTests
     [Theory]
     [Trait("Req", "FR-WORLD-01")]
     [InlineData(0)]
-    [InlineData(2)]
+    [InlineData(1)] // v1 had no veins (P-21); only the current version is reproduced
+    [InlineData(3)]
     public void OtherGeneratorVersionsAreNotSupported(int version)
     {
         Assert.False(WorldGenerator.IsSupportedVersion(version));
@@ -140,7 +141,7 @@ public sealed class WorldGeneratorTests
     {
         // Sub-seeds depend on these values; renumbering would silently change every world.
         Assert.Equal(
-            [1, 2, 3, 4, 5, 6, 7, 8],
+            [1, 2, 3, 4, 5, 6, 7, 8, 9],
             Enum.GetValues<WorldGenStep>().Select(s => (int)s));
     }
 

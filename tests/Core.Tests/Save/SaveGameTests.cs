@@ -87,16 +87,16 @@ public sealed class SaveGameTests
         byte[] body = DecompressBrotli(bytes.AsSpan(newline + 1).ToArray());
 
         Assert.Equal(
-            $"{{\"formatVersion\":{SaveFormat.CurrentVersion},\"gameVersion\":\"{SaveMapper.GameVersion}\",\"worldGenVersion\":1,\"seed\":48879,\"codec\":\"json-brotli\"}}",
+            $"{{\"formatVersion\":{SaveFormat.CurrentVersion},\"gameVersion\":\"{SaveMapper.GameVersion}\",\"worldGenVersion\":2,\"seed\":48879,\"codec\":\"json-brotli\"}}",
             header);
-        Assert.Equal(1, SaveFormat.WorldGenVersion);
+        Assert.Equal(2, SaveFormat.WorldGenVersion);
         Assert.Equal(Core.WorldGen.WorldGenerator.Version, SaveFormat.WorldGenVersion);
         string json = Encoding.UTF8.GetString(body);
         Assert.StartsWith("{\"tick\":120,\"rng\":[{\"stream\":\"world_gen\",", json, StringComparison.Ordinal);
         Assert.DoesNotContain('\n', json);
 
         SaveLoadResult loaded = Load(bytes);
-        Assert.Equal(new SaveHeader(SaveFormat.CurrentVersion, SaveMapper.GameVersion, 1, 48879, SaveFormat.CodecBrotliJson), loaded.Header);
+        Assert.Equal(new SaveHeader(SaveFormat.CurrentVersion, SaveMapper.GameVersion, 2, 48879, SaveFormat.CodecBrotliJson), loaded.Header);
         Assert.Equal(SaveFormat.CurrentVersion, loaded.SourceFormatVersion);
     }
 
@@ -117,7 +117,7 @@ public sealed class SaveGameTests
     [Theory]
     [Trait("Req", "FR-SAVE-02")]
     [Trait("Req", "FR-WORLD-01")]
-    [InlineData(2)]
+    [InlineData(1)] // the generator before the veins (P-21): its worlds can no longer be rebuilt
     [InlineData(-1)]
     [InlineData(99)]
     public void UnknownWorldGenVersionIsRejectedWithClearError(int worldGenVersion)

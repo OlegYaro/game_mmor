@@ -12,7 +12,7 @@ public sealed class AtlasTests
 {
     private static readonly string[] _biomes = ["meadow", "forest", "mountain", "wasteland"];
     private static readonly string[] _objectIds =
-        ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker"];
+        ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker", "coal", "ore_vein", "coal_vein"];
 
     [Fact]
     public void GenerationIsDeterministic()

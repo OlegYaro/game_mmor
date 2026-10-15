@@ -33,6 +33,15 @@ public enum WorldObject : byte
 
     /// <summary>Berry bush resource node.</summary>
     BerryBush = 8,
+
+    /// <summary>Coal resource node.</summary>
+    Coal = 9,
+
+    /// <summary>Ore vein tile.</summary>
+    OreVein = 10,
+
+    /// <summary>Coal vein tile.</summary>
+    CoalVein = 11,
 }
 
 /// <summary>
@@ -62,7 +71,7 @@ public sealed class WorldArt
 
     private static readonly string[] _landNames = ["meadow", "forest", "mountain", "wasteland"];
     private static readonly string[] _objectIds =
-        [WorldNames.StartMarkerArtId, "poi_chest", "poi_ruins", "poi_lair", WorldNames.SettlementSiteArtId, "tree", "rock", "ore", "berry_bush"];
+        [WorldNames.StartMarkerArtId, "poi_chest", "poi_ruins", "poi_lair", WorldNames.SettlementSiteArtId, "tree", "rock", "ore", "berry_bush", "coal", "ore_vein", "coal_vein"];
 
     private static WorldArt? _shared;
 
@@ -244,6 +253,9 @@ public sealed class WorldArt
         ResourceKind.Stone => WorldObject.Rock,
         ResourceKind.Ore => WorldObject.Ore,
         ResourceKind.BerryBush => WorldObject.BerryBush,
+        ResourceKind.Coal => WorldObject.Coal,
+        ResourceKind.OreVein => WorldObject.OreVein,
+        ResourceKind.CoalVein => WorldObject.CoalVein,
         _ => null,
     };
 

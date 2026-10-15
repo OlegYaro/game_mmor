@@ -57,12 +57,12 @@
           "stockMin": 40,
           "stockMax": 80,
           "biomes": [
-            { "biome": "forest", "permille": 650 },
-            { "biome": "meadow", "permille": 180 }
+            { "biome": "forest", "permille": 250 },
+            { "biome": "meadow", "permille": 70 }
           ]
         },
         "stone": {
-          "cellSize": 32,
+          "cellSize": 64,
           "minHeight": 0,
           "stockMin": 150,
           "stockMax": 300,
@@ -74,7 +74,16 @@
           ]
         },
         "ore": {
-          "cellSize": 48,
+          "cellSize": 96,
+          "minHeight": 2,
+          "stockMin": 300,
+          "stockMax": 600,
+          "biomes": [
+            { "biome": "mountain", "chancePermille": 400, "radius": 6 }
+          ]
+        },
+        "coal": {
+          "cellSize": 96,
           "minHeight": 2,
           "stockMin": 300,
           "stockMax": 600,
@@ -87,8 +96,23 @@
           "stockMin": 10,
           "stockMax": 25,
           "biomes": [
-            { "biome": "meadow", "permille": 120 },
-            { "biome": "forest", "permille": 80 }
+            { "biome": "meadow", "permille": 30 },
+            { "biome": "forest", "permille": 20 }
+          ]
+        },
+        "veins": {
+          "cellSize": 96,
+          "minSpacing": 96,
+          "radiusMin": 2,
+          "radiusMax": 4,
+          "minTiles": 9,
+          "edgeJitterPermille": 250,
+          "biomes": [
+            { "biome": "mountain", "chancePermille": 350, "minHeight": 2 }
+          ],
+          "kinds": [
+            { "kind": "ore", "weight": 60, "stockMultiplierMinPermille": 5000, "stockMultiplierMaxPermille": 10000 },
+            { "kind": "coal", "weight": 40, "stockMultiplierMinPermille": 5000, "stockMultiplierMaxPermille": 10000 }
           ]
         }
       },
@@ -105,8 +129,8 @@
       "start": {
         "biome": "meadow",
         "zoneRadius": 80,
-        "minTreeTiles": 160,
-        "minStoneTiles": 24,
+        "minTreeTiles": 400,
+        "minStoneTiles": 60,
         "minWaterTiles": 4,
         "flatRadius": 24,
         "minFlatPermille": 600,

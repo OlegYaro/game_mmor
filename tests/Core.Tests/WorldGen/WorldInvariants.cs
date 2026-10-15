@@ -16,6 +16,7 @@ internal static class WorldInvariants
     {
         ResourcesOnlyOnOpenLandWithStock(world, p.Resources);
         ResourcesRespectTheirBiomes(world, p.Resources);
+        VeinsAreValid(world, p.Resources);
         PointsOfInterestAreValid(world, p.PointsOfInterest);
         StartIsValid(world, p.Start);
         SettlementSitesAreValid(world, p);
@@ -88,6 +89,8 @@ internal static class WorldInvariants
                 ResourceKind.Stone => (p.Stone.StockMin, p.Stone.StockMax),
                 ResourceKind.Ore => (p.Ore.StockMin, p.Ore.StockMax),
                 ResourceKind.BerryBush => (p.Berries.StockMin, p.Berries.StockMax),
+                ResourceKind.Coal => (p.Coal.StockMin, p.Coal.StockMax),
+                ResourceKind.OreVein or ResourceKind.CoalVein => (1, ushort.MaxValue), // a share of the vein (VeinsAreValid)
                 _ => throw new InvalidOperationException($"Tile {i}: unknown resource kind {kind}."),
             };
             Assert.InRange(amount, min, max);
@@ -99,6 +102,7 @@ internal static class WorldInvariants
         HashSet<string> treeBiomes = p.Trees.Biomes.Select(b => b.Biome).ToHashSet(StringComparer.Ordinal);
         HashSet<string> stoneBiomes = p.Stone.Biomes.Select(b => b.Biome).ToHashSet(StringComparer.Ordinal);
         HashSet<string> oreBiomes = p.Ore.Biomes.Select(b => b.Biome).ToHashSet(StringComparer.Ordinal);
+        HashSet<string> coalBiomes = p.Coal.Biomes.Select(b => b.Biome).ToHashSet(StringComparer.Ordinal);
         HashSet<string> berryBiomes = p.Berries.Biomes.Select(b => b.Biome).ToHashSet(StringComparer.Ordinal);
         for (int i = 0; i < world.TileCount; i++)
         {
@@ -120,8 +124,74 @@ internal static class WorldInvariants
                 case ResourceKind.BerryBush:
                     Assert.Contains(biome, berryBiomes);
                     break;
+                case ResourceKind.Coal:
+                    Assert.Contains(biome, coalBiomes);
+                    Assert.True(height >= p.Coal.MinHeight, $"Coal on tile {i} at height {height}.");
+                    break;
+                case ResourceKind.OreVein:
+                case ResourceKind.CoalVein:
+                    VeinBiomeDef? veinBiome = p.Veins.Biomes.SingleOrDefault(b => b.Biome == biome);
+                    Assert.True(veinBiome is not null && height >= veinBiome.MinHeight, $"Vein tile {i} in {biome} at height {height}.");
+                    break;
             }
         }
+    }
+
+    /// <summary>
+    /// Veins: sorted, spaced, sized as the data says; the tiles of the vein kind within its radius are exactly its tiles,
+    /// their stocks add up to its stock (split evenly: they differ by at most 1), the stock is the average node stock
+    /// times a multiplier in the data's range, and no vein tile lies outside a listed vein.
+    /// </summary>
+    public static void VeinsAreValid(WorldMap world, ResourceParams p)
+    {
+        VeinParams v = p.Veins;
+        IReadOnlyList<Vein> veins = world.Veins;
+        AssertSortedByRowThenColumn(veins.Select(q => (q.X, q.Y)).ToList());
+        int listedTiles = 0;
+        foreach (Vein vein in veins)
+        {
+            Assert.True(WorldNames.IsVein(vein.Kind), $"{vein} has a kind that is not a vein.");
+            Assert.InRange(vein.Radius, v.RadiusMin, v.RadiusMax);
+            Assert.True(vein.Tiles >= v.MinTiles, $"{vein} is smaller than {v.MinTiles} tiles.");
+            Assert.Equal(vein.Kind, world.GetResource(vein.X, vein.Y));
+
+            int tiles = 0;
+            long stock = 0;
+            int least = int.MaxValue;
+            int most = 0;
+            CountInDisc(world, vein.X, vein.Y, vein.Radius, i =>
+            {
+                if (world.ResourceKinds[i] == vein.Kind)
+                {
+                    tiles++;
+                    stock += world.ResourceAmounts[i];
+                    least = Math.Min(least, world.ResourceAmounts[i]);
+                    most = Math.Max(most, world.ResourceAmounts[i]);
+                }
+
+                return false;
+            });
+            Assert.Equal(vein.Tiles, tiles);
+            Assert.Equal(vein.Stock, stock);
+            Assert.True(most - least <= 1, $"{vein}: tile stocks {least}–{most} are not an even split.");
+
+            VeinKindDef def = v.Kinds.Single(k => WorldNames.TryParseVein(k.Kind, out ResourceKind kind) && kind == vein.Kind);
+            ClusterResourceParams node = vein.Kind == ResourceKind.OreVein ? p.Ore : p.Coal;
+            Assert.InRange(vein.Stock, VeinParams.TotalStock(node, def.StockMultiplierMinPermille), VeinParams.TotalStock(node, def.StockMultiplierMaxPermille));
+            listedTiles += tiles;
+        }
+
+        long spacing2 = (long)v.MinSpacing * v.MinSpacing;
+        for (int a = 0; a < veins.Count; a++)
+        {
+            for (int b = a + 1; b < veins.Count; b++)
+            {
+                Assert.True(Distance2(veins[a].X, veins[a].Y, veins[b].X, veins[b].Y) >= spacing2, $"{veins[a]} and {veins[b]} are too close.");
+            }
+        }
+
+        int[] counts = world.CountResources();
+        Assert.Equal(listedTiles, counts[(int)ResourceKind.OreVein] + counts[(int)ResourceKind.CoalVein]);
     }
 
     public static void PointsOfInterestAreValid(WorldMap world, PoiParams p)

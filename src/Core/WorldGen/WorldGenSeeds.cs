@@ -31,6 +31,9 @@ public enum WorldGenStep
 
     /// <summary>8. Faction settlements.</summary>
     Settlements = 8,
+
+    /// <summary>Ore and coal veins (P-21); run between the resources (5) and the points of interest (6).</summary>
+    Veins = 9,
 }
 
 /// <summary>

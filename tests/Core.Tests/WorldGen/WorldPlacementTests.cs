@@ -24,6 +24,7 @@ public sealed class WorldPlacementTests
         Assert.Equal(a.PointsOfInterest, b.PointsOfInterest);
         Assert.Equal(a.Start, b.Start);
         Assert.Equal(a.SettlementSites, b.SettlementSites);
+        Assert.Equal(a.Veins, b.Veins);
         Assert.Equal(a.Warnings, b.Warnings);
     }
 
@@ -72,6 +73,11 @@ public sealed class WorldPlacementTests
         Mutate(() => world.StartRelaxation = relaxation == StartRelaxation.Water ? StartRelaxation.None : StartRelaxation.Water, () => world.StartRelaxation = relaxation);
         IReadOnlyList<SettlementSite> sites = world.SettlementSites;
         Mutate(() => world.SettlementSites = [.. sites, new SettlementSite(Faction.Human, 1, 1)], () => world.SettlementSites = sites);
+        IReadOnlyList<Vein> veins = world.Veins;
+        var vein = new Vein(ResourceKind.OreVein, 1, 1, 2, 9, 2250);
+        Mutate(() => world.Veins = [.. veins, vein], () => world.Veins = veins);
+        Mutate(() => world.Veins = [.. veins, vein with { Kind = ResourceKind.CoalVein }], () => world.Veins = veins);
+        Mutate(() => world.Veins = [.. veins, vein with { Stock = 2251 }], () => world.Veins = veins);
         Mutate(() => world.Terrain.HeightArray[0] ^= 1, () => world.Terrain.HeightArray[0] ^= 1);
 
         Assert.DoesNotContain(original, hashes);
@@ -135,8 +141,14 @@ public sealed class WorldPlacementTests
         WorldMap world = WorldGenTestData.GoldenWorld(index);
         int[] counts = world.CountResources();
         Assert.Equal(world.TileCount, counts.Sum());
-        Assert.All(WorldNames.Resources, kind => Assert.True(counts[(int)kind] > 0, $"No {kind} on the map."));
+
+        // Since the density cut (research #10) a 512² map has only a few ore and coal clusters and one or two veins, so
+        // a single golden map may lack one of them (seed 1 has neither ore nor coal nodes); the three maps together
+        // hold every kind. Trees, stone and bushes are on every map.
+        Assert.All([ResourceKind.Tree, ResourceKind.Stone, ResourceKind.BerryBush], kind => Assert.True(counts[(int)kind] > 0, $"No {kind} on the map."));
+        Assert.All(WorldNames.Resources, kind => Assert.Contains(WorldGenTestData.AllGoldenWorlds, w => w.CountResources()[(int)kind] > 0));
         Assert.True(counts[(int)ResourceKind.Ore] < counts[(int)ResourceKind.Stone], "Ore must be rarer than stone.");
+        Assert.True(counts[(int)ResourceKind.Coal] < counts[(int)ResourceKind.Stone], "Coal must be rarer than stone.");
 
         long[] trees = new long[BiomeNames.Generated.Count + 1];
         long[] tiles = new long[BiomeNames.Generated.Count + 1];
@@ -146,13 +158,16 @@ public sealed class WorldPlacementTests
             tiles[(int)biome]++;
             trees[(int)biome] += world.ResourceKinds[i] == ResourceKind.Tree ? 1 : 0;
 
-            // With the real data ore is a mountain resource only.
-            Assert.True(world.ResourceKinds[i] != ResourceKind.Ore || biome == Biome.Mountain, $"Ore outside the mountains on tile {i}.");
+            // With the real data ore, coal and the veins are mountain resources only.
+            Assert.True(world.ResourceKinds[i] is not (ResourceKind.Ore or ResourceKind.Coal or ResourceKind.OreVein or ResourceKind.CoalVein)
+                || biome == Biome.Mountain, $"{world.ResourceKinds[i]} outside the mountains on tile {i}.");
         }
 
-        // Forests are dense, meadows have only groves.
-        Assert.InRange(trees[(int)Biome.Forest] * 1000 / tiles[(int)Biome.Forest], 450, 900);
-        Assert.InRange(trees[(int)Biome.Meadow] * 1000 / tiles[(int)Biome.Meadow], 10, 200);
+        // Forests hold woods with clearings, meadows only groves. After the density cut (research #10: initial share
+        // 650/180 -> 250/70 permille, about a quarter of the trees) the forest is 18 % trees instead of 67 %; measured
+        // 159–185‰ in forests and 7–14‰ in meadows on seeds 1–20 at 512².
+        Assert.InRange(trees[(int)Biome.Forest] * 1000 / tiles[(int)Biome.Forest], 100, 300);
+        Assert.InRange(trees[(int)Biome.Meadow] * 1000 / tiles[(int)Biome.Meadow], 1, 50);
     }
 
     [Theory]
@@ -306,21 +321,28 @@ public sealed class WorldPlacementTests
             {
                 Stone = P.Resources.Stone with { Biomes = [] },
                 Ore = P.Resources.Ore with { Biomes = [new ClusterBiomeDef("mountain", 0, 3)] },
+                Coal = P.Resources.Coal with { Biomes = [] },
                 Berries = P.Resources.Berries with { Biomes = [new BiomeShareDef("meadow", 1000)] },
+                Veins = P.Resources.Veins with { Kinds = [] },
             },
             Start = P.Start with { MinStoneTiles = 0 },
         };
-        int[] counts = WorldGenTestData.GenerateWorld(4, 128, p).CountResources();
+        WorldMap world = WorldGenTestData.GenerateWorld(4, 128, p);
+        int[] counts = world.CountResources();
 
         Assert.Equal(0, counts[(int)ResourceKind.Stone]);
         Assert.Equal(0, counts[(int)ResourceKind.Ore]);
+        Assert.Equal(0, counts[(int)ResourceKind.Coal]);
+        Assert.Equal(0, counts[(int)ResourceKind.OreVein] + counts[(int)ResourceKind.CoalVein]);
+        Assert.Empty(world.Veins);
         Assert.Equal(0, counts[(int)ResourceKind.BerryBush]); // a lone listed biome has no border with another listed one
         Assert.True(counts[(int)ResourceKind.Tree] > 0);
     }
 
     // ---- Unknown names in the parameters fail loudly (the generator can run on unvalidated data) ----
 
-    public static TheoryData<string> BadParameterCases => ["resourceBiome", "poiKind", "noPoiKinds", "faction", "preferredBiome", "startBiome"];
+    public static TheoryData<string> BadParameterCases =>
+        ["resourceBiome", "poiKind", "noPoiKinds", "faction", "preferredBiome", "startBiome", "veinBiome", "veinKind", "veinStock"];
 
     [Theory]
     [Trait("Req", "FR-MOD-01")]
@@ -335,6 +357,9 @@ public sealed class WorldPlacementTests
             "faction" => P with { Settlements = P.Settlements with { Factions = [new FactionSitesDef("elf", 10, 200, "forest")] } },
             "preferredBiome" => P with { Settlements = P.Settlements with { Factions = [new FactionSitesDef("orc", 10, 200, "lava")] } },
             "startBiome" => P with { Start = P.Start with { Biome = "water" } },
+            "veinBiome" => P with { Resources = P.Resources with { Veins = P.Resources.Veins with { Biomes = [new VeinBiomeDef("water", 100, 0)] } } },
+            "veinKind" => P with { Resources = P.Resources with { Veins = P.Resources.Veins with { Kinds = [new VeinKindDef("gold", 1, 5000, 10000)] } } },
+            "veinStock" => P with { Resources = P.Resources with { Veins = P.Resources.Veins with { Kinds = [new VeinKindDef("ore", 1, 5000, 200000)] } } },
             _ => throw new ArgumentOutOfRangeException(nameof(field)),
         };
 

@@ -1,5 +1,5 @@
 # Full map hashes (WorldMap.ComputeHash): generator version, seed, size, hash.
 # Regenerate deliberately with UPDATE_GOLDEN=1 tools/test.sh.
-1 1 512 e1118f87c2c9bf72
-1 2 512 5d80ba665f3182ca
-1 3 512 902f3badded732bb
+2 1 512 b1f4caaf3eaa2377
+2 2 512 5a472932c743de45
+2 3 512 29f1de8f4251a598

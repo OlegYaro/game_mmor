@@ -22,7 +22,7 @@ public interface IContentSection
 /// <param name="Climate">Step 2: moisture and temperature.</param>
 /// <param name="Biomes">Step 3: biome table and smoothing.</param>
 /// <param name="Rivers">Step 4: rivers.</param>
-/// <param name="Resources">Step 5: resource nodes (trees, stone, ore, berry bushes).</param>
+/// <param name="Resources">Step 5: resource nodes (trees, stone, ore, coal, berry bushes) and the ore and coal veins.</param>
 /// <param name="PointsOfInterest">Step 6: points of interest.</param>
 /// <param name="Start">Step 7: the start location (B1).</param>
 /// <param name="Settlements">Step 8: faction settlement sites.</param>
@@ -40,7 +40,8 @@ public sealed record WorldGenParamsDef(
     /// <summary>
     /// Cross-field checks that DataAnnotations cannot express (run in the catalog's reference pass): increasing height
     /// quantiles, ordered rule ranges, a catch-all last biome rule so every tile gets a biome, ordered stock ranges,
-    /// unique names in the placement lists, and settlement sites that cannot overlap the start zone.
+    /// unique names in the placement lists, vein sizes and stocks that fit (no touching veins, a vein stock fits the
+    /// 16-bit tile stock and gives every tile at least 1), and settlement sites that cannot overlap the start zone.
     /// </summary>
     /// <returns>(JSON path below the definition, message) per problem, in a fixed order.</returns>
     public IEnumerable<(string Path, string Message)> CheckConsistency() =>
@@ -53,6 +54,7 @@ public sealed record WorldGenParamsDef(
             ("resources.trees", Resources.Trees.StockMin, Resources.Trees.StockMax),
             ("resources.stone", Resources.Stone.StockMin, Resources.Stone.StockMax),
             ("resources.ore", Resources.Ore.StockMin, Resources.Ore.StockMax),
+            ("resources.coal", Resources.Coal.StockMin, Resources.Coal.StockMax),
             ("resources.berries", Resources.Berries.StockMin, Resources.Berries.StockMax),
         })
         {
@@ -67,7 +69,10 @@ public sealed record WorldGenParamsDef(
             ("resources.trees.biomes", Resources.Trees.Biomes.Select(b => b.Biome)),
             ("resources.stone.biomes", Resources.Stone.Biomes.Select(b => b.Biome)),
             ("resources.ore.biomes", Resources.Ore.Biomes.Select(b => b.Biome)),
+            ("resources.coal.biomes", Resources.Coal.Biomes.Select(b => b.Biome)),
             ("resources.berries.biomes", Resources.Berries.Biomes.Select(b => b.Biome)),
+            ("resources.veins.biomes", Resources.Veins.Biomes.Select(b => b.Biome)),
+            ("resources.veins.kinds", Resources.Veins.Kinds.Select(k => k.Kind)),
             ("pointsOfInterest.kinds", PointsOfInterest.Kinds.Select(k => k.Kind)),
             ("settlements.factions", Settlements.Factions.Select(f => f.Faction)),
         })
@@ -77,6 +82,11 @@ public sealed record WorldGenParamsDef(
             {
                 yield return (path, "Every name may appear only once.");
             }
+        }
+
+        foreach ((string path, string message) in CheckVeins())
+        {
+            yield return (path, message);
         }
 
         if (PointsOfInterest.Kinds.Count == 0)
@@ -95,6 +105,50 @@ public sealed record WorldGenParamsDef(
             {
                 yield return ($"settlements.factions[{i}].minStartDistance",
                     "Must be at least start.zoneRadius + settlements.siteSize, so no site overlaps the start zone (FR-WORLD-08).");
+            }
+        }
+    }
+
+    private IEnumerable<(string Path, string Message)> CheckVeins()
+    {
+        VeinParams veins = Resources.Veins;
+        if (veins.RadiusMin > veins.RadiusMax)
+        {
+            yield return ("resources.veins", "radiusMin must not exceed radiusMax.");
+        }
+
+        if (veins.MinSpacing <= 2 * veins.RadiusMax)
+        {
+            yield return ("resources.veins.minSpacing", "Must exceed 2 * radiusMax, so two veins never touch.");
+        }
+
+        // A vein has at most this many tiles (its bounding square), each of which needs a stock of at least 1.
+        int side = (2 * veins.RadiusMax) + 1;
+        for (int i = 0; i < veins.Kinds.Count; i++)
+        {
+            VeinKindDef kind = veins.Kinds[i];
+            ClusterResourceParams? node = kind.Kind switch
+            {
+                "ore" => Resources.Ore,
+                "coal" => Resources.Coal,
+                _ => null,
+            };
+            if (node is null)
+            {
+                continue;
+            }
+
+            if (kind.StockMultiplierMinPermille > kind.StockMultiplierMaxPermille)
+            {
+                yield return ($"resources.veins.kinds[{i}]", "stockMultiplierMinPermille must not exceed stockMultiplierMaxPermille.");
+            }
+            else if (VeinParams.TotalStock(node, kind.StockMultiplierMaxPermille) > ushort.MaxValue)
+            {
+                yield return ($"resources.veins.kinds[{i}]", "The largest vein stock (average node stock * stockMultiplierMaxPermille / 1000) must not exceed 65535.");
+            }
+            else if (VeinParams.TotalStock(node, kind.StockMultiplierMinPermille) < (long)side * side)
+            {
+                yield return ($"resources.veins.kinds[{i}]", "The smallest vein stock must cover 1 per tile of the largest vein ((2 * radiusMax + 1)^2 tiles).");
             }
         }
     }
@@ -228,18 +282,22 @@ public sealed record RiverParams(
 
 /// <summary>
 /// Step 5: resource nodes, one per tile at most, each with a stock (B5). Applied in this order, a later kind never
-/// replacing an earlier one: ore, stone, trees, berry bushes. Nothing is placed on water or river tiles. Animals are
-/// not placed by the generator (they spawn, M4).
+/// replacing an earlier one: ore, coal, stone, trees, berry bushes. Nothing is placed on water or river tiles. Animals
+/// are not placed by the generator (they spawn, M4). The veins are placed right after, over the nodes.
 /// </summary>
 /// <param name="Trees">Forest and grove density by a cellular automaton over smoothed noise.</param>
 /// <param name="Stone">Stone clusters.</param>
 /// <param name="Ore">Ore clusters (rarer, higher up).</param>
+/// <param name="Coal">Coal clusters (a separate resource in the MVP, also in the mountains).</param>
 /// <param name="Berries">Berry bushes along the borders between the listed biomes.</param>
+/// <param name="Veins">Ore and coal veins: large deposits for mines (P-21).</param>
 public sealed record ResourceParams(
     TreeParams Trees,
     ClusterResourceParams Stone,
     ClusterResourceParams Ore,
-    BerryParams Berries) : IContentSection;
+    ClusterResourceParams Coal,
+    BerryParams Berries,
+    VeinParams Veins) : IContentSection;
 
 /// <summary>
 /// Trees: every eligible tile gets a value mixing OpenSimplex2 FBm with per-tile white noise; tiles whose rank among
@@ -298,6 +356,60 @@ public sealed record ClusterBiomeDef(
     [property: RegularExpression(BiomeNames.LandPattern)] string Biome,
     [property: Range(0, 1000)] int ChancePermille,
     [property: Range(1, 64)] int Radius) : IContentSection;
+
+/// <summary>
+/// Veins (P-21): compact deposits of ore or coal for mines, placed after the resource nodes like the points of interest.
+/// One candidate per square cell (a jittered grid point) whose tile lies in a listed biome at its height and wins the
+/// biome's chance roll; candidates are tried in seeded order and accepted when no accepted vein lies closer than the
+/// minimum spacing. A vein is a disc of tiles of its biome mask with a ragged outer ring; it replaces the nodes there.
+/// Its whole stock is the average node stock of its resource (<c>(stockMin + stockMax) / 2</c>) times a multiplier
+/// rolled per vein, split evenly over its tiles.
+/// </summary>
+/// <param name="CellSize">Side of a grid cell in tiles: at most one candidate per cell.</param>
+/// <param name="MinSpacing">Smallest distance in tiles between the centres of two veins (more than 2 * radiusMax).</param>
+/// <param name="RadiusMin">Smallest disc radius of a vein in tiles.</param>
+/// <param name="RadiusMax">Largest disc radius of a vein in tiles.</param>
+/// <param name="MinTiles">A candidate whose disc holds fewer tiles of the biome mask is skipped.</param>
+/// <param name="EdgeJitterPermille">Chance that a tile of the outer ring of the disc is left out (ragged edge), permille.</param>
+/// <param name="Biomes">Biomes that hold veins, with the chance per candidate and the lowest height step.</param>
+/// <param name="Kinds">Vein kinds with their weights and stock multipliers; an empty list places no veins.</param>
+public sealed record VeinParams(
+    [property: Range(16, 256)] int CellSize,
+    [property: Range(1, 512)] int MinSpacing,
+    [property: Range(1, 8)] int RadiusMin,
+    [property: Range(1, 8)] int RadiusMax,
+    [property: Range(1, 289)] int MinTiles,
+    [property: Range(0, 1000)] int EdgeJitterPermille,
+    IReadOnlyList<VeinBiomeDef> Biomes,
+    IReadOnlyList<VeinKindDef> Kinds) : IContentSection
+{
+    /// <summary>Whole stock of a vein: the average stock of a <paramref name="node"/> times a multiplier in permille.</summary>
+    public static long TotalStock(ClusterResourceParams node, int multiplierPermille)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+        return (long)((node.StockMin + node.StockMax) / 2) * multiplierPermille / 1000;
+    }
+}
+
+/// <summary>How veins appear in one biome.</summary>
+/// <param name="Biome">Land biome name.</param>
+/// <param name="ChancePermille">Chance that a candidate in this biome becomes a vein, permille.</param>
+/// <param name="MinHeight">Lowest height step (0–3) of a vein tile in this biome.</param>
+public sealed record VeinBiomeDef(
+    [property: RegularExpression(BiomeNames.LandPattern)] string Biome,
+    [property: Range(0, 1000)] int ChancePermille,
+    [property: Range(0, 3)] int MinHeight) : IContentSection;
+
+/// <summary>A vein kind: the resource it holds, its weight and the range of its stock multiplier.</summary>
+/// <param name="Kind">Resource of the vein: <c>ore</c> or <c>coal</c>.</param>
+/// <param name="Weight">Relative weight.</param>
+/// <param name="StockMultiplierMinPermille">Smallest multiplier of the average node stock, permille (5000 = x5).</param>
+/// <param name="StockMultiplierMaxPermille">Largest multiplier of the average node stock, permille (10000 = x10).</param>
+public sealed record VeinKindDef(
+    [property: RegularExpression(WorldNames.VeinKindPattern)] string Kind,
+    [property: Range(1, 1000)] int Weight,
+    [property: Range(1000, 50000)] int StockMultiplierMinPermille,
+    [property: Range(1000, 50000)] int StockMultiplierMaxPermille) : IContentSection;
 
 /// <summary>Berry bushes: on tiles of a listed biome within <c>EdgeDistance</c> of a tile of another listed biome.</summary>
 /// <param name="EdgeDistance">Largest Chebyshev distance in tiles to the other biome.</param>

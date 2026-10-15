@@ -7,7 +7,7 @@ namespace Core.WorldGen.Placement;
 /// ADR 0006 step 6: points of interest (FR-WORLD-07, B7). Poisson-disk style dart throwing: buildable tiles away from
 /// the edge are shuffled with the step's seeded stream and accepted when no accepted point lies closer than the
 /// minimum spacing, until the target count (land tiles / tiles per point) is reached. The point's tile loses its
-/// resource node.
+/// resource node; vein tiles are never used, so a vein keeps its whole stock.
 /// </summary>
 internal static class PoiStep
 {
@@ -30,7 +30,7 @@ internal static class PoiStep
         {
             for (int x = p.EdgeMargin; x < size - p.EdgeMargin; x++)
             {
-                if (buildable[(y * size) + x])
+                if (buildable[(y * size) + x] && !WorldNames.IsVein(world.ResourceKindArray[(y * size) + x]))
                 {
                     candidates.Add((y * size) + x);
                 }

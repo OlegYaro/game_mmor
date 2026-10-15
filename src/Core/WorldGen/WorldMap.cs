@@ -3,8 +3,8 @@ using Core.Determinism;
 namespace Core.WorldGen;
 
 /// <summary>
-/// The whole generated world (ADR 0006 steps 1–9): the <see cref="TerrainMap"/> plus the resource layers, points of
-/// interest, the start and the settlement sites. Layers are whole-map arrays indexed <c>y * Size + x</c>; lists are
+/// The whole generated world (ADR 0006 steps 1–9): the <see cref="TerrainMap"/> plus the resource layers, the veins,
+/// points of interest, the start and the settlement sites. Layers are whole-map arrays indexed <c>y * Size + x</c>; lists are
 /// sorted by (y, x). Immutable once generated.
 /// </summary>
 public sealed class WorldMap : IStateHashable
@@ -36,6 +36,9 @@ public sealed class WorldMap : IStateHashable
 
     /// <summary>Stock of the resource node per tile (0 where there is none, otherwise at least 1).</summary>
     public ReadOnlySpan<ushort> ResourceAmounts => ResourceAmountArray;
+
+    /// <summary>Ore and coal veins sorted by (y, x) of their centres; their tiles are in the resource layers.</summary>
+    public IReadOnlyList<Vein> Veins { get; internal set; } = [];
 
     /// <summary>Points of interest sorted by (y, x).</summary>
     public IReadOnlyList<PointOfInterest> PointsOfInterest { get; internal set; } = [];
@@ -85,7 +88,7 @@ public sealed class WorldMap : IStateHashable
     /// Writes the canonical world bytes: a tag, version, seed, size, the terrain hash
     /// (<see cref="TerrainMap.ComputeHash"/>), then in this fixed order: resource kinds, resource amounts (16-bit
     /// little-endian), points of interest (count, then kind, x, y each), start (x, y, relaxation), settlement sites
-    /// (count, then faction, x, y each).
+    /// (count, then faction, x, y each), veins (count, then kind, x, y, radius, tiles, stock each).
     /// </summary>
     public void WriteState(StateWriter writer)
     {
@@ -114,6 +117,17 @@ public sealed class WorldMap : IStateHashable
             writer.WriteByte((byte)site.Faction);
             writer.WriteInt32(site.X);
             writer.WriteInt32(site.Y);
+        }
+
+        writer.WriteInt32(Veins.Count);
+        foreach (Vein vein in Veins)
+        {
+            writer.WriteByte((byte)vein.Kind);
+            writer.WriteInt32(vein.X);
+            writer.WriteInt32(vein.Y);
+            writer.WriteInt32(vein.Radius);
+            writer.WriteInt32(vein.Tiles);
+            writer.WriteInt32(vein.Stock);
         }
     }
 

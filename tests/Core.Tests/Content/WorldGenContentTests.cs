@@ -92,6 +92,9 @@ public sealed class WorldGenContentTests
 
         Assert.Equal(["forest", "meadow"], world.Resources.Trees.Biomes.Select(b => b.Biome));
         Assert.Equal(["mountain"], world.Resources.Ore.Biomes.Select(b => b.Biome));
+        Assert.Equal(["mountain"], world.Resources.Coal.Biomes.Select(b => b.Biome));
+        Assert.Equal(["mountain"], world.Resources.Veins.Biomes.Select(b => b.Biome));
+        Assert.Equal(["ore", "coal"], world.Resources.Veins.Kinds.Select(k => k.Kind));
         Assert.Equal(["chest", "ruins", "lair"], world.PointsOfInterest.Kinds.Select(k => k.Kind));
         // Lengths in tiles on the 32x16 grid: twice the 64x32 values (40, 120), areas four times (1600), P-07.
         Assert.Equal(6400, world.PointsOfInterest.TilesPerPoi);
@@ -119,6 +122,35 @@ public sealed class WorldGenContentTests
             [
                 "$.items[0].resources.trees", "$.items[0].resources.ore.biomes", "$.items[0].pointsOfInterest.kinds",
                 "$.items[0].settlements.siteSize", "$.items[0].settlements.factions[1].minStartDistance",
+            ],
+            result.Errors.Select(e => e.JsonPath));
+    }
+
+    [Fact]
+    [Trait("Req", "FR-MOD-01")]
+    [Trait("Req", "FR-WORLD-04")]
+    public void VeinCrossFieldChecksRunInTheReferencePass()
+    {
+        ContentLoadResult result = LoadWorld(Edited(d =>
+        {
+            JsonNode resources = d["resources"]!;
+            JsonNode veins = resources["veins"]!;
+            veins["radiusMin"] = 5; // above radiusMax 4
+            veins["minSpacing"] = 8; // two veins of radius 4 could touch
+            veins["kinds"]![0]!["stockMultiplierMinPermille"] = 9000; // above the max 6000
+            veins["kinds"]![0]!["stockMultiplierMaxPermille"] = 6000;
+            resources["coal"]!["stockMax"] = 20000; // 10150 x 10 does not fit 16 bits
+            resources["ore"]!["stockMin"] = 10;
+            resources["ore"]!["stockMax"] = 20; // 15 x 1 cannot give each of 81 tiles a stock
+            veins["kinds"]!.AsArray().Add(JsonNode.Parse("""{ "kind": "ore", "weight": 1, "stockMultiplierMinPermille": 1000, "stockMultiplierMaxPermille": 1000 }"""));
+        }));
+
+        Assert.Null(result.Catalog);
+        Assert.All(result.Errors, e => Assert.Equal(ContentErrorKind.Validation, e.Kind));
+        Assert.Equal(
+            [
+                "$.items[0].resources.veins.kinds", "$.items[0].resources.veins", "$.items[0].resources.veins.minSpacing",
+                "$.items[0].resources.veins.kinds[0]", "$.items[0].resources.veins.kinds[1]", "$.items[0].resources.veins.kinds[2]",
             ],
             result.Errors.Select(e => e.JsonPath));
     }
@@ -192,6 +224,9 @@ public sealed class WorldGenContentTests
             Edited(d => d["settlements"]!["factions"]![0]!["faction"] = "elf"),
             Edited(d => d["start"]!["biome"] = "water"),
             Edited(d => d["resources"]!["trees"]!["extra"] = 1),
+            Edited(d => d["resources"]!.AsObject().Remove("coal")),
+            Edited(d => d["resources"]!["veins"]!["kinds"]![0]!["kind"] = "gold"),
+            Edited(d => d["resources"]!["veins"]!["biomes"]![0]!["biome"] = "water"),
         ];
         foreach (string json in bad)
         {

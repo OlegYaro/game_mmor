@@ -5,7 +5,7 @@
   "heightStep": 8,
   "atlases": [
     { "id": "tiles", "file": "art/atlas_tiles.png", "width": 512, "height": 112 },
-    { "id": "objects", "file": "art/atlas_objects.png", "width": 96, "height": 96 }
+    { "id": "objects", "file": "art/atlas_objects.png", "width": 96, "height": 128 }
   ],
   "cells": [
     { "id": "meadow_h0_v0", "atlas": "tiles", "kind": "tile", "x": 0, "y": 0, "w": 32, "h": 16, "originX": 16, "originY": 8, "height": 0, "variant": 0 },
@@ -79,6 +79,9 @@
     { "id": "poi_ruins", "atlas": "objects", "kind": "object", "x": 64, "y": 32, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
     { "id": "poi_lair", "atlas": "objects", "kind": "object", "x": 0, "y": 64, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
     { "id": "settlement_site", "atlas": "objects", "kind": "object", "x": 32, "y": 64, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
-    { "id": "start_marker", "atlas": "objects", "kind": "object", "x": 64, "y": 64, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 }
+    { "id": "start_marker", "atlas": "objects", "kind": "object", "x": 64, "y": 64, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "coal", "atlas": "objects", "kind": "object", "x": 0, "y": 96, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "ore_vein", "atlas": "objects", "kind": "object", "x": 32, "y": 96, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "coal_vein", "atlas": "objects", "kind": "object", "x": 64, "y": 96, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 }
   ]
 }

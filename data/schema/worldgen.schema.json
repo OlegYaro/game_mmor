@@ -453,6 +453,42 @@
                 ],
                 "additionalProperties": false
               },
+              "coal": {
+                "type": "object",
+                "properties": {
+                  "cellSize": {
+                    "type": "integer",
+                    "minimum": 4,
+                    "maximum": 256
+                  },
+                  "minHeight": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3
+                  },
+                  "stockMin": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "stockMax": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "biomes": {
+                    "$ref": "#/properties/items/items/properties/resources/properties/stone/properties/biomes"
+                  }
+                },
+                "required": [
+                  "cellSize",
+                  "minHeight",
+                  "stockMin",
+                  "stockMax",
+                  "biomes"
+                ],
+                "additionalProperties": false
+              },
               "berries": {
                 "type": "object",
                 "properties": {
@@ -485,13 +521,129 @@
                   "biomes"
                 ],
                 "additionalProperties": false
+              },
+              "veins": {
+                "type": "object",
+                "properties": {
+                  "cellSize": {
+                    "type": "integer",
+                    "minimum": 16,
+                    "maximum": 256
+                  },
+                  "minSpacing": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 512
+                  },
+                  "radiusMin": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "radiusMax": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "minTiles": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 289
+                  },
+                  "edgeJitterPermille": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "biomes": {
+                    "type": "array",
+                    "items": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "biome": {
+                          "type": "string",
+                          "pattern": "^(meadow|forest|mountain|wasteland)$"
+                        },
+                        "chancePermille": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000
+                        },
+                        "minHeight": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 3
+                        }
+                      },
+                      "required": [
+                        "biome",
+                        "chancePermille",
+                        "minHeight"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "kinds": {
+                    "type": "array",
+                    "items": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "pattern": "^(ore|coal)$"
+                        },
+                        "weight": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000
+                        },
+                        "stockMultiplierMinPermille": {
+                          "type": "integer",
+                          "minimum": 1000,
+                          "maximum": 50000
+                        },
+                        "stockMultiplierMaxPermille": {
+                          "type": "integer",
+                          "minimum": 1000,
+                          "maximum": 50000
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "weight",
+                        "stockMultiplierMinPermille",
+                        "stockMultiplierMaxPermille"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "cellSize",
+                  "minSpacing",
+                  "radiusMin",
+                  "radiusMax",
+                  "minTiles",
+                  "edgeJitterPermille",
+                  "biomes",
+                  "kinds"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
               "trees",
               "stone",
               "ore",
-              "berries"
+              "coal",
+              "berries",
+              "veins"
             ],
             "additionalProperties": false
           },

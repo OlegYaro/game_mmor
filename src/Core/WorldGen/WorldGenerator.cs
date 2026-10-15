@@ -61,14 +61,16 @@ public static class WorldGenerator
     /// every terrain golden.
     /// </summary>
     /// <remarks>
-    /// v1 is the first generator that ships (M1) and already includes the placement steps 5–9: the terrain-only
-    /// development state was never released or committed, and no save holds a world from it (M0 saves carry
-    /// <see cref="Save.SaveFormat.NoWorldGenVersion"/>), so adding the placement steps did not need a bump. The same holds
-    /// for the M1.1 rescale of <c>data/worldgen</c> to the 32×16 grid (P-07), which changed every world: v1 was not
-    /// released yet, and a development save made before it fails to load with <see cref="Sim.WorldGenMismatchException"/>
-    /// (its stored map hash no longer matches the regenerated world), which is the intended outcome.
+    /// <para>v1 (M1, M1.1): terrain, resources, points of interest, start and settlement sites on the 32×16 grid (P-07).
+    /// It was never released to players, so the placement steps and the 32×16 rescale went in without a bump.</para>
+    /// <para>v2 (P-21, phase 3): ore and coal veins (<see cref="Placement.VeinStep"/>), coal nodes, the resource density
+    /// cut to about a quarter after the 32×16 rescale and the start thresholds raised to match (research #10). It is a
+    /// bump, not an in-place change, because it alters every world: a save of a v1 world is rejected at the header with
+    /// <see cref="Save.SaveErrorKind.UnsupportedWorldGenVersion"/> before the map is rebuilt
+    /// (<see cref="IsSupportedVersion"/> knows only the current version; no world migration before the first release).
+    /// <see cref="Sim.WorldGenMismatchException"/> stays for a changed map under the same version, i.e. a forgotten bump.</para>
     /// </remarks>
-    public const int Version = 1;
+    public const int Version = 2;
 
     /// <summary>True when this build can reproduce worlds of generator <paramref name="version"/>.</summary>
     public static bool IsSupportedVersion(int version) => version == Version;
@@ -93,7 +95,7 @@ public static class WorldGenerator
 
     /// <summary>
     /// The whole pipeline, ADR 0006 steps 1–9: the terrain (<see cref="GenerateTerrain"/>, unchanged), then resources,
-    /// points of interest, the start and the settlement sites. Hash the result with <see cref="WorldMap.ComputeHash"/>.
+    /// veins, points of interest, the start and the settlement sites. Hash the result with <see cref="WorldMap.ComputeHash"/>.
     /// </summary>
     /// <exception cref="ArgumentException">Invalid request or placement parameters (unknown names).</exception>
     /// <exception cref="NotSupportedException">Unsupported generator version.</exception>
@@ -104,6 +106,7 @@ public static class WorldGenerator
         var world = new WorldMap(terrain);
         bool[] buildable = PlacementOps.Buildable(terrain);
         ResourceStep.Run(world, p.Resources);
+        VeinStep.Run(world, p.Resources);
         PoiStep.Run(world, p.PointsOfInterest, buildable);
         var settlements = new SettlementStep(world, p.Settlements, buildable);
         StartStep.Run(world, p.Start, buildable, settlements);

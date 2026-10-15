@@ -90,7 +90,7 @@ public sealed class SaveWorldTests
         Assert.Equal(64 * 64, runs.Sum(r => (int)r!));
         int rows = (2 * SimTestData.Real.Fog.HeroDay) + 1;
         Assert.InRange(runs.Count, 3, (2 * rows) + 1); // two runs per row of the hero's day disc (radius 24), at most
-        Assert.Contains("\"worldGenVersion\":1,", Encoding.UTF8.GetString(bytes, 0, Array.IndexOf(bytes, (byte)'\n')), StringComparison.Ordinal);
+        Assert.Contains("\"worldGenVersion\":2,", Encoding.UTF8.GetString(bytes, 0, Array.IndexOf(bytes, (byte)'\n')), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -149,6 +149,21 @@ public sealed class SaveWorldTests
 
         Assert.Equal(SaveErrorKind.WorldGenMismatch, result.Error!.Kind);
         Assert.NotNull(result.Header);
+    }
+
+    [Fact]
+    [Trait("Req", "FR-SAVE-02")]
+    [Trait("Req", "FR-WORLD-01")]
+    public void WorldSaveOfThePreviousGeneratorIsRejectedBeforeTheMapIsRebuilt()
+    {
+        // v2 added the veins and cut the density (P-21): a v1 world save fails at the header, not with a map mismatch.
+        byte[] bytes = Edit(SaveTestData.BuildWorld(), (header, _) => header["worldGenVersion"] = SaveFormat.WorldGenVersion - 1);
+
+        SaveLoadResult result = Load(bytes);
+
+        Assert.Equal(2, SaveFormat.WorldGenVersion);
+        Assert.Equal(SaveErrorKind.UnsupportedWorldGenVersion, result.Error!.Kind);
+        Assert.Contains("world generator v1", result.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

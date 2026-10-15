@@ -5,11 +5,11 @@ using Core.WorldGen.Terrain;
 namespace Core.WorldGen.Placement;
 
 /// <summary>
-/// ADR 0006 step 5: resource nodes as a tile layer with a stock (B5). Order: ore, stone, trees, berry bushes; a later
-/// kind never replaces an earlier one. Only open land gets resources: never water, never a river.
+/// ADR 0006 step 5: resource nodes as a tile layer with a stock (B5). Order: ore, coal, stone, trees, berry bushes; a
+/// later kind never replaces an earlier one. Only open land gets resources: never water, never a river.
 /// </summary>
 /// <remarks>
-/// Ore and stone use integer cellular (Worley-style) clusters: one feature point per square cell, three overlapping
+/// Ore, coal and stone use integer cellular (Worley-style) clusters: one feature point per square cell, three overlapping
 /// discs around it, a per-cell roll against the chance of the tile's biome. Trees use OpenSimplex2 FBm (the only
 /// floating-point part, converted to 16-bit fixed point right after sampling) mixed with per-tile white noise,
 /// rank-normalized, then a cellular automaton. Everything else is integer arithmetic.
@@ -23,6 +23,7 @@ internal static class ResourceStep
     private const int StoneLayer = 1;
     private const int TreeLayer = 2;
     private const int BerryLayer = 3;
+    private const int CoalLayer = 4;
 
     public static void Run(WorldMap world, ResourceParams p)
     {
@@ -35,6 +36,7 @@ internal static class ResourceStep
         }
 
         PlaceClusters(world, open, p.Ore, ResourceKind.Ore, OreLayer);
+        PlaceClusters(world, open, p.Coal, ResourceKind.Coal, CoalLayer);
         PlaceClusters(world, open, p.Stone, ResourceKind.Stone, StoneLayer);
         PlaceTrees(world, open, p.Trees);
         PlaceBerries(world, open, p.Berries);
@@ -49,7 +51,7 @@ internal static class ResourceStep
     }
 
     // Per-biome lookup (indexed by Biome value) of a value from a named list; -1 for biomes not in the list.
-    private static int[] BiomeTable<T>(IReadOnlyList<T> entries, Func<T, string> name, Func<T, int> value, string what)
+    internal static int[] BiomeTable<T>(IReadOnlyList<T> entries, Func<T, string> name, Func<T, int> value, string what)
     {
         int[] table = new int[BiomeNames.Generated.Count + 1];
         Array.Fill(table, -1);

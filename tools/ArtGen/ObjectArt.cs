@@ -11,7 +11,7 @@ public static class ObjectArt
 
     /// <summary>Object ids in atlas order.</summary>
     public static readonly IReadOnlyList<string> Ids =
-        ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker"];
+        ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker", "coal", "ore_vein", "coal_vein"];
 
     private static readonly Rgba Black = new(20, 20, 24);
     private static readonly Rgba White = new(250, 250, 250);
@@ -31,6 +31,9 @@ public static class ObjectArt
             case "poi_lair": Labelled(c, Lair, "LAIR"); break;
             case "settlement_site": Labelled(c, Site, "SITE"); break;
             case "start_marker": Marker(c); break;
+            case "coal": Coal(c); break;
+            case "ore_vein": Vein(c, Rgba.Hex(0x5A5E6B), Rgba.Hex(0xE8892B), Rgba.Hex(0x4DA6FF)); break;
+            case "coal_vein": Vein(c, Rgba.Hex(0x1C1C22), Rgba.Hex(0xF2C230), Rgba.Hex(0xE8E8F0)); break;
             default: throw new ArgumentException("Unknown object id " + id, nameof(id));
         }
 
@@ -66,6 +69,31 @@ public static class ObjectArt
                 c.FillRect(flecks[i, 0], flecks[i, 1], 2, 2, i % 2 == 0 ? orange : blue);
             }
         }
+    }
+
+    private static void Coal(Canvas c)
+    {
+        Rgba coal = Rgba.Hex(0x2B2B31);
+        Pt[] body = [new Pt(7, 23), new Pt(9, 16), new Pt(15, 13), new Pt(21, 15), new Pt(25, 22), new Pt(20, 26), new Pt(12, 26)];
+        c.FillAndOutline(body, coal, Black);
+        c.FillPolygon([new Pt(10, 16), new Pt(15, 14), new Pt(21, 16), new Pt(16, 19)], coal.Shift(30));
+        c.FillPolygon([new Pt(16, 19), new Pt(21, 16), new Pt(24, 22), new Pt(20, 25), new Pt(16, 25)], coal.Scale(70));
+        Rgba glint = Rgba.Hex(0x9AA0B4);
+        c.FillRect(12, 20, 2, 2, glint);
+        c.FillRect(19, 18, 2, 2, glint);
+    }
+
+    // Veins fill nearly the whole cell and carry big bright crystals, so they read from far away on the map.
+    private static void Vein(Canvas c, Rgba rock, Rgba glowA, Rgba glowB)
+    {
+        Pt[] body = [new Pt(2, 24), new Pt(4, 14), new Pt(10, 8), new Pt(17, 6), new Pt(25, 9), new Pt(30, 16), new Pt(29, 25), new Pt(21, 29), new Pt(9, 29)];
+        c.FillAndOutline(body, rock, Black);
+        c.FillPolygon([new Pt(6, 15), new Pt(11, 9), new Pt(17, 7), new Pt(24, 10), new Pt(18, 15)], rock.Shift(26));
+        c.FillPolygon([new Pt(18, 15), new Pt(24, 10), new Pt(29, 16), new Pt(28, 24), new Pt(21, 28), new Pt(18, 26)], rock.Scale(75));
+        c.FillAndOutline([new Pt(7, 24), new Pt(9, 15), new Pt(12, 15), new Pt(13, 24)], glowA, glowA.Scale(45));
+        c.FillAndOutline([new Pt(15, 27), new Pt(16, 11), new Pt(20, 11), new Pt(21, 27)], glowB, glowB.Scale(45));
+        c.FillAndOutline([new Pt(23, 25), new Pt(24, 17), new Pt(27, 17), new Pt(27, 25)], glowA, glowA.Scale(45));
+        c.FillRect(17, 12, 1, 6, White);
     }
 
     private static void Bush(Canvas c)
