@@ -3,6 +3,7 @@
   "items": [
     { "id": "wood", "stackSize": 100, "weight": 2000 },
     { "id": "stone", "stackSize": 50, "weight": 5000 },
-    { "id": "wheat", "stackSize": 200, "weight": 100 }
+    { "id": "wheat", "stackSize": 200, "weight": 100 },
+    { "id": "berries", "stackSize": 100, "weight": 50 }
   ]
 }

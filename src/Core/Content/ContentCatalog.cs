@@ -33,6 +33,8 @@ public sealed class ContentCatalog
         Time = defs.OfType<TimeBalanceDef>().Single();
         Fog = defs.OfType<FogBalanceDef>().Single();
         Saves = defs.OfType<SaveBalanceDef>().Single();
+        Hero = defs.OfType<HeroBalanceDef>().Single();
+        Construction = defs.OfType<ConstructionBalanceDef>().Single();
         WorldGen = defs.OfType<WorldGenParamsDef>().Single();
         Items = defs.OfType<ItemDef>().ToArray();
         Eras = defs.OfType<EraDef>().OrderBy(e => e.Order).ToArray();
@@ -56,6 +58,12 @@ public sealed class ContentCatalog
 
     /// <summary>Save slot numbers (data/balance/saves.json).</summary>
     public SaveBalanceDef Saves { get; }
+
+    /// <summary>Hero balance (data/balance/hero.json).</summary>
+    public HeroBalanceDef Hero { get; }
+
+    /// <summary>Construction rules such as refunds (data/balance/construction.json).</summary>
+    public ConstructionBalanceDef Construction { get; }
 
     /// <summary>World generator parameters (data/worldgen/*.json, ADR 0006).</summary>
     public WorldGenParamsDef WorldGen { get; }
@@ -139,6 +147,8 @@ public sealed class ContentCatalog
         RequireExactlyOne<TimeBalanceDef>(loaded, errors, "data/balance/time.json");
         RequireExactlyOne<FogBalanceDef>(loaded, errors, "data/balance/fog.json");
         RequireExactlyOne<SaveBalanceDef>(loaded, errors, "data/balance/saves.json");
+        RequireExactlyOne<HeroBalanceDef>(loaded, errors, "data/balance/hero.json");
+        RequireExactlyOne<ConstructionBalanceDef>(loaded, errors, "data/balance/construction.json");
         RequireExactlyOne<WorldGenParamsDef>(loaded, errors, "data/worldgen/*.json");
 
         // Cross-reference pass runs only on structurally valid data so it does not report follow-up noise.
@@ -205,6 +215,8 @@ public sealed class ContentCatalog
                 TimeBalanceFile f => f.Items,
                 FogBalanceFile f => f.Items,
                 SaveBalanceFile f => f.Items,
+                HeroBalanceFile f => f.Items,
+                ConstructionBalanceFile f => f.Items,
                 ItemFile f => f.Items,
                 EraFile f => f.Items,
                 RaceFile f => f.Items,
@@ -313,6 +325,24 @@ public sealed class ContentCatalog
             if (def is RaceDef race)
             {
                 CheckRace(file, index, race, byId, errors);
+            }
+
+            if (def is HeroBalanceDef hero)
+            {
+                foreach ((string path, string message) in hero.CheckConsistency())
+                {
+                    errors.Add(new ContentError(ContentErrorKind.Validation, file, $"$.items[{index}].{path}", message));
+                }
+
+                for (int i = 0; i < hero.Gathering.Count; i++)
+                {
+                    CheckTarget<ItemDef>(file, $"$.items[{index}].gathering[{i}].item", hero.Id, hero.Gathering[i].Item, "item", byId, errors);
+                }
+
+                for (int i = 0; i < hero.StartItems.Count; i++)
+                {
+                    CheckTarget<ItemDef>(file, $"$.items[{index}].startItems[{i}].item", hero.Id, hero.StartItems[i].Item, "item", byId, errors);
+                }
             }
 
             if (def is BuildingDef building)

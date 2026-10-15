@@ -49,6 +49,9 @@
             "type": "string",
             "pattern": "^(flat)$"
           },
+          "rotatable": {
+            "type": "boolean"
+          },
           "provisional": {
             "type": "boolean",
             "description": "True while the costs, times and capacities are placeholders; balance is tuned in the M2 plan (docs/MVP.md)."
@@ -87,6 +90,11 @@
                   }
                 },
                 "buildTicks": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                "moveTicks": {
                   "type": "integer",
                   "minimum": 1,
                   "maximum": 100000
@@ -131,6 +139,7 @@
               "required": [
                 "cost",
                 "buildTicks",
+                "moveTicks",
                 "requirements"
               ],
               "additionalProperties": false
@@ -143,6 +152,7 @@
           "footprint",
           "outsideTerritory",
           "placement",
+          "rotatable",
           "provisional",
           "levels"
         ],

@@ -16,9 +16,20 @@ public sealed class WorldGenContentTests
     private static readonly string _worldJson = File.ReadAllText(Path.Combine(TestPaths.Data, "worldgen", "world.json"));
     private static readonly string _fogJson = File.ReadAllText(Path.Combine(TestPaths.Data, "balance", "fog.json"));
     private static readonly string _savesJson = File.ReadAllText(Path.Combine(TestPaths.Data, "balance", "saves.json"));
+    // The hero data references items; tests with their own item lists use the real hero file without gathering entries.
+    private static readonly string _heroJson = NoGathering(File.ReadAllText(Path.Combine(TestPaths.Data, "balance", "hero.json")));
+    private static readonly string _constructionJson = File.ReadAllText(Path.Combine(TestPaths.Data, "balance", "construction.json"));
+
+    private static string NoGathering(string json)
+    {
+        System.Text.Json.Nodes.JsonNode root = System.Text.Json.Nodes.JsonNode.Parse(json)!;
+        root["items"]![0]!["gathering"] = new System.Text.Json.Nodes.JsonArray();
+        return root.ToJsonString();
+    }
 
     private static InMemoryContentSource Base() =>
-        new InMemoryContentSource().Add("balance/time.json", TimeJson).Add("balance/fog.json", _fogJson).Add("balance/saves.json", _savesJson);
+        new InMemoryContentSource().Add("balance/time.json", TimeJson).Add("balance/fog.json", _fogJson).Add("balance/saves.json", _savesJson)
+            .Add("balance/hero.json", _heroJson).Add("balance/construction.json", _constructionJson);
 
     private static ContentLoadResult LoadWorld(string worldJson) =>
         ContentCatalog.Load(Base().Add("worldgen/world.json", worldJson));

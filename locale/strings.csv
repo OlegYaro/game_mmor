@@ -2,6 +2,7 @@ keys,ru,en
 item.wood.name,Дерево,Wood
 item.stone.name,Камень,Stone
 item.wheat.name,Пшеница,Wheat
+item.berries.name,Ягоды,Berries
 ui.hud.day,День,Day
 ui.hud.night,Ночь,Night
 ui.speed.paused,Пауза,Paused

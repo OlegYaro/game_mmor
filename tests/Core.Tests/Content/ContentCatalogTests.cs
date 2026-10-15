@@ -13,9 +13,19 @@ public sealed class ContentCatalogTests
     private static readonly string _worldGenJson = File.ReadAllText(Path.Combine(TestPaths.Data, "worldgen", "world.json"));
     private static readonly string _fogJson = File.ReadAllText(Path.Combine(TestPaths.Data, "balance", "fog.json"));
     private static readonly string _savesJson = File.ReadAllText(Path.Combine(TestPaths.Data, "balance", "saves.json"));
+    // The hero data references items; tests with their own item lists use the real hero file without gathering entries.
+    private static readonly string _heroJson = NoGathering(File.ReadAllText(Path.Combine(TestPaths.Data, "balance", "hero.json")));
+    private static readonly string _constructionJson = File.ReadAllText(Path.Combine(TestPaths.Data, "balance", "construction.json"));
+
+    private static string NoGathering(string json)
+    {
+        System.Text.Json.Nodes.JsonNode root = System.Text.Json.Nodes.JsonNode.Parse(json)!;
+        root["items"]![0]!["gathering"] = new System.Text.Json.Nodes.JsonArray();
+        return root.ToJsonString();
+    }
 
     private static InMemoryContentSource WithTime() =>
-        new InMemoryContentSource().Add("balance/time.json", TimeJson).Add("balance/fog.json", _fogJson).Add("balance/saves.json", _savesJson).Add("worldgen/world.json", _worldGenJson);
+        new InMemoryContentSource().Add("balance/time.json", TimeJson).Add("balance/fog.json", _fogJson).Add("balance/saves.json", _savesJson).Add("balance/hero.json", _heroJson).Add("balance/construction.json", _constructionJson).Add("worldgen/world.json", _worldGenJson);
 
     private static ContentLoadResult LoadItems(string itemsJson) =>
         ContentCatalog.Load(WithTime().Add("items/x.json", itemsJson));
@@ -34,7 +44,7 @@ public sealed class ContentCatalogTests
         Assert.Equal(7, catalog.Time.DaysPerWeek);
         Assert.Equal(15, catalog.Time.DaysPerSeason);
         Assert.Equal(4, catalog.Time.SeasonsPerYear);
-        Assert.Equal(["stone", "wheat", "wood"], catalog.Items.Select(i => i.Id));
+        Assert.Equal(["berries", "stone", "wheat", "wood"], catalog.Items.Select(i => i.Id));
         Assert.Equal(new FogBalanceDef("fog", HeroDay: 24, HeroNight: 12, VillagerDay: 16, VillagerNight: 8, TowerDay: 32, TowerNight: 32), catalog.Fog);
         Assert.Equal(new SaveBalanceDef("saves", ManualSlots: 5, AutosavesKept: 3), catalog.Saves);
     }
@@ -45,19 +55,19 @@ public sealed class ContentCatalogTests
     {
         ContentCatalog catalog = ContentCatalog.Load(TestPaths.LoadDataSource()).Catalog!;
 
-        // Sorted ordinal over all 31 ids (balance, items, world, eras, races, professions, relation reasons, buildings).
+        // Sorted ordinal over all 34 ids (balance, items, world, eras, races, professions, relation reasons, buildings).
         Assert.True(catalog.TryGetId("fog", out DefId fog));
         Assert.True(catalog.TryGetId("stone", out DefId stone));
         Assert.True(catalog.TryGetId("time", out DefId time));
         Assert.True(catalog.TryGetId("wood", out DefId wood));
         Assert.True(catalog.TryGetId("world", out DefId world));
-        Assert.Equal(new DefId(8), fog);
-        Assert.Equal(new DefId(22), stone);
-        Assert.Equal(new DefId(25), time);
-        Assert.Equal(new DefId(30), wood);
-        Assert.Equal(new DefId(31), world);
+        Assert.Equal(new DefId(10), fog);
+        Assert.Equal(new DefId(25), stone);
+        Assert.Equal(new DefId(28), time);
+        Assert.Equal(new DefId(33), wood);
+        Assert.Equal(new DefId(34), world);
         Assert.Equal("wood", catalog.Get(wood).Id);
-        Assert.Equal(31, catalog.Count);
+        Assert.Equal(34, catalog.Count);
         Assert.False(catalog.TryGetId("nope", out _));
         Assert.Throws<KeyNotFoundException>(() => catalog.Get(new DefId(0)));
         Assert.Throws<InvalidCastException>(() => catalog.Get<ItemDef>(time));
@@ -205,7 +215,7 @@ public sealed class ContentCatalogTests
     [Trait("Req", "FR-MOD-01")]
     public void MissingTimeBalanceIsAnError()
     {
-        ContentLoadResult result = ContentCatalog.Load(new InMemoryContentSource().Add("balance/fog.json", _fogJson).Add("balance/saves.json", _savesJson).Add("worldgen/world.json", _worldGenJson));
+        ContentLoadResult result = ContentCatalog.Load(new InMemoryContentSource().Add("balance/fog.json", _fogJson).Add("balance/saves.json", _savesJson).Add("balance/hero.json", _heroJson).Add("balance/construction.json", _constructionJson).Add("worldgen/world.json", _worldGenJson));
 
         ContentError error = Assert.Single(result.Errors);
         Assert.Equal(ContentErrorKind.Missing, error.Kind);
@@ -217,7 +227,7 @@ public sealed class ContentCatalogTests
     [Trait("Req", "FR-WORLD-06")]
     public void ExactlyOneFogBalanceIsRequiredAndRadiiAreRangeChecked()
     {
-        ContentLoadResult missing = ContentCatalog.Load(new InMemoryContentSource().Add("balance/time.json", TimeJson).Add("balance/saves.json", _savesJson).Add("worldgen/world.json", _worldGenJson));
+        ContentLoadResult missing = ContentCatalog.Load(new InMemoryContentSource().Add("balance/time.json", TimeJson).Add("balance/saves.json", _savesJson).Add("balance/hero.json", _heroJson).Add("balance/construction.json", _constructionJson).Add("worldgen/world.json", _worldGenJson));
         ContentError error = Assert.Single(missing.Errors);
         Assert.Equal(ContentErrorKind.Missing, error.Kind);
         Assert.Contains("FogBalanceDef", error.Message, StringComparison.Ordinal);
@@ -227,14 +237,14 @@ public sealed class ContentCatalogTests
 
         string zero = _fogJson.Replace("\"heroNight\": 12", "\"heroNight\": 0", StringComparison.Ordinal);
         ContentError range = Assert.Single(ContentCatalog.Load(new InMemoryContentSource()
-            .Add("balance/time.json", TimeJson).Add("balance/saves.json", _savesJson).Add("balance/fog.json", zero).Add("worldgen/world.json", _worldGenJson)).Errors);
+            .Add("balance/time.json", TimeJson).Add("balance/saves.json", _savesJson).Add("balance/hero.json", _heroJson).Add("balance/construction.json", _constructionJson).Add("balance/fog.json", zero).Add("worldgen/world.json", _worldGenJson)).Errors);
         Assert.Equal(ContentErrorKind.Validation, range.Kind);
         Assert.Equal("balance/fog.json", range.File);
         Assert.Equal("$.items[0].heroNight", range.JsonPath);
 
         // fog.json is parsed as fog radii, every other balance file as time constants.
         ContentError wrongShape = Assert.Single(ContentCatalog.Load(new InMemoryContentSource()
-            .Add("balance/time.json", TimeJson).Add("balance/saves.json", _savesJson).Add("balance/fog.json", TimeJson).Add("worldgen/world.json", _worldGenJson)).Errors,
+            .Add("balance/time.json", TimeJson).Add("balance/saves.json", _savesJson).Add("balance/hero.json", _heroJson).Add("balance/construction.json", _constructionJson).Add("balance/fog.json", TimeJson).Add("worldgen/world.json", _worldGenJson)).Errors,
             e => e.Kind == ContentErrorKind.Parse);
         Assert.Equal("balance/fog.json", wrongShape.File);
     }

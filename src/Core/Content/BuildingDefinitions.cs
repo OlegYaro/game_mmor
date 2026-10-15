@@ -13,6 +13,7 @@ namespace Core.Content;
 /// <param name="Footprint">Size on the tile grid, the same for every level.</param>
 /// <param name="OutsideTerritory">True when the building may be placed outside the settlement territory (the first settlement center, later outposts).</param>
 /// <param name="Placement">Ground rule: <c>flat</c> needs level ground.</param>
+/// <param name="Rotatable">True when the player may rotate the building before placing it (swaps width and height).</param>
 /// <param name="Provisional">True while the numbers are placeholders to be tuned in the M2 plan.</param>
 /// <param name="Levels">Level 1 first; at least one.</param>
 public sealed record BuildingDef(
@@ -21,6 +22,7 @@ public sealed record BuildingDef(
     BuildingFootprint Footprint,
     bool OutsideTerritory,
     [property: RegularExpression("^(flat)$")] string Placement,
+    bool Rotatable,
     [property: Description("True while the costs, times and capacities are placeholders; balance is tuned in the M2 plan (docs/MVP.md).")]
     bool Provisional,
     IReadOnlyList<BuildingLevelDef> Levels) : IContentDef;
@@ -35,12 +37,14 @@ public sealed record BuildingFootprint(
 /// <summary>One level of a building. The cost is the extra payment over the previous level (ADR 0012).</summary>
 /// <param name="Cost">Items paid for this level, in a fixed order.</param>
 /// <param name="BuildTicks">Ticks to build or upgrade to this level (100 ticks are 10 seconds at 10 Hz).</param>
+/// <param name="MoveTicks">Ticks to move a finished building of this level to another spot (a third of <paramref name="BuildTicks"/>).</param>
 /// <param name="Requirements">Conditions to build or upgrade to this level; all must hold.</param>
 /// <param name="Capacity">Resident places (housing); 0 when the building has none.</param>
 /// <param name="Storage">Item stacks the building stores (storage); 0 when it has none.</param>
 public sealed record BuildingLevelDef(
     IReadOnlyList<ItemAmountDef> Cost,
     [property: Range(1, 100000)] int BuildTicks,
+    [property: Range(1, 100000)] int MoveTicks,
     IReadOnlyList<RequirementDef> Requirements,
     [property: Range(0, 1000)] int Capacity = 0,
     [property: Range(0, 100000)] int Storage = 0) : IContentSection;

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConstructionBalanceFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "provisional": {
+            "type": "boolean"
+          },
+          "demolishRefundPermille": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "cancelRefundPermille": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "id",
+          "provisional",
+          "demolishRefundPermille",
+          "cancelRefundPermille"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

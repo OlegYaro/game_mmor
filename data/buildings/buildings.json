@@ -7,11 +7,13 @@
       "footprint": { "width": 1, "height": 1 },
       "outsideTerritory": true,
       "placement": "flat",
+      "rotatable": false,
       "provisional": true,
       "levels": [
         {
           "cost": [ { "item": "wood", "count": 5 } ],
           "buildTicks": 100,
+          "moveTicks": 33,
           "requirements": [ { "kind": "era", "value": "camp" } ]
         }
       ]
@@ -22,24 +24,28 @@
       "footprint": { "width": 2, "height": 2 },
       "outsideTerritory": false,
       "placement": "flat",
+      "rotatable": true,
       "provisional": true,
       "levels": [
         {
           "cost": [ { "item": "wood", "count": 20 } ],
           "buildTicks": 100,
-          "requirements": [ { "kind": "era", "value": "camp" } ],
+          "moveTicks": 33,
+          "requirements": [],
           "capacity": 2
         },
         {
           "cost": [ { "item": "wood", "count": 30 }, { "item": "stone", "count": 10 } ],
           "buildTicks": 100,
-          "requirements": [ { "kind": "era", "value": "village" } ],
+          "moveTicks": 33,
+          "requirements": [],
           "capacity": 3
         },
         {
           "cost": [ { "item": "wood", "count": 40 }, { "item": "stone", "count": 20 } ],
           "buildTicks": 120,
-          "requirements": [ { "kind": "era", "value": "town" } ],
+          "moveTicks": 40,
+          "requirements": [],
           "capacity": 4
         }
       ]
@@ -50,17 +56,20 @@
       "footprint": { "width": 3, "height": 2 },
       "outsideTerritory": false,
       "placement": "flat",
+      "rotatable": true,
       "provisional": true,
       "levels": [
         {
           "cost": [ { "item": "wood", "count": 30 } ],
           "buildTicks": 100,
+          "moveTicks": 33,
           "requirements": [ { "kind": "era", "value": "camp" } ],
           "storage": 20
         },
         {
           "cost": [ { "item": "wood", "count": 40 }, { "item": "stone", "count": 20 } ],
           "buildTicks": 120,
+          "moveTicks": 40,
           "requirements": [ { "kind": "era", "value": "village" } ],
           "storage": 40
         }
