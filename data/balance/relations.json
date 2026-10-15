@@ -1,0 +1,9 @@
+{
+  "$schema": "../schema/relations.schema.json",
+  "items": [
+    { "id": "poach_resident", "delta": -5, "decayKind": "none", "decayTicks": 0 },
+    { "id": "raid_loot", "delta": -50, "decayKind": "none", "decayTicks": 0 },
+    { "id": "settlement_destroyed", "delta": -80, "decayKind": "none", "decayTicks": 0 },
+    { "id": "trade", "delta": 1, "decayKind": "none", "decayTicks": 0 }
+  ]
+}

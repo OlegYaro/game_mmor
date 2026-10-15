@@ -60,6 +60,9 @@ public static class SchemaGenerator
                     case RegularExpressionAttribute regex:
                         obj["pattern"] = regex.Pattern;
                         break;
+                    case System.ComponentModel.DescriptionAttribute description:
+                        obj["description"] = description.Description;
+                        break;
                 }
             }
         }

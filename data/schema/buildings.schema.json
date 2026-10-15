@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BuildingFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "category": {
+            "type": "string",
+            "pattern": "^(housing|storage|settlement_center|production)$"
+          },
+          "footprint": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 32
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 32
+              }
+            },
+            "required": [
+              "width",
+              "height"
+            ],
+            "additionalProperties": false
+          },
+          "outsideTerritory": {
+            "type": "boolean"
+          },
+          "placement": {
+            "type": "string",
+            "pattern": "^(flat)$"
+          },
+          "provisional": {
+            "type": "boolean",
+            "description": "True while the costs, times and capacities are placeholders; balance is tuned in the M2 plan (docs/MVP.md)."
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "cost": {
+                  "type": "array",
+                  "items": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "item": {
+                        "type": "string",
+                        "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100000
+                      }
+                    },
+                    "required": [
+                      "item",
+                      "count"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "buildTicks": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                "requirements": {
+                  "type": "array",
+                  "items": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "pattern": "^(era|specialist)$"
+                      },
+                      "value": {
+                        "type": "string",
+                        "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "capacity": {
+                  "type": "integer",
+                  "default": 0,
+                  "minimum": 0,
+                  "maximum": 1000
+                },
+                "storage": {
+                  "type": "integer",
+                  "default": 0,
+                  "minimum": 0,
+                  "maximum": 100000
+                }
+              },
+              "required": [
+                "cost",
+                "buildTicks",
+                "requirements"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "footprint",
+          "outsideTerritory",
+          "placement",
+          "provisional",
+          "levels"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

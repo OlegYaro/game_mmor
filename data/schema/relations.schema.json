@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RelationModifierFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "delta": {
+            "type": "integer",
+            "minimum": -100,
+            "maximum": 100
+          },
+          "decayKind": {
+            "type": "string",
+            "pattern": "^(none|expiring|fading)$",
+            "description": "none, expiring or fading. All reasons are none for now: whether penalties fade is the owner's open question A9."
+          },
+          "decayTicks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000000
+          }
+        },
+        "required": [
+          "id",
+          "delta",
+          "decayKind",
+          "decayTicks"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

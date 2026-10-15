@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RaceFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "side": {
+            "type": "string",
+            "pattern": "^(good|evil)$"
+          },
+          "startRelation": {
+            "type": "integer",
+            "minimum": -100,
+            "maximum": 100
+          },
+          "biome": {
+            "type": "string",
+            "pattern": "^(meadow|forest|mountain|wasteland)$"
+          },
+          "startTechnologies": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": "Technology tags the faction knows at the start. Hard-coded per faction under the MVP (human: none, orc: siege_ladders); the v1 technology tree replaces them."
+          },
+          "settlementBuildings": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": "Ids of buildings the faction settlement starts with; each must be a building definition."
+          },
+          "army": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": "Ids of the army composition; unit definitions do not exist yet, so only the id format is checked."
+          }
+        },
+        "required": [
+          "id",
+          "side",
+          "startRelation",
+          "biome",
+          "startTechnologies",
+          "settlementBuildings",
+          "army"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

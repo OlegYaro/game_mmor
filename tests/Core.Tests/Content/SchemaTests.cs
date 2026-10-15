@@ -30,9 +30,14 @@ public sealed class SchemaTests
             checkedFiles++;
         }
 
-        Assert.True(checkedFiles >= 4);
+        Assert.True(checkedFiles >= 9);
         Assert.Equal("fog.schema.json", Core.Content.ContentCategories.Find("balance/fog.json")!.SchemaFileName);
         Assert.Equal("balance.schema.json", Core.Content.ContentCategories.Find("balance/time.json")!.SchemaFileName);
+        Assert.Equal("relations.schema.json", Core.Content.ContentCategories.Find("balance/relations.json")!.SchemaFileName);
+        Assert.Equal("eras.schema.json", Core.Content.ContentCategories.Find("eras/eras.json")!.SchemaFileName);
+        Assert.Equal("races.schema.json", Core.Content.ContentCategories.Find("races/races.json")!.SchemaFileName);
+        Assert.Equal("buildings.schema.json", Core.Content.ContentCategories.Find("buildings/buildings.json")!.SchemaFileName);
+        Assert.Equal("professions.schema.json", Core.Content.ContentCategories.Find("professions/professions.json")!.SchemaFileName);
         Assert.Null(Core.Content.ContentCategories.Find("nofolder.json"));
     }
 

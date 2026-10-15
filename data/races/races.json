@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/races.schema.json",
+  "items": [
+    {
+      "id": "human",
+      "side": "good",
+      "startRelation": 20,
+      "biome": "meadow",
+      "startTechnologies": [],
+      "settlementBuildings": [],
+      "army": []
+    },
+    {
+      "id": "orc",
+      "side": "evil",
+      "startRelation": -80,
+      "biome": "wasteland",
+      "startTechnologies": ["siege_ladders"],
+      "settlementBuildings": [],
+      "army": []
+    }
+  ]
+}

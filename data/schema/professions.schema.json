@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProfessionFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "kind": {
+            "type": "string",
+            "pattern": "^(ordinary|specialist)$",
+            "description": "ordinary or specialist. The specialist list (blacksmith, healer, armorer) is proposal A7, not yet confirmed by the owner."
+          },
+          "skill": {
+            "type": "string",
+            "pattern": "^(construction|mining|farming|hunting|cooking|crafting|smithing|medicine|trading|knowledge|melee|shooting)$"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "skill"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

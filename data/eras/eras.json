@@ -1,0 +1,9 @@
+{
+  "$schema": "../schema/eras.schema.json",
+  "items": [
+    { "id": "camp", "order": 1, "minPopulation": 1, "maxPopulation": 3, "territoryRadius": 48 },
+    { "id": "village", "order": 2, "minPopulation": 4, "maxPopulation": 15, "territoryRadius": 80 },
+    { "id": "town", "order": 3, "minPopulation": 16, "maxPopulation": 39, "territoryRadius": 128 },
+    { "id": "fortress", "order": 4, "minPopulation": 40, "maxPopulation": null, "territoryRadius": 192 }
+  ]
+}

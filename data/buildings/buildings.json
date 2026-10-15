@@ -1,0 +1,70 @@
+{
+  "$schema": "../schema/buildings.schema.json",
+  "items": [
+    {
+      "id": "campfire",
+      "category": "settlement_center",
+      "footprint": { "width": 1, "height": 1 },
+      "outsideTerritory": true,
+      "placement": "flat",
+      "provisional": true,
+      "levels": [
+        {
+          "cost": [ { "item": "wood", "count": 5 } ],
+          "buildTicks": 100,
+          "requirements": [ { "kind": "era", "value": "camp" } ]
+        }
+      ]
+    },
+    {
+      "id": "house",
+      "category": "housing",
+      "footprint": { "width": 2, "height": 2 },
+      "outsideTerritory": false,
+      "placement": "flat",
+      "provisional": true,
+      "levels": [
+        {
+          "cost": [ { "item": "wood", "count": 20 } ],
+          "buildTicks": 100,
+          "requirements": [ { "kind": "era", "value": "camp" } ],
+          "capacity": 2
+        },
+        {
+          "cost": [ { "item": "wood", "count": 30 }, { "item": "stone", "count": 10 } ],
+          "buildTicks": 100,
+          "requirements": [ { "kind": "era", "value": "village" } ],
+          "capacity": 3
+        },
+        {
+          "cost": [ { "item": "wood", "count": 40 }, { "item": "stone", "count": 20 } ],
+          "buildTicks": 120,
+          "requirements": [ { "kind": "era", "value": "town" } ],
+          "capacity": 4
+        }
+      ]
+    },
+    {
+      "id": "storage",
+      "category": "storage",
+      "footprint": { "width": 3, "height": 2 },
+      "outsideTerritory": false,
+      "placement": "flat",
+      "provisional": true,
+      "levels": [
+        {
+          "cost": [ { "item": "wood", "count": 30 } ],
+          "buildTicks": 100,
+          "requirements": [ { "kind": "era", "value": "camp" } ],
+          "storage": 20
+        },
+        {
+          "cost": [ { "item": "wood", "count": 40 }, { "item": "stone", "count": 20 } ],
+          "buildTicks": 120,
+          "requirements": [ { "kind": "era", "value": "village" } ],
+          "storage": 40
+        }
+      ]
+    }
+  ]
+}

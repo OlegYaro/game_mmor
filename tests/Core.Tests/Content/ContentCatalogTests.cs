@@ -45,19 +45,19 @@ public sealed class ContentCatalogTests
     {
         ContentCatalog catalog = ContentCatalog.Load(TestPaths.LoadDataSource()).Catalog!;
 
-        // Sorted ordinal: fog, saves, stone, time, wheat, wood, world.
+        // Sorted ordinal over all 31 ids (balance, items, world, eras, races, professions, relation reasons, buildings).
         Assert.True(catalog.TryGetId("fog", out DefId fog));
         Assert.True(catalog.TryGetId("stone", out DefId stone));
         Assert.True(catalog.TryGetId("time", out DefId time));
         Assert.True(catalog.TryGetId("wood", out DefId wood));
         Assert.True(catalog.TryGetId("world", out DefId world));
-        Assert.Equal(new DefId(1), fog);
-        Assert.Equal(new DefId(3), stone);
-        Assert.Equal(new DefId(4), time);
-        Assert.Equal(new DefId(6), wood);
-        Assert.Equal(new DefId(7), world);
+        Assert.Equal(new DefId(8), fog);
+        Assert.Equal(new DefId(22), stone);
+        Assert.Equal(new DefId(25), time);
+        Assert.Equal(new DefId(30), wood);
+        Assert.Equal(new DefId(31), world);
         Assert.Equal("wood", catalog.Get(wood).Id);
-        Assert.Equal(7, catalog.Count);
+        Assert.Equal(31, catalog.Count);
         Assert.False(catalog.TryGetId("nope", out _));
         Assert.Throws<KeyNotFoundException>(() => catalog.Get(new DefId(0)));
         Assert.Throws<InvalidCastException>(() => catalog.Get<ItemDef>(time));

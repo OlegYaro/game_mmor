@@ -35,6 +35,11 @@ public sealed class ContentCatalog
         Saves = defs.OfType<SaveBalanceDef>().Single();
         WorldGen = defs.OfType<WorldGenParamsDef>().Single();
         Items = defs.OfType<ItemDef>().ToArray();
+        Eras = defs.OfType<EraDef>().OrderBy(e => e.Order).ToArray();
+        Races = defs.OfType<RaceDef>().ToArray();
+        Buildings = defs.OfType<BuildingDef>().ToArray();
+        Professions = defs.OfType<ProfessionDef>().ToArray();
+        RelationModifiers = defs.OfType<RelationModifierDef>().ToArray();
     }
 
     /// <summary>
@@ -57,6 +62,21 @@ public sealed class ContentCatalog
 
     /// <summary>All item definitions, ordered by id.</summary>
     public IReadOnlyList<ItemDef> Items { get; }
+
+    /// <summary>All eras, ordered by <see cref="EraDef.Order"/> (data/eras/*.json).</summary>
+    public IReadOnlyList<EraDef> Eras { get; }
+
+    /// <summary>All races, ordered by id (data/races/*.json).</summary>
+    public IReadOnlyList<RaceDef> Races { get; }
+
+    /// <summary>All building types, ordered by id (data/buildings/*.json).</summary>
+    public IReadOnlyList<BuildingDef> Buildings { get; }
+
+    /// <summary>All professions, ordered by id (data/professions/*.json).</summary>
+    public IReadOnlyList<ProfessionDef> Professions { get; }
+
+    /// <summary>All relation modifier reasons, ordered by id (data/balance/relations.json).</summary>
+    public IReadOnlyList<RelationModifierDef> RelationModifiers { get; }
 
     /// <summary>Number of definitions.</summary>
     public int Count => _defs.Length;
@@ -186,6 +206,11 @@ public sealed class ContentCatalog
                 FogBalanceFile f => f.Items,
                 SaveBalanceFile f => f.Items,
                 ItemFile f => f.Items,
+                EraFile f => f.Items,
+                RaceFile f => f.Items,
+                BuildingFile f => f.Items,
+                ProfessionFile f => f.Items,
+                RelationModifierFile f => f.Items,
                 WorldGenFile f => f.Items,
                 _ => throw new JsonException("Unexpected file content."),
             };
@@ -266,6 +291,7 @@ public sealed class ContentCatalog
     private static void CheckReferences(List<(string File, int Index, IContentDef Def)> loaded, List<ContentError> errors)
     {
         Dictionary<string, IContentDef> byId = loaded.ToDictionary(l => l.Def.Id, l => l.Def, StringComparer.Ordinal);
+        CheckEras(loaded, errors);
         foreach ((string file, int index, IContentDef def) in loaded)
         {
             if (def is WorldGenParamsDef worldGen)
@@ -274,6 +300,24 @@ public sealed class ContentCatalog
                 {
                     errors.Add(new ContentError(ContentErrorKind.Validation, file, $"$.items[{index}].{path}", message));
                 }
+            }
+
+            if (def is RelationModifierDef relation)
+            {
+                foreach ((string path, string message) in relation.CheckConsistency())
+                {
+                    errors.Add(new ContentError(ContentErrorKind.Validation, file, $"$.items[{index}].{path}", message));
+                }
+            }
+
+            if (def is RaceDef race)
+            {
+                CheckRace(file, index, race, byId, errors);
+            }
+
+            if (def is BuildingDef building)
+            {
+                CheckBuilding(file, index, building, byId, errors);
             }
 
             if (def is ItemDef { SpoilsInto: { } target })
@@ -287,6 +331,87 @@ public sealed class ContentCatalog
                     errors.Add(new ContentError(ContentErrorKind.Reference, file, $"$.items[{index}].spoilsInto", $"Item '{def.Id}' references '{target}', which is not an item."));
                 }
             }
+        }
+    }
+
+    private static void CheckEras(List<(string File, int Index, IContentDef Def)> loaded, List<ContentError> errors)
+    {
+        List<(string File, int Index, EraDef Def)> eras = loaded.Where(l => l.Def is EraDef).Select(l => (l.File, l.Index, (EraDef)l.Def)).ToList();
+        foreach ((int index, string path, string message) in EraDef.CheckCoverage(eras.Select(e => e.Def).ToList()))
+        {
+            errors.Add(new ContentError(ContentErrorKind.Validation, eras[index].File, $"$.items[{eras[index].Index}].{path}", message));
+        }
+    }
+
+    private static void CheckRace(string file, int index, RaceDef race, Dictionary<string, IContentDef> byId, List<ContentError> errors)
+    {
+        foreach ((string name, IReadOnlyList<string> ids) in new[]
+        {
+            ("startTechnologies", race.StartTechnologies),
+            ("army", race.Army),
+        })
+        {
+            for (int i = 0; i < ids.Count; i++)
+            {
+                if (!ContentId.IsValid(ids[i]))
+                {
+                    errors.Add(new ContentError(ContentErrorKind.Validation, file, $"$.items[{index}].{name}[{i}]", $"Race '{race.Id}' has an invalid id '{ids[i]}'."));
+                }
+            }
+        }
+
+        for (int i = 0; i < race.SettlementBuildings.Count; i++)
+        {
+            CheckTarget<BuildingDef>(file, $"$.items[{index}].settlementBuildings[{i}]", race.Id, race.SettlementBuildings[i], "building", byId, errors);
+        }
+    }
+
+    private static void CheckBuilding(string file, int index, BuildingDef building, Dictionary<string, IContentDef> byId, List<ContentError> errors)
+    {
+        if (building.Levels.Count == 0)
+        {
+            errors.Add(new ContentError(ContentErrorKind.Validation, file, $"$.items[{index}].levels", $"Building '{building.Id}' needs at least one level."));
+        }
+
+        for (int level = 0; level < building.Levels.Count; level++)
+        {
+            BuildingLevelDef levelDef = building.Levels[level];
+            for (int i = 0; i < levelDef.Cost.Count; i++)
+            {
+                CheckTarget<ItemDef>(file, $"$.items[{index}].levels[{level}].cost[{i}].item", building.Id, levelDef.Cost[i].Item, "item", byId, errors);
+            }
+
+            for (int i = 0; i < levelDef.Requirements.Count; i++)
+            {
+                RequirementDef requirement = levelDef.Requirements[i];
+                string path = $"$.items[{index}].levels[{level}].requirements[{i}].value";
+                if (requirement.Kind == "era")
+                {
+                    CheckTarget<EraDef>(file, path, building.Id, requirement.Value, "era", byId, errors);
+                }
+                else if (byId.TryGetValue(requirement.Value, out IContentDef? found) && found is ProfessionDef { Kind: not "specialist" })
+                {
+                    errors.Add(new ContentError(ContentErrorKind.Reference, file, path, $"'{building.Id}' requires '{requirement.Value}', which is not a specialist profession."));
+                }
+                else
+                {
+                    CheckTarget<ProfessionDef>(file, path, building.Id, requirement.Value, "profession", byId, errors);
+                }
+            }
+        }
+    }
+
+    // Reports a Reference error when `target` is missing or is not a definition of type T.
+    private static void CheckTarget<T>(string file, string path, string owner, string target, string what, Dictionary<string, IContentDef> byId, List<ContentError> errors)
+        where T : IContentDef
+    {
+        if (!byId.TryGetValue(target, out IContentDef? found))
+        {
+            errors.Add(new ContentError(ContentErrorKind.Reference, file, path, $"'{owner}' references unknown id '{target}'."));
+        }
+        else if (found is not T)
+        {
+            errors.Add(new ContentError(ContentErrorKind.Reference, file, path, $"'{owner}' references '{target}', which is not a {what}."));
         }
     }
 }
