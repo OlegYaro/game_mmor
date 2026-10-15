@@ -2,6 +2,8 @@
 
 Игра на Godot 4.7.2 (.NET) + чистый C# Core. Решения: `docs/adr/`, требования: `docs/GDD.md`, `docs/requirements-index.md`. Журнал: `docs/PROGRESS.md`.
 
+**Источники истины с 15.10.2026: `docs/MVP.md` и `docs/ROADMAP-v1-v2.md`.** При расхождении с GDD, gdd-issues, gdd-change-proposals, requirements-index (и ADR) прав новый файл. Пометки: [решено] и [GDD] обязательны; [предложение] можно закладывать, но записывать в `gdd-change-proposals.md` как открытое; [открыто] не решать самому, собирать в `docs/open-questions.md`. `docs/design-overview.md` — архив.
+
 ## Архитектурные правила
 - `src/Core` не знает про Godot (проверяет архитектурный тест). Весь геймплей живёт в Core, `src/Game` только показывает снимки состояния и передаёт ввод.
 - Детерминированный тик 10 Гц. Никакого `DateTime.Now`, `System.Random`, `float`/`double` в логике — только целые и fixed-point (см. `BannedSymbols.txt`, ADR 0005).
