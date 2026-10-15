@@ -23,6 +23,11 @@ namespace Core.Save;
 [JsonDerivedType(typeof(GatherCommandDto), GatherCommand.KindName)]
 [JsonDerivedType(typeof(StopHeroCommandDto), StopHeroCommand.KindName)]
 [JsonDerivedType(typeof(GiveItemCommandDto), GiveItemCommand.KindName)]
+[JsonDerivedType(typeof(PlaceBuildingCommandDto), PlaceBuildingCommand.KindName)]
+[JsonDerivedType(typeof(CancelBuildingCommandDto), CancelBuildingCommand.KindName)]
+[JsonDerivedType(typeof(UpgradeBuildingCommandDto), UpgradeBuildingCommand.KindName)]
+[JsonDerivedType(typeof(MoveBuildingCommandDto), MoveBuildingCommand.KindName)]
+[JsonDerivedType(typeof(DemolishBuildingCommandDto), DemolishBuildingCommand.KindName)]
 public abstract record CommandDto
 {
     /// <summary>JSON name of the discriminator property.</summary>
@@ -46,6 +51,11 @@ public abstract record CommandDto
             GatherCommand c => new GatherCommandDto(c.X, c.Y),
             StopHeroCommand => new StopHeroCommandDto(),
             GiveItemCommand c => new GiveItemCommandDto(c.Item, c.Count),
+            PlaceBuildingCommand c => new PlaceBuildingCommandDto(c.BuildingId, c.X, c.Y, c.Rotation),
+            CancelBuildingCommand c => new CancelBuildingCommandDto(c.Building.Index, c.Building.Generation),
+            UpgradeBuildingCommand c => new UpgradeBuildingCommandDto(c.Building.Index, c.Building.Generation),
+            MoveBuildingCommand c => new MoveBuildingCommandDto(c.Building.Index, c.Building.Generation, c.X, c.Y, c.Rotation),
+            DemolishBuildingCommand c => new DemolishBuildingCommandDto(c.Building.Index, c.Building.Generation),
             _ => throw new NotSupportedException($"Command kind '{command.Kind}' ({command.GetType().Name}) has no CommandDto."),
         };
     }
@@ -109,4 +119,54 @@ public sealed record GiveItemCommandDto(string Item, int Count) : CommandDto
 {
     /// <inheritdoc />
     public override ISimCommand ToCommand() => new GiveItemCommand(Item, Count);
+}
+
+/// <summary>DTO of <see cref="PlaceBuildingCommand"/>.</summary>
+/// <param name="Building">Building type id.</param>
+/// <param name="X">Column of the footprint's top-left tile.</param>
+/// <param name="Y">Row of the footprint's top-left tile.</param>
+/// <param name="Rotation">Quarter turns.</param>
+public sealed record PlaceBuildingCommandDto(string Building, int X, int Y, int Rotation) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new PlaceBuildingCommand(Building, X, Y, Rotation);
+}
+
+/// <summary>DTO of <see cref="CancelBuildingCommand"/>.</summary>
+/// <param name="Index">Building entity slot index.</param>
+/// <param name="Generation">Building entity generation.</param>
+public sealed record CancelBuildingCommandDto(int Index, int Generation) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new CancelBuildingCommand(new EntityId(Index, Generation));
+}
+
+/// <summary>DTO of <see cref="UpgradeBuildingCommand"/>.</summary>
+/// <param name="Index">Building entity slot index.</param>
+/// <param name="Generation">Building entity generation.</param>
+public sealed record UpgradeBuildingCommandDto(int Index, int Generation) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new UpgradeBuildingCommand(new EntityId(Index, Generation));
+}
+
+/// <summary>DTO of <see cref="MoveBuildingCommand"/>.</summary>
+/// <param name="Index">Building entity slot index.</param>
+/// <param name="Generation">Building entity generation.</param>
+/// <param name="X">Column of the new top-left tile.</param>
+/// <param name="Y">Row of the new top-left tile.</param>
+/// <param name="Rotation">Quarter turns at the new place.</param>
+public sealed record MoveBuildingCommandDto(int Index, int Generation, int X, int Y, int Rotation) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new MoveBuildingCommand(new EntityId(Index, Generation), X, Y, Rotation);
+}
+
+/// <summary>DTO of <see cref="DemolishBuildingCommand"/>.</summary>
+/// <param name="Index">Building entity slot index.</param>
+/// <param name="Generation">Building entity generation.</param>
+public sealed record DemolishBuildingCommandDto(int Index, int Generation) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new DemolishBuildingCommand(new EntityId(Index, Generation));
 }

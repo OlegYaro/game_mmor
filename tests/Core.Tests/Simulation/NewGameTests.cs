@@ -99,7 +99,10 @@ public sealed class NewGameTests
         Assert.Equal(new FogCounts(world.Fog.TileCount - disc, 0, disc), world.Fog.CountStates());
         Assert.Equal(FogState.Visible, world.Fog.GetState(start.X, start.Y));
         Assert.Equal(
-            [Simulation.PositionStoreName, Simulation.RevealerStoreName, Simulation.HeroStoreName, Simulation.InventoryStoreName, Simulation.MoverStoreName],
+            [
+                Simulation.PositionStoreName, Simulation.RevealerStoreName, Simulation.HeroStoreName, Simulation.InventoryStoreName, Simulation.MoverStoreName,
+                Simulation.BuildingStoreName,
+            ],
             sim.Entities.Stores.Select(s => s.Name));
         Assert.Equal(marker, world.HeroEntity);
         Assert.Equal(Core.Heroes.Hero.FromBalance(SimTestData.Real.Hero), world.Heroes.Get(marker));

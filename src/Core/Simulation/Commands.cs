@@ -28,7 +28,10 @@ public sealed record SpawnMarkerCommand(Position Position) : ISimCommand
     public void WriteState(StateWriter writer) => Position.WriteState(writer);
 }
 
-/// <summary>Destroys an entity; ignored when it is no longer alive.</summary>
+/// <summary>
+/// Destroys an entity; ignored when it is no longer alive. A building is not destroyed (warning): its tiles and refund
+/// are handled by <see cref="DemolishBuildingCommand"/> and <see cref="CancelBuildingCommand"/>.
+/// </summary>
 /// <param name="Entity">Entity to destroy.</param>
 public sealed record DestroyEntityCommand(EntityId Entity) : ISimCommand
 {
@@ -42,6 +45,13 @@ public sealed record DestroyEntityCommand(EntityId Entity) : ISimCommand
     public void Execute(Simulation sim)
     {
         ArgumentNullException.ThrowIfNull(sim);
+        if (Buildings.BuildingRules.IsBuilding(sim, Entity))
+        {
+            sim.Log.Write(sim.Tick, LogLevel.Warning, Buildings.BuildingRules.LogCategory, "destroy_entity ignored: {entity} is a building (demolish it)",
+                LogField.Of("entity", Entity.ToString()));
+            return;
+        }
+
         sim.Buffer.Destroy(Entity);
     }
 

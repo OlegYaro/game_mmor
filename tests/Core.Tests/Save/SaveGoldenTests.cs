@@ -1,3 +1,4 @@
+using Core.Buildings;
 using Core.Content;
 using Core.Determinism;
 using Core.Entities;
@@ -158,12 +159,13 @@ public sealed class SaveGoldenTests
         Assert.Contains("v2 to v3", withoutV3.Error.Message, StringComparison.Ordinal);
     }
 
-    // The first format with the hero (stats, path, inventory) and tile changes (gathered stock, occupancy).
+    // The first format with the hero (stats, path, inventory), buildings and tile changes (gathered stock, occupancy).
     [Fact]
     [Trait("Req", "FR-SAVE-02")]
     [Trait("Req", "FR-SAVE-04")]
     [Trait("Req", "FR-HERO-01")]
     [Trait("Req", "FR-WORLD-05")]
+    [Trait("Req", "FR-BUILD-02")]
     public void SaveV3SampleLoads()
     {
         CreateV3SampleIfMissing();
@@ -195,33 +197,49 @@ public sealed class SaveGoldenTests
         Inventory inventory = world.Inventories.Get(heroEntity);
         Assert.True(SimTestData.Real.TryGetId("wood", out DefId wood));
         Assert.True(SimTestData.Real.TryGetId("berries", out DefId berries));
-        Assert.Equal(40 + V3Frozen.Gathered, inventory.Count(wood));
+        Assert.Equal(40 - 5 - 20 + V3Frozen.Gathered, inventory.Count(wood)); // campfire and house paid
         Assert.Equal(7, inventory.Count(berries));
         Assert.Equal(2, inventory.UsedStacks);
 
         Assert.Equal(1, world.Tiles.ChangedResourceTiles);
         Assert.Equal(V3Frozen.TreeStock, world.Tiles.GetEffectiveAmount(V3Frozen.TreeX, V3Frozen.TreeY));
-        Assert.Equal(new EntityId(1, 1), world.Tiles.GetOccupant(2, 3));
-        Assert.Equal(1, world.Tiles.OccupiedTiles);
+        Assert.True(SimTestData.Real.TryGetId("campfire", out DefId campfire));
+        Assert.True(SimTestData.Real.TryGetId("house", out DefId house));
+        Assert.Equal(
+            [
+                new ComponentEntry<Building>(new EntityId(1, 1), new Building(campfire, 1, BuildingState.Active, 0, V3Frozen.CampfireX, V3Frozen.CampfireY, 0, -1, -1, -1, 1)),
+                new ComponentEntry<Building>(new EntityId(2, 1), new Building(house, 1, BuildingState.Constructing, V3Frozen.HouseTicksLeft, V3Frozen.HouseX, V3Frozen.HouseY, 0, -1, -1, -1, 1)),
+            ],
+            world.Buildings.GetEntries());
+        Assert.Equal(new EntityId(1, 1), world.Tiles.GetOccupant(V3Frozen.CampfireX, V3Frozen.CampfireY));
+        Assert.Equal(new EntityId(2, 1), world.Tiles.GetOccupant(V3Frozen.HouseX + 1, V3Frozen.HouseY + 1));
+        Assert.Equal(5, world.Tiles.OccupiedTiles);
         Assert.Equal([new PendingCommand(V3Frozen.Tick + 1, V3Frozen.PendingSequence, new GatherCommand(V3Frozen.TreeX, V3Frozen.TreeY))], sim.PendingCommands);
 
-        // It keeps running: the pending order sends the hero back to the tree, which it gathers again.
+        // It keeps running: the pending order sends the hero back to the tree, which it gathers again; the house gets built.
         Heroes.HeroTestWorld.StepUntil(sim, () => world.Tiles.GetEffectiveAmount(V3Frozen.TreeX, V3Frozen.TreeY) < V3Frozen.TreeStock);
         Assert.Equal(HeroActivity.Gathering, world.Heroes.Get(heroEntity).Activity);
+        Heroes.HeroTestWorld.StepUntil(sim, () => world.Buildings.Get(new EntityId(2, 1)).State == BuildingState.Active);
     }
 
-    // Frozen together with save_v3.sav (values read once from the generated file, never from today's code).
+    // Frozen together with save_v3.sav (values read once from the generated file, never from today's code). The sample
+    // was made again on 15.10.2026 when buildings joined format v3 before its release (ADR 0007).
     private static class V3Frozen
     {
-        public const long Tick = 70;
+        public const long Tick = 103;
         public const string MapHash = "221e3e5aed2fc2d0";
         public const int Stamina = 98;   // one sprinting tick
-        public const int Goal = 1762;    // tile (34, 27)
+        public const int Goal = 1763;    // tile (35, 27)
         public const int Gathered = 10;  // one tree action
         public const int TreeX = 27;
         public const int TreeY = 25;
         public const int TreeStock = 62;
-        public const long PendingSequence = 5;
+        public const long PendingSequence = 6;
+        public const int CampfireX = 29;
+        public const int CampfireY = 29;
+        public const int HouseX = 32;
+        public const int HouseY = 24;
+        public const int HouseTicksLeft = 98;
     }
 
     private static void CreateV3SampleIfMissing()

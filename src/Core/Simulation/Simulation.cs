@@ -1,3 +1,4 @@
+using Core.Buildings;
 using Core.Content;
 using Core.Determinism;
 using Core.Entities;
@@ -38,13 +39,15 @@ public sealed record SimulationState(
 /// </summary>
 /// <remarks>
 /// <para>Two kinds exist. A game (<see cref="CreateNewGame"/>) has a <see cref="World"/>: generated map, tile changes,
-/// fog of war, revealers, the hero and a difficulty; it adds the <c>game</c>, <c>fog</c> and <c>tiles</c> hash
-/// subsystems and the <c>revealer</c>, <c>hero</c>, <c>inventory</c> and <c>mover</c> stores. A core simulation (the
-/// constructor; M0 tests and replays) has no world and keeps exactly the M0 state layout.</para>
+/// fog of war, revealers, the hero, buildings and a difficulty; it adds the <c>game</c>, <c>fog</c> and <c>tiles</c>
+/// hash subsystems and the <c>revealer</c>, <c>hero</c>, <c>inventory</c>, <c>mover</c> and <c>building</c> stores. A
+/// core simulation (the constructor; M0 tests and replays) has no world and keeps exactly the M0 state layout.</para>
 /// <para><see cref="Tick"/> is the number of the last executed tick; it is 0 before the first <see cref="Step"/>.
 /// <see cref="Step"/> first increments it, then runs the systems for the new value.</para>
 /// <para>The host changes state only through <see cref="Enqueue"/>. Systems and commands make structural entity
-/// changes only through <see cref="Buffer"/>, played back after every system.</para>
+/// changes only through <see cref="Buffer"/>, played back after every system. The one exception are the building
+/// orders: a placement creates its entity and a demolition or cancel destroys it at once, so that a later order of the
+/// same tick already sees the reserved or freed tiles (nothing iterates the stores while commands run).</para>
 /// </remarks>
 public sealed class Simulation : IStateHashable
 {
@@ -86,6 +89,9 @@ public sealed class Simulation : IStateHashable
 
     /// <summary>Name of the <see cref="Mover"/> store (games only; registered after <see cref="InventoryStoreName"/>).</summary>
     public const string MoverStoreName = "mover";
+
+    /// <summary>Name of the <see cref="Buildings.Building"/> store (games only; registered after <see cref="MoverStoreName"/>).</summary>
+    public const string BuildingStoreName = "building";
 
     private const string EcbCategory = "ecb";
 
@@ -262,6 +268,7 @@ public sealed class Simulation : IStateHashable
 
             sim.World.Fog.LoadExplored(state.World.ExploredBits);
             HeroRules.Restore(sim, state.World);
+            BuildingRules.Restore(sim, state.World);
         }
 
         long previousTick = state.Tick + 1;
@@ -346,7 +353,8 @@ public sealed class Simulation : IStateHashable
             World is null
                 ? null
                 : new WorldState(World.Size, World.Map.Version, World.MapHash, World.Fog.CopyExplored(), World.Revealers.GetEntries(),
-                    World.Heroes.GetEntries(), World.Inventories.GetEntries(), World.Movers.GetEntries(), World.Tiles.CaptureState()));
+                    World.Heroes.GetEntries(), World.Inventories.GetEntries(), World.Movers.GetEntries(), World.Buildings.GetEntries(),
+                    World.Tiles.CaptureState()));
     }
 
     /// <summary>Queues a command for tick <c><see cref="Tick"/> + 1</c> (also when called from inside a step).</summary>
@@ -476,6 +484,7 @@ public sealed class Simulation : IStateHashable
     [
         new ClockSystem(),
         new CommandSystem(),
+        new ConstructionSystem(),
         new MovementSystem(),
         new GatherSystem(),
         new FogSystem(),

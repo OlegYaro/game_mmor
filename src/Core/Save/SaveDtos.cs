@@ -15,7 +15,7 @@ public sealed record SaveHeader(int FormatVersion, string GameVersion, int World
 
 /// <summary>
 /// Save body, format v3 (v1 plus <c>game</c>, <c>fog</c> and the <c>revealer</c> store in v2; plus <c>tiles</c> and the
-/// <c>hero</c>, <c>inventory</c> and <c>mover</c> stores in v3).
+/// <c>hero</c>, <c>inventory</c>, <c>mover</c> and <c>building</c> stores in v3).
 /// </summary>
 /// <param name="Tick">Last executed tick.</param>
 /// <param name="Rng">One entry per RNG stream, in stream id order.</param>
@@ -93,12 +93,14 @@ public sealed record EntitiesDto(IReadOnlyList<int> Generations, IReadOnlyList<b
 /// <param name="Hero">Hero components in ascending entity index order (empty without a world).</param>
 /// <param name="Inventory">Inventory components in ascending entity index order (empty without a world).</param>
 /// <param name="Mover">Mover components in ascending entity index order (empty without a world).</param>
+/// <param name="Building">Building components in ascending entity index order (empty without a world).</param>
 public sealed record ComponentsDto(
     IReadOnlyList<PositionEntryDto> Position,
     IReadOnlyList<RevealerEntryDto> Revealer,
     IReadOnlyList<HeroEntryDto> Hero,
     IReadOnlyList<InventoryEntryDto> Inventory,
-    IReadOnlyList<MoverEntryDto> Mover);
+    IReadOnlyList<MoverEntryDto> Mover,
+    IReadOnlyList<BuildingEntryDto> Building);
 
 /// <summary>One position component with its owner.</summary>
 /// <param name="Index">Owner slot index.</param>
@@ -169,6 +171,38 @@ public sealed record ItemSlotDto(int Slot, string Item, int Count);
 /// <param name="StepProgress">Progress of the current step in thousandths of a walking tick.</param>
 /// <param name="Sprint">Sprint while stamina lasts.</param>
 public sealed record MoverEntryDto(int Index, int Generation, int Goal, int GoalRange, IReadOnlyList<int> Path, int StepIndex, int StepProgress, bool Sprint);
+
+/// <summary>
+/// One building component with its owner (FR-BUILD-02, 09, 13, ADR 0012). A storage's stock is its inventory entry
+/// (same owner) in <see cref="ComponentsDto.Inventory"/>.
+/// </summary>
+/// <param name="Index">Owner slot index.</param>
+/// <param name="Generation">Owner generation.</param>
+/// <param name="Building">Building type id (the string id, so content changes do not shift it).</param>
+/// <param name="Level">Level, from 1 (the new level while upgrading).</param>
+/// <param name="State">State name: <c>constructing</c>, <c>active</c>, <c>upgrading</c> or <c>moving</c>.</param>
+/// <param name="TicksLeft">Ticks until the construction, upgrade or move ends; 0 when active.</param>
+/// <param name="X">Column of the footprint's top-left tile.</param>
+/// <param name="Y">Row of the footprint's top-left tile.</param>
+/// <param name="Rotation">Quarter turns, 0 to 3.</param>
+/// <param name="TargetX">Column of the new top-left tile while moving, -1 otherwise.</param>
+/// <param name="TargetY">Row of the new top-left tile while moving, -1 otherwise.</param>
+/// <param name="TargetRotation">Rotation at the new place while moving, -1 otherwise.</param>
+/// <param name="Settlement">Owning settlement (1: the player's).</param>
+public sealed record BuildingEntryDto(
+    int Index,
+    int Generation,
+    string Building,
+    int Level,
+    string State,
+    int TicksLeft,
+    int X,
+    int Y,
+    int Rotation,
+    int TargetX,
+    int TargetY,
+    int TargetRotation,
+    int Settlement);
 
 /// <summary>The command queue.</summary>
 /// <param name="NextSequence">Sequence number of the next enqueued command.</param>

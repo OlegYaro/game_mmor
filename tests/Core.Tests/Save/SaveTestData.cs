@@ -68,10 +68,11 @@ internal static class SaveTestData
     public const ulong V3SampleSeed = 0x5A5E_0003;
 
     /// <summary>
-    /// Script of the frozen <c>Golden/save_v3.sav</c> (first format with the hero and tile changes): a peaceful 64² game;
-    /// 40 wood and 7 berries given in tick 1; the hero gathers the nearest explored tree until its first yield, a marker
-    /// spawned in tick 1 occupies tile (2, 3), then the hero is sent sprinting 6 tiles away and the save is taken one
-    /// tick into that walk (mid-step), with a pending gather order on the same tree.
+    /// Script of the frozen <c>Golden/save_v3.sav</c> (first format with the hero, buildings and tile changes): a peaceful
+    /// 64² game; 40 wood and 7 berries given in tick 1 while the hero starts gathering the nearest explored tree; a
+    /// campfire placed in tick 2 and built; a house placed right after it (still under construction in the save); the
+    /// hero gathers until its first yield, is then sent sprinting 6 tiles away and the save is taken one tick into that
+    /// walk (mid-step), with a pending gather order on the same tree.
     /// </summary>
     public static Simulation BuildV3Sample()
     {
@@ -79,11 +80,16 @@ internal static class SaveTestData
         (int tx, int ty) = Heroes.HeroTestWorld.NearestNode(sim, ResourceKind.Tree);
         sim.Enqueue(new GiveItemCommand("wood", 40));
         sim.Enqueue(new GiveItemCommand("berries", 7));
-        sim.Enqueue(new SpawnMarkerCommand(Position.FromTile(2, 3)));
         sim.Enqueue(new GatherCommand(tx, ty));
         sim.Step();
-        Assert.True(sim.World!.Tiles.TryOccupy(2, 3, sim.Entities.Registry.AliveEntities().Last()));
-        Heroes.HeroTestWorld.StepUntil(sim, () => sim.World.Tiles.IsResourceChanged(tx, ty));
+        (int cx, int cy) = Buildings.BuildingTestWorld.FindSpot(sim, "campfire", minDistance: 3);
+        sim.Enqueue(new PlaceBuildingCommand("campfire", cx, cy));
+        sim.Step();
+        Heroes.HeroTestWorld.StepUntil(sim, () => sim.World!.Buildings.Values[0].State == Core.Buildings.BuildingState.Active);
+        (int hx, int hy) = Buildings.BuildingTestWorld.FindSpot(sim, "house", minDistance: 3);
+        sim.Enqueue(new PlaceBuildingCommand("house", hx, hy));
+        sim.Step();
+        Heroes.HeroTestWorld.StepUntil(sim, () => sim.World!.Tiles.IsResourceChanged(tx, ty));
         (int mx, int my) = Heroes.HeroTestWorld.StraightTarget(sim, 6);
         sim.Enqueue(new MoveHeroCommand(mx, my, Sprint: true));
         sim.Step();

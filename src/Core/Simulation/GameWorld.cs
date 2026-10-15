@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Core.Buildings;
 using Core.Content;
 using Core.Determinism;
 using Core.Entities;
@@ -22,6 +23,7 @@ namespace Core.Sim;
 /// <param name="Heroes">Hero components in ascending entity index order (empty in saves from before M2).</param>
 /// <param name="Inventories">Inventory components in ascending entity index order.</param>
 /// <param name="Movers">Mover components in ascending entity index order.</param>
+/// <param name="Buildings">Building components in ascending entity index order.</param>
 /// <param name="Tiles">Tile changes against the generated map (<see cref="TileChanges"/>).</param>
 public sealed record WorldState(
     int MapSize,
@@ -32,6 +34,7 @@ public sealed record WorldState(
     IReadOnlyList<ComponentEntry<Hero>> Heroes,
     IReadOnlyList<ComponentEntry<Inventory>> Inventories,
     IReadOnlyList<ComponentEntry<Mover>> Movers,
+    IReadOnlyList<ComponentEntry<Building>> Buildings,
     TileChangesState Tiles);
 
 /// <summary>
@@ -48,10 +51,16 @@ public sealed record WorldState(
 /// the game interpolates between two ticks), <see cref="Heroes"/>, <see cref="Inventories"/> and <see cref="Movers"/>
 /// (the planned path). Orders are <see cref="MoveHeroCommand"/>, <see cref="GatherCommand"/> and
 /// <see cref="StopHeroCommand"/> through <see cref="Simulation.Enqueue"/>.</para>
+/// <para>Buildings: <see cref="Buildings"/>, the placement check and the territory in <see cref="Construction"/>, the
+/// outcome of every building order in <see cref="BuildingEvents"/>.</para>
 /// </remarks>
 public sealed class GameWorld
 {
+    /// <summary>How many of the latest <see cref="BuildingEvents"/> are kept.</summary>
+    public const int BuildingEventCapacity = 64;
+
     private readonly List<RevealSource> _sources = [];
+    private readonly List<BuildingEvent> _buildingEvents = [];
     private Pathfinder? _pathfinder;
 
     internal GameWorld(WorldMap map, ulong mapHash, EntityWorld entities)
@@ -62,6 +71,7 @@ public sealed class GameWorld
         Heroes = entities.AddStore<Hero>(Simulation.HeroStoreName);
         Inventories = entities.AddStore<Inventory>(Simulation.InventoryStoreName);
         Movers = entities.AddStore<Mover>(Simulation.MoverStoreName);
+        Buildings = entities.AddStore<Building>(Simulation.BuildingStoreName);
         Fog = new FogOfWar(map.Size);
         Tiles = new TileChanges(map);
     }
@@ -90,6 +100,18 @@ public sealed class GameWorld
     /// <summary>Mover components (store <see cref="Simulation.MoverStoreName"/>).</summary>
     public ComponentStore<Mover> Movers { get; }
 
+    /// <summary>Building components (store <see cref="Simulation.BuildingStoreName"/>); see <see cref="Construction"/>.</summary>
+    public ComponentStore<Building> Buildings { get; }
+
+    /// <summary>
+    /// The latest processed building orders, oldest first (at most <see cref="BuildingEventCapacity"/>), for the game's
+    /// messages. Presentation only: not part of the state, not saved (empty after a load), not hashed.
+    /// </summary>
+    public IReadOnlyList<BuildingEvent> BuildingEvents => _buildingEvents;
+
+    /// <summary>Sequence of the latest building event; 0 before the first.</summary>
+    public long LastBuildingEventSequence { get; private set; }
+
     /// <summary>Changes of the tiles against the generated map: resource stocks and occupancy (FR-WORLD-05).</summary>
     public TileChanges Tiles { get; }
 
@@ -115,6 +137,20 @@ public sealed class GameWorld
 
             return _pathfinder;
         }
+    }
+
+    /// <summary>Appends a building event (dropping the oldest beyond <see cref="BuildingEventCapacity"/>) and returns it.</summary>
+    internal BuildingEvent AddBuildingEvent(long tick, string command, BuildResult result, EntityId building, string buildingId, int x, int y,
+        IReadOnlyList<ItemAmountDef> lost)
+    {
+        var added = new BuildingEvent(++LastBuildingEventSequence, tick, command, result, building, buildingId, x, y, lost);
+        if (_buildingEvents.Count == BuildingEventCapacity)
+        {
+            _buildingEvents.RemoveAt(0);
+        }
+
+        _buildingEvents.Add(added);
+        return added;
     }
 
     /// <summary>

@@ -66,9 +66,9 @@ internal sealed class SaveMigrationV1ToV2 : ISaveMigration
 }
 
 /// <summary>
-/// v2 → v3 (M2, FR-WORLD-05, FR-HERO-01). Adds empty <c>components.hero</c>, <c>components.inventory</c> and
-/// <c>components.mover</c> stores and an empty <c>tiles = {resources: [], occupancy: []}</c>: v2 games had no hero and
-/// no tile changes. The hero itself needs the content's balance, so it is not created here: on load, the entity with
+/// v2 → v3 (M2, FR-WORLD-05, FR-HERO-01, FR-BUILD-02). Adds empty <c>components.hero</c>, <c>components.inventory</c>,
+/// <c>components.mover</c> and <c>components.building</c> stores and an empty <c>tiles = {resources: [], occupancy: []}</c>:
+/// v2 games had no hero, no buildings and no tile changes. The hero itself needs the content's balance, so it is not created here: on load, the entity with
 /// the hero revealer (the start marker of v2) becomes the hero with default data and an empty inventory
 /// (<c>Simulation.Restore</c>). The header is unchanged. Frozen: never edit after release.
 /// </summary>
@@ -86,14 +86,16 @@ internal sealed class SaveMigrationV2ToV3 : ISaveMigration
             throw new InvalidOperationException("v2 body has no 'components' object.");
         }
 
-        if (body.ContainsKey("tiles") || components.ContainsKey("hero") || components.ContainsKey("inventory") || components.ContainsKey("mover"))
+        if (body.ContainsKey("tiles") || components.ContainsKey("hero") || components.ContainsKey("inventory") || components.ContainsKey("mover")
+            || components.ContainsKey("building"))
         {
-            throw new InvalidOperationException("v2 body already has v3 members ('tiles' or 'components.hero', 'inventory', 'mover').");
+            throw new InvalidOperationException("v2 body already has v3 members ('tiles' or 'components.hero', 'inventory', 'mover', 'building').");
         }
 
         components["hero"] = new JsonArray();
         components["inventory"] = new JsonArray();
         components["mover"] = new JsonArray();
+        components["building"] = new JsonArray();
         body["tiles"] = new JsonObject
         {
             ["resources"] = new JsonArray(),

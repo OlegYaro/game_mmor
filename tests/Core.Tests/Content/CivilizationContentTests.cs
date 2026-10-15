@@ -200,6 +200,17 @@ public sealed class CivilizationContentTests
     }
 
     [Fact]
+    [Trait("Req", "FR-BUILD-09")]
+    public void UpgradesNeverShrinkStorageOrCapacity()
+    {
+        ContentLoadResult storage = LoadWith("buildings/buildings.json", items => Item(items, "storage")["levels"]![1]!["storage"] = 10);
+        AssertSingleError(storage, ContentErrorKind.Validation, "buildings/buildings.json", "$.items[2].levels[1]");
+
+        ContentLoadResult capacity = LoadWith("buildings/buildings.json", items => Item(items, "house")["levels"]![2]!["capacity"] = 1);
+        AssertSingleError(capacity, ContentErrorKind.Validation, "buildings/buildings.json", "$.items[1].levels[2]");
+    }
+
+    [Fact]
     [Trait("Req", "FR-HERO-01")]
     public void HeroBalanceLoadsWithAgreedStartValues()
     {

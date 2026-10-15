@@ -406,6 +406,13 @@ public sealed class ContentCatalog
         for (int level = 0; level < building.Levels.Count; level++)
         {
             BuildingLevelDef levelDef = building.Levels[level];
+            if (level > 0 && (levelDef.Storage < building.Levels[level - 1].Storage || levelDef.Capacity < building.Levels[level - 1].Capacity))
+            {
+                // An upgrade never shrinks a building: residents and stock always keep their place (ADR 0012).
+                errors.Add(new ContentError(ContentErrorKind.Validation, file, $"$.items[{index}].levels[{level}]",
+                    $"Building '{building.Id}' level {level + 1} has less storage or capacity than level {level}."));
+            }
+
             for (int i = 0; i < levelDef.Cost.Count; i++)
             {
                 CheckTarget<ItemDef>(file, $"$.items[{index}].levels[{level}].cost[{i}].item", building.Id, levelDef.Cost[i].Item, "item", byId, errors);

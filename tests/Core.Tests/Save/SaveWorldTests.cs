@@ -82,7 +82,8 @@ public sealed class SaveWorldTests
         Assert.Equal(
             ["tick", "rng", "entities", "components", "commands", "game", "fog", "tiles"],
             body.Select(p => p.Key));
-        Assert.Equal(["position", "revealer", "hero", "inventory", "mover"], body["components"]!.AsObject().Select(p => p.Key));
+        Assert.Equal(["position", "revealer", "hero", "inventory", "mover", "building"], body["components"]!.AsObject().Select(p => p.Key));
+        Assert.Empty(body["components"]!["building"]!.AsArray());
         Assert.Equal(0, (int)body["components"]!["hero"]![0]!["index"]!);
         Assert.Equal("idle", (string?)body["components"]!["hero"]![0]!["activity"]);
         Assert.Equal(SimTestData.Real.Hero.BackpackStacks, (int)body["components"]!["inventory"]![0]!["backpackSize"]!);

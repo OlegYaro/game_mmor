@@ -53,7 +53,21 @@ internal sealed class CommandSystem : ISimSystem
 }
 
 /// <summary>
-/// Third system: walkers advance along their paths and heroes spend or regain stamina (FR-HERO-01). Runs after the
+/// Third system: constructions, upgrades and moves of buildings count down and finish (FR-BUILD-02, 09, 13). Runs after
+/// the commands, so an order's tick counts as its first, and before the movement, so tiles a finished move frees are
+/// walkable in the same tick. Simulations without a world skip it.
+/// </summary>
+internal sealed class ConstructionSystem : ISimSystem
+{
+    public const string SystemName = "construction";
+
+    public string Name => SystemName;
+
+    public void Update(Simulation sim) => Core.Buildings.BuildingRules.Update(sim);
+}
+
+/// <summary>
+/// Fourth system: walkers advance along their paths and heroes spend or regain stamina (FR-HERO-01). Runs after the
 /// commands, so an order moves the hero in the tick it executes, and before the fog, so sight follows the new position.
 /// Simulations without a world skip it.
 /// </summary>
@@ -67,7 +81,7 @@ internal sealed class MovementSystem : ISimSystem
 }
 
 /// <summary>
-/// Fourth system: heroes standing next to their node work on it and fill the backpack (FR-HERO-02, FR-WORLD-05). Runs
+/// Fifth system: heroes standing next to their node work on it and fill the backpack (FR-HERO-02, FR-WORLD-05). Runs
 /// after the movement, so gathering starts in the tick the hero arrives. Simulations without a world skip it.
 /// </summary>
 internal sealed class GatherSystem : ISimSystem

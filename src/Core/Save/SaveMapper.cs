@@ -1,3 +1,4 @@
+using Core.Buildings;
 using Core.Content;
 using Core.Determinism;
 using Core.Entities;
@@ -86,11 +87,13 @@ internal static class SaveMapper
                 e.Value.StepIndex, e.Value.StepProgress, e.Value.Sprint))
             .ToArray();
 
+        BuildingEntryDto[] buildings = world is null ? [] : world.Buildings.Select(e => ToDto(e, content)).ToArray();
+
         return new SaveBodyDto(
             state.Tick,
             rng,
             new EntitiesDto(state.Entities.Generations.ToArray(), state.Entities.Alive.ToArray()),
-            new ComponentsDto(positions, revealers, heroes, inventories, movers),
+            new ComponentsDto(positions, revealers, heroes, inventories, movers, buildings),
             new CommandQueueDto(state.NextCommandSequence, pending),
             new GameDto(DifficultyNames.ToName(state.Difficulty), world?.MapSize ?? 0, world?.MapHash ?? 0),
             new FogDto(exploredRuns),
@@ -116,6 +119,14 @@ internal static class SaveMapper
         Inventory inventory = entry.Value;
         return new InventoryEntryDto(entry.Entity.Index, entry.Entity.Generation, inventory.Backpack.Count, Slots(inventory.Backpack, content),
             inventory.Equipment.Count, Slots(inventory.Equipment, content));
+    }
+
+    private static BuildingEntryDto ToDto(ComponentEntry<Building> entry, ContentCatalog content)
+    {
+        Building b = entry.Value;
+        return new BuildingEntryDto(entry.Entity.Index, entry.Entity.Generation, content.Get(b.Def).Id, b.Level,
+            NameOf(Construction.StateNames, (int)b.State, "building state"), b.TicksLeft, b.X, b.Y, b.Rotation, b.TargetX, b.TargetY,
+            b.TargetRotation, b.Settlement);
     }
 
     private static TilesDto ToDto(TileChangesState tiles) => new(
@@ -197,9 +208,10 @@ internal static class SaveMapper
         if (size == 0)
         {
             if (body.Game.MapHash != 0 || body.Fog.ExploredRuns.Count != 0 || components.Revealer.Count != 0 || components.Hero.Count != 0
-                || components.Inventory.Count != 0 || components.Mover.Count != 0 || body.Tiles.Resources.Count != 0 || body.Tiles.Occupancy.Count != 0)
+                || components.Inventory.Count != 0 || components.Mover.Count != 0 || components.Building.Count != 0 || body.Tiles.Resources.Count != 0
+                || body.Tiles.Occupancy.Count != 0)
             {
-                throw new InvalidDataException("A save without a world (mapSize 0) must have mapHash 0, no fog runs, revealers, hero components or tile changes.");
+                throw new InvalidDataException("A save without a world (mapSize 0) must have mapHash 0, no fog runs, revealers, hero or building components or tile changes.");
             }
 
             return null;
@@ -229,7 +241,21 @@ internal static class SaveMapper
             components.Hero.Select(ToHero).ToArray(),
             components.Inventory.Select(i => ToInventory(i, content)).ToArray(),
             components.Mover.Select(ToMover).ToArray(),
+            components.Building.Select(b => ToBuilding(b, content)).ToArray(),
             ToTiles(body.Tiles));
+    }
+
+    private static ComponentEntry<Building> ToBuilding(BuildingEntryDto? dto, ContentCatalog content)
+    {
+        NotNull(dto, "building entry");
+        if (!content.TryGetId(dto.Building, out DefId def) || content.Get(def) is not BuildingDef)
+        {
+            throw new InvalidDataException($"Unknown building '{dto.Building}'.");
+        }
+
+        return new ComponentEntry<Building>(new EntityId(dto.Index, dto.Generation), new Building(def, dto.Level,
+            (BuildingState)ValueOf(Construction.StateNames, dto.State, "building state"), dto.TicksLeft, dto.X, dto.Y, dto.Rotation,
+            dto.TargetX, dto.TargetY, dto.TargetRotation, dto.Settlement));
     }
 
     private static ComponentEntry<Hero> ToHero(HeroEntryDto? h)
