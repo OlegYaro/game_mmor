@@ -55,8 +55,11 @@ internal static class HeroTestWorld
         throw new InvalidOperationException($"No straight {steps}-step target around the hero.");
     }
 
-    /// <summary>The explored gatherable node of <paramref name="kind"/> nearest to the hero (ties by y, then x).</summary>
-    public static (int X, int Y) NearestNode(Simulation sim, ResourceKind kind)
+    /// <summary>
+    /// The explored, reachable node of <paramref name="kind"/> nearest to the hero (ties by y, then x) at a Chebyshev
+    /// distance of at least <paramref name="minDistance"/>.
+    /// </summary>
+    public static (int X, int Y) NearestNode(Simulation sim, ResourceKind kind, int minDistance = 4)
     {
         GameWorld world = sim.World!;
         (int hx, int hy) = HeroTile(sim);
@@ -67,7 +70,7 @@ internal static class HeroTestWorld
             for (int x = 0; x < world.Size; x++)
             {
                 int distance = Math.Max(Math.Abs(x - hx), Math.Abs(y - hy));
-                if (world.Tiles.GetEffectiveResource(x, y) == kind && world.Fog.GetState(x, y) != FogState.Unknown && distance > 3
+                if (world.Tiles.GetEffectiveResource(x, y) == kind && world.Fog.GetState(x, y) != FogState.Unknown && distance >= minDistance
                     && distance < bestDistance && world.Pathfinder.TryFindApproachTile(world.Pathfinder.Grid.Index(hx, hy), world.Pathfinder.Grid.Index(x, y), 100_000, out _))
                 {
                     best = (x, y);

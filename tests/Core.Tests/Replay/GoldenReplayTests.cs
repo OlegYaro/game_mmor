@@ -190,9 +190,21 @@ public sealed class GoldenReplayTests(ITestOutputHelper output)
                 Simulation.CommandsHashName, Simulation.GameHashName, Simulation.FogHashName, Simulation.TilesHashName],
             last.Entries.Select(e => e.Name));
 
+        foreach (Type kind in new[] { typeof(MoveHeroCommand), typeof(GatherCommand), typeof(StopHeroCommand), typeof(GiveItemCommand) })
+        {
+            Assert.Contains(golden.Replay.Commands, c => c.Command.GetType() == kind);
+        }
+
         ReplayPlayer first = ReplayPlayer.Start(golden.Replay, SimTestData.Real);
         first.RunTo(6500);
         Assert.True(first.Simulation.Now.IsNight);
+
+        // The save is taken while the hero walks to a tree it will gather after the load.
+        GameWorld world = first.Simulation.World!;
+        Assert.True(world.Movers.Get(world.HeroEntity).IsMoving);
+        Assert.Equal(Core.Heroes.HeroActivity.Gathering, world.Heroes.Get(world.HeroEntity).Activity);
+        int changedBefore = world.Tiles.ChangedResourceTiles;
+        Assert.True(changedBefore > 0);
         SaveLoadResult loaded = SaveGame.Read(SaveGame.ToBytes(first.Simulation), SimTestData.Real);
         Assert.True(loaded.Succeeded, loaded.Error?.Message);
         Assert.Null(loaded.Simulation!.ComputeHashes().FindFirstMismatch(first.Simulation.ComputeHashes()));
@@ -205,6 +217,8 @@ public sealed class GoldenReplayTests(ITestOutputHelper output)
         AssertNoDivergence(golden.Expected, actual);
         Assert.Equal(golden.Expected.Last!.Value.Hashes.Combined, actual.Last!.Value.Hashes.Combined);
         Assert.Equal(0, loaded.Simulation.World!.Fog.CountStates().Unknown);
+        Assert.True(loaded.Simulation.World.Tiles.ChangedResourceTiles > changedBefore);
+        Assert.Equal(Core.Heroes.HeroStopReason.Stopped, loaded.Simulation.World.Heroes.Get(loaded.Simulation.World.HeroEntity).LastStop);
     }
 
     [Fact]

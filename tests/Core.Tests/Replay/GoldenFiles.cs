@@ -4,6 +4,7 @@ using Core.Replay;
 using Core.Sim;
 using Core.Tests.Content;
 using Core.Tests.Sim;
+using Core.WorldGen;
 
 namespace Core.Tests.Replay;
 
@@ -43,7 +44,8 @@ internal static class GoldenFiles
 
     /// <summary>
     /// M1 scenario: a new game on a 64² world (hard), through nightfall (fog radius halves) and dawn, with markers,
-    /// destroys and a <c>reveal</c> after nightfall; hashes every 250 ticks.
+    /// destroys and a <c>reveal</c> after nightfall; hashes every 250 ticks. Since M2 the hero also walks (and
+    /// sprints), gathers, gets items, is stopped and receives rejected orders (<see cref="WorldHeroTicks"/>).
     /// </summary>
     public static ReplayGolden World => _world.Value;
 
@@ -52,6 +54,13 @@ internal static class GoldenFiles
 
     /// <summary>Tick at which <see cref="World"/> reveals the map (after nightfall at tick 6000).</summary>
     public const long WorldRevealTick = 7000;
+
+    /// <summary>
+    /// Ticks (before the step) at which the <see cref="World"/> script orders the hero: gather the nearest tree, sprint
+    /// away, receive stone, an order outside the map (rejected), gather a stone or bush, gather a tree farther away shortly
+    /// before the save at tick 6500 (so the hero walks across the save and gathers after it), stop.
+    /// </summary>
+    public static IReadOnlyList<long> WorldHeroTicks { get; } = [20, 1500, 2000, 2600, 3000, 6490, 8200];
 
     public static string PathOf(string fileName) => Path.Combine(Directory, fileName);
 
@@ -101,16 +110,57 @@ internal static class GoldenFiles
     private static ReplayFile ScenarioReplayScript() =>
         RecordRandomCommands(new Simulation(0x5CE7A410, SimTestData.Real), scriptSeed: 2, endTick: 10_000, spawnPermille: 8, destroyPermille: 5);
 
-    // The start marker (the only revealer) is entity 0; it is never destroyed, so the fog keeps a source.
-    private static ReplayFile WorldReplayScript() =>
-        RecordRandomCommands(Simulation.CreateNewGame(SimTestData.Real, WorldOptions), scriptSeed: 3, endTick: 9_500, spawnPermille: 6, destroyPermille: 4,
+    // The hero (the only revealer) is entity 0; it is never destroyed, so the fog keeps a source. Hero targets are
+    // computed from the running simulation, so they are always explored and reachable.
+    private static ReplayFile WorldReplayScript()
+    {
+        Simulation sim = Simulation.CreateNewGame(SimTestData.Real, WorldOptions);
+        return RecordRandomCommands(sim, scriptSeed: 3, endTick: 9_500, spawnPermille: 6, destroyPermille: 4,
             keepAlive: new EntityId(0, 1), extra: (tick, recorder) =>
             {
                 if (tick == WorldRevealTick - 1)
                 {
                     recorder.Enqueue(new RevealAllCommand());
                 }
+
+                ISimCommand? hero = Array.IndexOf([.. WorldHeroTicks], tick) switch
+                {
+                    0 => Gather(Heroes.HeroTestWorld.NearestNode(sim, ResourceKind.Tree)),
+                    1 => Walk(Heroes.HeroTestWorld.StraightTarget(sim, 9), sprint: true),
+                    2 => new GiveItemCommand("stone", 200),
+                    3 => new MoveHeroCommand(-1, 3),
+                    4 => Gather(NodeOrTree(sim, ResourceKind.Stone, ResourceKind.BerryBush)),
+                    5 => Gather(Heroes.HeroTestWorld.NearestNode(sim, ResourceKind.Tree, minDistance: 8)),
+                    6 => new StopHeroCommand(),
+                    _ => null,
+                };
+                if (hero is not null)
+                {
+                    recorder.Enqueue(hero);
+                }
             });
+
+        static GatherCommand Gather((int X, int Y) tile) => new(tile.X, tile.Y);
+
+        static MoveHeroCommand Walk((int X, int Y) tile, bool sprint) => new(tile.X, tile.Y, sprint);
+
+        static (int X, int Y) NodeOrTree(Simulation sim, params ResourceKind[] kinds)
+        {
+            foreach (ResourceKind kind in kinds)
+            {
+                try
+                {
+                    return Heroes.HeroTestWorld.NearestNode(sim, kind);
+                }
+                catch (InvalidOperationException)
+                {
+                    // None of this kind in sight; try the next.
+                }
+            }
+
+            return Heroes.HeroTestWorld.NearestNode(sim, ResourceKind.Tree);
+        }
+    }
 
     /// <summary>
     /// Records a replay by playing a seeded random script: per tick it may spawn markers (sometimes two in one tick),
