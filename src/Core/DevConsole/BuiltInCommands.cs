@@ -3,6 +3,7 @@ using Core.Content;
 using Core.Determinism;
 using Core.Entities;
 using Core.Fog;
+using Core.Heroes;
 using Core.Logging;
 using Core.Save;
 using Core.Sim;
@@ -11,8 +12,8 @@ using Core.WorldGen;
 namespace Core.DevConsole;
 
 /// <summary>
-/// The built-in console commands: help, tick, speed, pause, resume, seed, hash, spawn, save, load, log (M0) and
-/// world, worldhash, fog, reveal, goto (M1).
+/// The built-in console commands: help, tick, speed, pause, resume, seed, hash, spawn, save, load, log (M0),
+/// world, worldhash, fog, reveal, goto (M1) and hero, herogo, give (M2).
 /// </summary>
 internal static class BuiltInCommands
 {
@@ -37,6 +38,9 @@ internal static class BuiltInCommands
         console.Register("fog", "fog", "Print how many tiles are unknown, explored and visible.", FogCounts);
         console.Register("reveal", "reveal", "Mark the whole map explored (runs next tick, recorded in replays).", Reveal);
         console.Register("goto", "goto <x> <y>", "Move the camera to a tile.", GoTo);
+        console.Register("hero", "hero", "Print the hero: position, health, stamina, activity, path and inventory.", HeroInfo);
+        console.Register("herogo", "herogo <x> <y> [sprint]", "Order the hero to walk to a tile (runs next tick, recorded in replays).", HeroGo);
+        console.Register("give", "give <item> <count>", "Put items into the hero's backpack, as many as fit (runs next tick, recorded in replays).", Give);
     }
 
     private static ConsoleResult Usage(DevConsole console, string name) =>
@@ -253,6 +257,117 @@ internal static class BuiltInCommands
         }
 
         return ConsoleResult.OkWithCamera(new CameraRequest(x, y), string.Create(CultureInfo.InvariantCulture, $"camera to {x},{y}"));
+    }
+
+    private static bool TryGetHero(DevConsoleContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out GameWorld? world,
+        out EntityId hero, out ConsoleResult failure)
+    {
+        world = context.Simulation.Current.World;
+        hero = world?.HeroEntity ?? EntityId.None;
+        failure = world is null ? NoWorld() : ConsoleResult.Fail("There is no hero in this game.");
+        return world is not null && hero != EntityId.None;
+    }
+
+    private static ConsoleResult HeroInfo(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        if (args.Count != 0)
+        {
+            return ConsoleResult.Fail("Usage: hero");
+        }
+
+        if (!TryGetHero(context, out GameWorld? world, out EntityId entity, out ConsoleResult failure))
+        {
+            return failure;
+        }
+
+        Simulation sim = context.Simulation.Current;
+        ContentCatalog content = sim.Content;
+        CultureInfo inv = CultureInfo.InvariantCulture;
+        Hero hero = world.Heroes.Get(entity);
+        Position position = sim.Positions.TryGet(entity, out Position p) ? p : default;
+        Mover mover = world.Movers.TryGet(entity, out Mover m) ? m : Mover.Idle;
+        Inventory inventory = world.Inventories.TryGet(entity, out Inventory i) ? i : Inventory.Create(0, 0);
+        int size = world.Size;
+
+        string activity = SaveMapper.HeroActivityNames[(int)hero.Activity]
+            + (hero.Activity == HeroActivity.Gathering ? string.Create(inv, $" {hero.TargetX},{hero.TargetY} (action {hero.ActionTicks} ticks)") : string.Empty);
+        string path = mover.IsMoving
+            ? string.Create(inv, $"path {mover.Path.Count - 1 - mover.StepIndex} steps left to {mover.Goal % size},{mover.Goal / size}{(mover.Sprint ? " (sprint)" : string.Empty)}")
+            : "path none";
+        string backpack = string.Join(", ", inventory.Backpack
+            .Select((slot, index) => (slot, index))
+            .Where(e => !e.slot.IsEmpty)
+            .Select(e => string.Create(inv, $"[{e.index}] {content.Get(e.slot.Item).Id} {e.slot.Count}")));
+        string equipment = string.Join(", ", inventory.Equipment.Select((slot, index) =>
+            (index < content.Hero.EquipmentSlots.Count ? content.Hero.EquipmentSlots[index] : index.ToString(inv)) + " "
+            + (slot.IsEmpty ? "-" : content.Get(slot.Item).Id)));
+
+        return ConsoleResult.Ok(
+        [
+            string.Create(inv, $"hero {entity} at tile {position.TileX},{position.TileY} ({position.X},{position.Y}) | health {hero.Health}/{content.Hero.Health} | stamina {hero.Stamina}/{content.Hero.Stamina}"),
+            string.Create(inv, $"attack {hero.Attack} | defense {hero.Defense} | spell power {hero.SpellPower} | knowledge {hero.Knowledge}"),
+            $"activity {activity} | last stop {SaveMapper.HeroStopReasonNames[(int)hero.LastStop]} | last order {SaveMapper.HeroOrderResultNames[(int)hero.LastOrder]} | {path}",
+            string.Create(inv, $"backpack {inventory.UsedStacks}/{inventory.Backpack.Count}{(backpack.Length == 0 ? string.Empty : ": " + backpack)}"),
+            "equipment: " + equipment,
+        ]);
+    }
+
+    private static ConsoleResult HeroGo(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        const string UsageText = "Usage: herogo <x> <y> [sprint] (tile coordinates)";
+        bool sprint = args.Count == 3 && string.Equals(args[2], "sprint", StringComparison.OrdinalIgnoreCase);
+        if (args.Count is < 2 or > 3 || (args.Count == 3 && !sprint))
+        {
+            return ConsoleResult.Fail(UsageText);
+        }
+
+        if (!TryParseInt(args[0], out int x) || !TryParseInt(args[1], out int y))
+        {
+            return ConsoleResult.Fail($"Coordinates must be whole numbers. {UsageText}");
+        }
+
+        if (!TryGetHero(context, out GameWorld? world, out _, out ConsoleResult failure))
+        {
+            return failure;
+        }
+
+        if (!world.Map.Terrain.Contains(x, y))
+        {
+            return ConsoleResult.Fail(string.Create(CultureInfo.InvariantCulture, $"Tile {x},{y} is outside the map (0..{world.Size - 1})."));
+        }
+
+        PendingCommand pending = context.Simulation.Current.Enqueue(new MoveHeroCommand(x, y, sprint));
+        return ConsoleResult.Ok(string.Create(CultureInfo.InvariantCulture,
+            $"hero ordered to {x},{y}{(sprint ? " sprinting" : string.Empty)} for tick {pending.ExecuteTick} (see 'hero' for the result)"));
+    }
+
+    private static ConsoleResult Give(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        const string UsageText = "Usage: give <item> <count>";
+        if (args.Count != 2)
+        {
+            return ConsoleResult.Fail(UsageText);
+        }
+
+        if (!TryParseInt(args[1], out int count) || count < 1)
+        {
+            return ConsoleResult.Fail($"Count must be a whole number of at least 1. {UsageText}");
+        }
+
+        if (!TryGetHero(context, out _, out _, out ConsoleResult failure))
+        {
+            return failure;
+        }
+
+        Simulation sim = context.Simulation.Current;
+        string item = args[0].ToLowerInvariant();
+        if (!sim.Content.TryGet(item, out ItemDef _))
+        {
+            return ConsoleResult.Fail($"Unknown item '{args[0]}'. Items: {string.Join(", ", sim.Content.Items.Select(i => i.Id))}.");
+        }
+
+        PendingCommand pending = sim.Enqueue(new GiveItemCommand(item, count));
+        return ConsoleResult.Ok(string.Create(CultureInfo.InvariantCulture, $"give {count} {item} queued for tick {pending.ExecuteTick}"));
     }
 
     private static bool TryValidName(string name) =>
