@@ -166,6 +166,36 @@ public sealed class HeroGatherTests
 
     [Fact]
     [Trait("Req", "FR-HERO-02")]
+    [Trait("Req", "FR-HERO-01")]
+    public void AGatherOrderMidStepFinishesTheStepEvenWhenItStartedInRange()
+    {
+        Simulation sim = NewGame();
+        (int x, int y) = NearestNode(sim, ResourceKind.Tree);
+        sim.Enqueue(new GatherCommand(x, y));
+        sim.Step();
+        StepUntil(sim, () => !MoverOf(sim).IsMoving);
+        (int ax, int ay) = HeroTile(sim);
+        (int tx, int ty) = StraightTarget(sim, 6);
+        sim.Enqueue(new MoveHeroCommand(tx, ty));
+        sim.Step();
+        Assert.Equal(Mover.ProgressPerTick, MoverOf(sim).StepProgress);
+
+        // Back to the tree while leaving tile A, which is within range of it: the step is finished, not undone.
+        sim.Enqueue(new GatherCommand(x, y));
+        sim.Step();
+        Assert.Equal(2 * Mover.ProgressPerTick, MoverOf(sim).StepProgress);
+        Assert.NotEqual(Simulation.TileCenter(ax, ay), sim.Positions.Get(Hero(sim)));
+        Assert.Equal(HeroActivity.Gathering, HeroOf(sim).Activity);
+
+        StepUntil(sim, () => !MoverOf(sim).IsMoving);
+        (int hx, int hy) = HeroTile(sim);
+        Assert.NotEqual((ax, ay), (hx, hy));
+        Assert.InRange(HeroRules.Distance(hx, hy, x, y), 1, Balance.InteractionRange);
+        StepUntil(sim, () => InventoryOf(sim).Count(Item("wood")) > Rule("tree").YieldPerAction);
+    }
+
+    [Fact]
+    [Trait("Req", "FR-HERO-02")]
     [Trait("Req", "NFR-07")]
     public void GiveAddsWhatFitsAndIgnoresUnknownItems()
     {

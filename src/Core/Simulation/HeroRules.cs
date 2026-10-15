@@ -393,7 +393,9 @@ internal static class HeroRules
         int index = mover.StepIndex;
         int progress = mover.StepProgress + rate;
         bool stepStarts = mover.StepProgress == 0;
-        while (index < path.Count - 1 && !InRange(grid, path[index], mover))
+
+        // The range check applies only on a tile (at a step boundary): mid-step the walker always finishes the step.
+        while (index < path.Count - 1 && !(stepStarts && InRange(grid, path[index], mover)))
         {
             int from = path[index];
             int to = path[index + 1];

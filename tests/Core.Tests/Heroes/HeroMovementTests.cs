@@ -292,6 +292,27 @@ public sealed class HeroMovementTests
         Assert.True(InventoryOf(a).UsedStacks > 0);
     }
 
+    [Fact]
+    [Trait("Req", "FR-HERO-01")]
+    [Trait("Req", "NFR-04")]
+    public void PendingHeroOrdersAreHashedWithTheirPayload()
+    {
+        ISimCommand[] orders =
+        [
+            new MoveHeroCommand(3, 4), new MoveHeroCommand(3, 4, Sprint: true), new MoveHeroCommand(4, 3), new GatherCommand(3, 4),
+            new StopHeroCommand(), new GiveItemCommand("wood", 5), new GiveItemCommand("wood", 6), new GiveItemCommand("stone", 5),
+        ];
+
+        ulong[] hashes = [.. orders.Select(order =>
+        {
+            Simulation sim = new(1, SimTestData.Real);
+            sim.Enqueue(order);
+            return sim.ComputeHashes().Entries.Single(e => e.Name == Simulation.CommandsHashName).Hash;
+        })];
+
+        Assert.Equal(orders.Length, hashes.Distinct().Count());
+    }
+
     private static void AssertRejected(Simulation sim, ISimCommand command, HeroOrderResult expected)
     {
         Mover mover = MoverOf(sim);
