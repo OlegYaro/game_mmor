@@ -1,4 +1,5 @@
 using System.Globalization;
+using Core.Buildings;
 using Core.Content;
 using Core.Determinism;
 using Core.Entities;
@@ -13,7 +14,8 @@ namespace Core.DevConsole;
 
 /// <summary>
 /// The built-in console commands: help, tick, speed, pause, resume, seed, hash, spawn, save, load, log (M0),
-/// world, worldhash, fog, reveal, goto (M1) and hero, herogo, give (M2).
+/// world, worldhash, fog, reveal, goto (M1), hero, herogo, give, build, check, upgrade, movebuilding, demolish,
+/// cancelbuilding and buildings (M2).
 /// </summary>
 internal static class BuiltInCommands
 {
@@ -41,6 +43,13 @@ internal static class BuiltInCommands
         console.Register("hero", "hero", "Print the hero: position, health, stamina, activity, path and inventory.", HeroInfo);
         console.Register("herogo", "herogo <x> <y> [sprint]", "Order the hero to walk to a tile (runs next tick, recorded in replays).", HeroGo);
         console.Register("give", "give <item> <count>", "Put items into the hero's backpack, as many as fit (runs next tick, recorded in replays).", Give);
+        console.Register("build", "build <id> <x> <y> [rot]", "Place a building with its top-left tile at x,y (runs next tick; see 'buildings').", Build);
+        console.Register("check", "check <id> <x> <y> [rot]", "Show whether a building can be placed at x,y now, and why not.", Check);
+        console.Register("upgrade", "upgrade <entity>", "Upgrade a building to its next level (runs next tick; see 'buildings').", (c, a) => EntityOrder(c, a, "upgrade", e => new UpgradeBuildingCommand(e)));
+        console.Register("movebuilding", "movebuilding <entity> <x> <y> [rot]", "Move a building to a new top-left tile (runs next tick; see 'buildings').", MoveBuilding);
+        console.Register("demolish", "demolish <entity>", "Demolish a building for a partial refund (runs next tick; see 'buildings').", (c, a) => EntityOrder(c, a, "demolish", e => new DemolishBuildingCommand(e)));
+        console.Register("cancelbuilding", "cancelbuilding <entity>", "Cancel a building's construction, upgrade or move (runs next tick; see 'buildings').", (c, a) => EntityOrder(c, a, "cancelbuilding", e => new CancelBuildingCommand(e)));
+        console.Register("buildings", "buildings", "List the buildings, the territory and the last building order's result.", BuildingList);
     }
 
     private static ConsoleResult Usage(DevConsole console, string name) =>
@@ -368,6 +377,212 @@ internal static class BuiltInCommands
 
         PendingCommand pending = sim.Enqueue(new GiveItemCommand(item, count));
         return ConsoleResult.Ok(string.Create(CultureInfo.InvariantCulture, $"give {count} {item} queued for tick {pending.ExecuteTick}"));
+    }
+
+    private static ConsoleResult Build(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        if (!TryParsePlacement(context, args, "build", out _, out string id, out int x, out int y, out int rotation, out ConsoleResult failure))
+        {
+            return failure;
+        }
+
+        PendingCommand pending = context.Simulation.Current.Enqueue(new PlaceBuildingCommand(id, x, y, rotation));
+        return ConsoleResult.Ok(string.Create(CultureInfo.InvariantCulture,
+            $"build {id} at {x},{y} rot {rotation} queued for tick {pending.ExecuteTick} (see 'buildings' for the result)"));
+    }
+
+    private static ConsoleResult Check(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        if (!TryParsePlacement(context, args, "check", out _, out string id, out int x, out int y, out int rotation, out ConsoleResult failure))
+        {
+            return failure;
+        }
+
+        PlacementResult result = Construction.CheckPlacement(context.Simulation.Current, id, x, y, rotation);
+        string tile = result.TileX >= 0 ? string.Create(CultureInfo.InvariantCulture, $" at tile {result.TileX},{result.TileY}") : string.Empty;
+        return ConsoleResult.Ok(string.Create(CultureInfo.InvariantCulture, $"{id} at {x},{y} rot {rotation}: {Construction.NameOf(result.Reason)}{tile}"));
+    }
+
+    private static ConsoleResult MoveBuilding(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        const string UsageText = "Usage: movebuilding <entity> <x> <y> [rot]";
+        if (args.Count is < 3 or > 4)
+        {
+            return ConsoleResult.Fail(UsageText);
+        }
+
+        if (!TryGetBuildingArg(context, args[0], out GameWorld? world, out EntityId entity, out ConsoleResult failure))
+        {
+            return failure;
+        }
+
+        int rotation = world.Buildings.Get(entity).Rotation;
+        if (!TryParseInt(args[1], out int x) || !TryParseInt(args[2], out int y) || (args.Count == 4 && !TryParseInt(args[3], out rotation)))
+        {
+            return ConsoleResult.Fail($"Coordinates and rotation must be whole numbers. {UsageText}");
+        }
+
+        PendingCommand pending = context.Simulation.Current.Enqueue(new MoveBuildingCommand(entity, x, y, rotation));
+        return ConsoleResult.Ok(string.Create(CultureInfo.InvariantCulture,
+            $"move {entity} to {x},{y} rot {rotation} queued for tick {pending.ExecuteTick} (see 'buildings' for the result)"));
+    }
+
+    private static ConsoleResult EntityOrder(DevConsoleContext context, IReadOnlyList<string> args, string name, Func<EntityId, ISimCommand> order)
+    {
+        if (args.Count != 1)
+        {
+            return ConsoleResult.Fail($"Usage: {name} <entity>");
+        }
+
+        if (!TryGetBuildingArg(context, args[0], out _, out EntityId entity, out ConsoleResult failure))
+        {
+            return failure;
+        }
+
+        PendingCommand pending = context.Simulation.Current.Enqueue(order(entity));
+        return ConsoleResult.Ok(string.Create(CultureInfo.InvariantCulture,
+            $"{name} {entity} queued for tick {pending.ExecuteTick} (see 'buildings' for the result)"));
+    }
+
+    private static ConsoleResult BuildingList(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        if (args.Count != 0)
+        {
+            return ConsoleResult.Fail("Usage: buildings");
+        }
+
+        if (!TryGetWorld(context, out GameWorld? world))
+        {
+            return NoWorld();
+        }
+
+        Simulation sim = context.Simulation.Current;
+        CultureInfo inv = CultureInfo.InvariantCulture;
+        EraDef era = Construction.CurrentEra(sim);
+        List<string> lines =
+        [
+            Construction.GetTerritory(sim) is { } territory
+                ? string.Create(inv, $"territory: center {territory.CenterX},{territory.CenterY} radius {territory.Radius} | era {era.Id} | population {Construction.SettlementPopulation(sim)}")
+                : string.Create(inv, $"territory: none (place a center) | era {era.Id} | population {Construction.SettlementPopulation(sim)}"),
+        ];
+
+        ReadOnlySpan<EntityId> owners = world.Buildings.Entities;
+        for (int i = 0; i < owners.Length; i++)
+        {
+            Building b = world.Buildings.Values[i];
+            BuildingDef def = Construction.DefOf(sim.Content, b);
+            (int width, int height) = Construction.FootprintOf(def, b.Rotation);
+            string line = string.Create(inv,
+                $"{owners[i]} {def.Id} L{b.Level} {Construction.NameOf(b.State)} at {b.X},{b.Y} rot {b.Rotation} ({width}x{height}) progress {Construction.ProgressPermille(sim.Content, b)}");
+            if (b.State != BuildingState.Active)
+            {
+                line += string.Create(inv, $" ({b.TicksLeft} ticks left)");
+            }
+
+            if (b.State == BuildingState.Moving)
+            {
+                line += string.Create(inv, $" -> {b.TargetX},{b.TargetY} rot {b.TargetRotation}");
+            }
+
+            if (world.Inventories.TryGet(owners[i], out Inventory stock))
+            {
+                string items = string.Join(", ", stock.Backpack.Where(s => !s.IsEmpty).Select(s => string.Create(inv, $"{sim.Content.Get(s.Item).Id} {s.Count}")));
+                line += string.Create(inv, $" | stock {stock.UsedStacks}/{stock.Backpack.Count}{(items.Length == 0 ? string.Empty : ": " + items)}");
+            }
+
+            lines.Add(line);
+        }
+
+        if (owners.Length == 0)
+        {
+            lines.Add("no buildings");
+        }
+
+        if (world.BuildingEvents.Count > 0)
+        {
+            BuildingEvent last = world.BuildingEvents[^1];
+            string lost = last.Lost.Count == 0 ? string.Empty : "; lost " + string.Join(", ", last.Lost.Select(l => string.Create(inv, $"{l.Count} {l.Item}")));
+            lines.Add(string.Create(inv, $"last order (tick {last.Tick}): {last.Command} {last.BuildingId} {last.Building} at {last.X},{last.Y}: {Construction.NameOf(last.Result)}{lost}"));
+        }
+
+        return ConsoleResult.Ok(lines);
+    }
+
+    // build/check arguments: <id> <x> <y> [rot], a known building type, a game.
+    private static bool TryParsePlacement(DevConsoleContext context, IReadOnlyList<string> args, string name,
+        [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out GameWorld? world, out string id, out int x, out int y, out int rotation, out ConsoleResult failure)
+    {
+        string usage = $"Usage: {name} <id> <x> <y> [rot]";
+        world = null;
+        id = args.Count > 0 ? args[0].ToLowerInvariant() : string.Empty;
+        x = y = rotation = 0;
+        if (args.Count is < 3 or > 4)
+        {
+            failure = ConsoleResult.Fail(usage);
+            return false;
+        }
+
+        if (!TryParseInt(args[1], out x) || !TryParseInt(args[2], out y) || (args.Count == 4 && !TryParseInt(args[3], out rotation)))
+        {
+            failure = ConsoleResult.Fail($"Coordinates and rotation must be whole numbers. {usage}");
+            return false;
+        }
+
+        if (!TryGetWorld(context, out world))
+        {
+            failure = NoWorld();
+            return false;
+        }
+
+        ContentCatalog content = context.Simulation.Current.Content;
+        if (!content.TryGet(id, out BuildingDef _))
+        {
+            failure = ConsoleResult.Fail($"Unknown building '{args[0]}'. Buildings: {string.Join(", ", content.Buildings.Select(b => b.Id))}.");
+            world = null;
+            return false;
+        }
+
+        failure = ConsoleResult.Ok();
+        return true;
+    }
+
+    // An entity argument naming a live building: "#5v1", "5v1" or just the index "5".
+    private static bool TryGetBuildingArg(DevConsoleContext context, string text, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out GameWorld? world,
+        out EntityId entity, out ConsoleResult failure)
+    {
+        entity = EntityId.None;
+        if (!TryGetWorld(context, out world))
+        {
+            failure = NoWorld();
+            return false;
+        }
+
+        string trimmed = text.TrimStart('#');
+        int v = trimmed.IndexOf('v', StringComparison.OrdinalIgnoreCase);
+        if (v >= 0)
+        {
+            if (TryParseInt(trimmed[..v], out int index) && TryParseInt(trimmed[(v + 1)..], out int generation))
+            {
+                entity = new EntityId(index, generation);
+            }
+        }
+        else if (TryParseInt(trimmed, out int index))
+        {
+            foreach (EntityId owner in world.Buildings.Entities)
+            {
+                entity = owner.Index == index ? owner : entity;
+            }
+        }
+
+        if (entity == EntityId.None || !world.Buildings.Has(entity))
+        {
+            failure = ConsoleResult.Fail($"'{text}' is not a building. Type 'buildings' for a list.");
+            world = null;
+            return false;
+        }
+
+        failure = ConsoleResult.Ok();
+        return true;
     }
 
     private static bool TryValidName(string name) =>
