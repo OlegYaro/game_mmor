@@ -114,3 +114,8 @@
 - Таблицы «вехи MVP» и «дорожная карта» в обоих файлах не попали в текст (embedded content): раскладка M2–M5 в GDD и индексе — [предложение].
 - Все вопросы A–D в `docs/open-questions.md`; блокируют M2: A1–A4.
 - Код не менялся (фаза 3 — после исследований и «ок»).
+
+## Пересмотр дизайна: фаза 2, исследования (15.10.2026)
+Статус: выполнена, ждёт «ок» владельца.
+
+Глубоко: `docs/research/building-data.md` (#1, M2) и `docs/research/ore-veins-density.md` (#10, M1.2/M2, с замерами текущей генерации). Кратко, с пометкой вехи: `roads-from-paths.md` (#2, M3), `economy-six-chains.md` (#3, M3), `specialists-poaching.md` (#4, M5), `faction-raid-decision.md` (#5, M4), `relation-modifiers.md` (#6, M5), `siege-walls-ladders.md` (#7, M4), `command-mode.md` (#8, M4), `world-map-travel.md` (#9, M5). Написаны субагентами, я проверил наличие и структуру, не все факты и ссылки. Числа рецептов и цен в #3 — оценки. Источники по части игр не подтверждены (отмечено в файлах). ADR 0012 и 0006 уточнены, новые вопросы — блок E в `docs/open-questions.md`.
