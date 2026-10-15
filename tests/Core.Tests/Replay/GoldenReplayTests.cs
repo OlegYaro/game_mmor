@@ -253,6 +253,8 @@ public sealed class GoldenReplayTests(ITestOutputHelper output)
         Assert.Equal(Normalize(GoldenFiles.ReadText("scenario_m0.json")), GoldenFiles.Scenario.Replay.ToJson());
         Assert.Equal(Normalize(GoldenFiles.ReadText("scenario_world_m1.json")), GoldenFiles.World.Replay.ToJson());
         Assert.Equal(Normalize(GoldenFiles.ReadText("scenario_world_m1.hashes.txt")), GoldenFiles.World.Expected.ToText());
+        Assert.Equal(Normalize(GoldenFiles.ReadText("scenario_m2.json")), GoldenFiles.M2.Replay.ToJson());
+        Assert.Equal(Normalize(GoldenFiles.ReadText("scenario_m2.hashes.txt")), GoldenFiles.M2.Expected.ToText());
     }
 
     private void AssertNoDivergence(HashTrace expected, HashTrace actual)

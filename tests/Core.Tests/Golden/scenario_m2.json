@@ -1,0 +1,20 @@
+{
+  "formatVersion": 1,
+  "seed": 807579938,
+  "contentHash": "6388a368af3afd54",
+  "endTick": 735,
+  "mapSize": 64,
+  "difficulty": "normal",
+  "commands": [
+    {"tick":1,"command":{"kind":"place_building","building":"house","x":34,"y":32,"rotation":0}},
+    {"tick":2,"command":{"kind":"gather","x":22,"y":22}},
+    {"tick":335,"command":{"kind":"place_building","building":"campfire","x":23,"y":22,"rotation":0}},
+    {"tick":336,"command":{"kind":"place_building","building":"house","x":22,"y":20,"rotation":0}},
+    {"tick":337,"command":{"kind":"place_building","building":"storage","x":25,"y":23,"rotation":0}},
+    {"tick":385,"command":{"kind":"gather","x":25,"y":22}},
+    {"tick":437,"command":{"kind":"upgrade_building","index":3,"generation":1}},
+    {"tick":485,"command":{"kind":"gather","x":31,"y":24}},
+    {"tick":582,"command":{"kind":"upgrade_building","index":2,"generation":1}},
+    {"tick":682,"command":{"kind":"move_building","index":2,"generation":1,"x":18,"y":16,"rotation":1}}
+  ]
+}

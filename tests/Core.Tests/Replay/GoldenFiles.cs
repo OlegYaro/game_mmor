@@ -31,6 +31,9 @@ internal static class GoldenFiles
     private static readonly Lazy<ReplayGolden> _world = new(() => LoadOrUpdate(
         "scenario_world_m1", WorldReplayScript, sampleInterval: 250));
 
+    private static readonly Lazy<ReplayGolden> _m2 = new(() => LoadOrUpdate(
+        "scenario_m2", M2Scenario.Record, sampleInterval: 50));
+
     /// <summary>True when the run may (re)write goldens.</summary>
     public static bool Updating => Environment.GetEnvironmentVariable(UpdateVariable) == "1";
 
@@ -48,6 +51,9 @@ internal static class GoldenFiles
     /// sprints), gathers, gets items, is stopped and receives rejected orders (<see cref="WorldHeroTicks"/>).
     /// </summary>
     public static ReplayGolden World => _world.Value;
+
+    /// <summary>M2 acceptance scenario (<see cref="M2Scenario"/>): gathering, campfire, house, storage, upgrade, move; hashes every 50 ticks.</summary>
+    public static ReplayGolden M2 => _m2.Value;
 
     /// <summary>New-game parameters of <see cref="World"/>.</summary>
     public static NewGameOptions WorldOptions { get; } = new(0x3011D_F06, 64, Difficulty.Hard);
