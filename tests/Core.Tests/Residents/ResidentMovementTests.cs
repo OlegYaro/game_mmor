@@ -65,4 +65,28 @@ public sealed class ResidentMovementTests
         Assert.Contains(sim.Log.GetEvents(), e => e.Level == LogLevel.Warning && e.Category == ResidentRules.LogCategory
             && e.Fields.Any(f => f.ValueText.Contains("blocked", StringComparison.Ordinal)));
     }
+
+    [Fact]
+    [Trait("Req", "FR-NPC-02")]
+    public void AWalkerThatIsNeitherHeroNorResidentWalksAtTheHeroPace()
+    {
+        Simulation sim = NewResidentGame();
+        GameWorld world = sim.World!;
+        (int hx, int hy) = Heroes.HeroTestWorld.HeroTile(sim);
+        (int tx, int ty) = Heroes.HeroTestWorld.StraightTarget(sim, 3);
+        EntityId walker = sim.Entities.Create();
+        sim.Positions.Add(walker, Simulation.TileCenter(hx, hy));
+        PassabilityGrid grid = world.Pathfinder.Grid;
+        Assert.True(AgentMovement.TryPlanFrom(world, grid.Index(hx, hy), grid.Index(tx, ty), 0, sprint: false, out Mover mover));
+        world.Movers.Add(walker, mover);
+        (int wx, int wy) = Core.Tests.Buildings.BuildingTestWorld.FindTile(sim, (x, y) => world.Map.Terrain.IsWater(x, y));
+        Assert.False(AgentMovement.TryPlanFrom(world, grid.Index(hx, hy), grid.Index(wx, wy), 0, sprint: false, out Mover none));
+        Assert.Equal(Mover.Idle, none);
+
+        sim.Step((3 * sim.Content.Hero.StepTicks) - 1);
+        Assert.True(world.Movers.Get(walker).IsMoving);
+        sim.Step();
+        Assert.False(world.Movers.Get(walker).IsMoving);
+        Assert.Equal(Simulation.TileCenter(tx, ty), sim.Positions.Get(walker));
+    }
 }

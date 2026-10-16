@@ -168,6 +168,29 @@ public sealed class SaveResidentTests
     }
 
     [Fact]
+    [Trait("Req", "FR-SAVE-02")]
+    public void MigrationV3ToV4AddsAnEmptyResidentStoreAndTheFirstEraOnlyForGamesWithAWorld()
+    {
+        var migration = new SaveMigrationV3ToV4();
+        JsonObject game = Migrated(64);
+        JsonObject core = Migrated(0);
+
+        Assert.Equal(3, migration.FromVersion);
+        Assert.Equal("camp", (string?)game["settlement"]!["reachedEra"]);
+        Assert.Equal(string.Empty, (string?)core["settlement"]!["reachedEra"]);
+        Assert.Empty(game["components"]!["resident"]!.AsArray());
+        Assert.Throws<InvalidOperationException>(() => migration.Migrate(new JsonObject(), new JsonObject { ["game"] = new JsonObject() }));
+        Assert.Throws<InvalidOperationException>(() => migration.Migrate(new JsonObject(), game));
+
+        static JsonObject Migrated(int mapSize)
+        {
+            var body = new JsonObject { ["components"] = new JsonObject(), ["game"] = new JsonObject { ["mapSize"] = mapSize } };
+            new SaveMigrationV3ToV4().Migrate(new JsonObject(), body);
+            return body;
+        }
+    }
+
+    [Fact]
     [Trait("Req", "FR-SAVE-04")]
     [Trait("Req", "NFR-04")]
     public void PendingSpawnOrdersAreHashedWithTheirProfession()
