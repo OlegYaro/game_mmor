@@ -23,6 +23,9 @@ public partial class StorageWindow : ToggleWindow
     private const int NumberWidth = 120;
     private const int Unset = -1;
 
+    // A filter just sent is shown for at most this long while Core has not stepped (e.g. on pause).
+    private const ulong PendingMsec = 3000;
+
     private readonly List<StorageRow> _storageRows = [];
     private readonly List<Button> _categoryButtons = [];
     private readonly List<ItemRow> _itemRows = [];
@@ -36,6 +39,9 @@ public partial class StorageWindow : ToggleWindow
     private Button _deposit = null!;
     private string _foodShown = string.Empty;
     private bool _languageDirty = true;
+    private EntityId _pendingStorage = EntityId.None;
+    private int _pendingMask;
+    private ulong _pendingUntil;
 
     /// <summary>The storage whose filter is shown, or none.</summary>
     public EntityId Selected { get; private set; }
@@ -276,7 +282,7 @@ public partial class StorageWindow : ToggleWindow
             return;
         }
 
-        int mask = Storages.FilterOf(world, Selected);
+        int mask = EffectiveMask(world, Selected);
         for (int i = 0; i < _categoryButtons.Count; i++)
         {
             _categoryButtons[i].SetPressedNoSignal((mask & ItemCategories.BitOf(ItemCategories.All[i])) != 0);
@@ -296,6 +302,25 @@ public partial class StorageWindow : ToggleWindow
         }
     }
 
+    // Core's filter of the storage, or the filter just sent for it until Core shows it (or the time is up).
+    private int EffectiveMask(GameWorld world, EntityId storage)
+    {
+        int mask = Storages.FilterOf(world, storage);
+        if (_pendingStorage != EntityId.None)
+        {
+            if (_pendingStorage != storage || mask == _pendingMask || Time.GetTicksMsec() >= _pendingUntil)
+            {
+                _pendingStorage = EntityId.None;
+            }
+            else
+            {
+                mask = _pendingMask;
+            }
+        }
+
+        return mask;
+    }
+
     private void OnCategoryPressed(int bit)
     {
         if (Host is not { IsRunning: true } host || Selected == EntityId.None || host.Simulation.World is not { } world)
@@ -303,7 +328,13 @@ public partial class StorageWindow : ToggleWindow
             return;
         }
 
-        host.Send(new SetStorageFilterCommand(Selected, Storages.FilterOf(world, Selected) ^ bit));
+        // Toggle from the displayed filter, so quick clicks on several categories add up before Core has ticked.
+        int mask = EffectiveMask(world, Selected) ^ bit;
+        host.Send(new SetStorageFilterCommand(Selected, mask));
+        _pendingStorage = Selected;
+        _pendingMask = mask;
+        _pendingUntil = Time.GetTicksMsec() + PendingMsec;
+        Refresh();
     }
 
     private void OnDepositPressed()

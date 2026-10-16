@@ -77,6 +77,7 @@ public partial class GameRoot : Node
             overlay.Attach(_worldView, Selection);
             AddChild(BuildMode);
             BuildMode.Attach(_worldView, InputState, Selection, overlay, command => _host?.Send(command));
+            BuildMode.ResidentInFront = (screen, footY) => _residentPicker?.IsResidentInFront(screen, footY) == true;
         }
 
         _residentMessages = new ResidentMessages { Name = "ResidentMessages" };
@@ -184,6 +185,14 @@ public partial class GameRoot : Node
         var storage = GetNode<StorageWindow>("Ui/StorageWindow");
         var buttons = GetNode<WindowButtons>("Ui/WindowButtons");
         residents.Bind(host);
+        // A resident selected on the map opens the window on its row; clearing the selection leaves the window as it is.
+        ResidentSelection.ResidentSelected += resident =>
+        {
+            if (resident != Core.Entities.EntityId.None)
+            {
+                residents.Focus(resident);
+            }
+        };
         storage.Bind(host);
         buttons.ResidentsRequested += residents.Toggle;
         buttons.StorageRequested += storage.Toggle;

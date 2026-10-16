@@ -60,6 +60,7 @@ public sealed class ChunkManager
     private readonly Dictionary<ChunkCoord, List<(int X, int Y, WorldObject Object)>> _placed = [];
     private readonly List<ChunkCoord> _wanted = [];
     private readonly List<ChunkCoord> _release = [];
+    private readonly List<WorldChunk> _stale = [];
     private readonly byte[] _fogChunk = new byte[ChunkCoord.Size * ChunkCoord.Size];
     private readonly bool[] _taken = new bool[ChunkCoord.Size * ChunkCoord.Size];
     private readonly List<(int X, int Y, WorldObject Object)> _objects = [];
@@ -90,6 +91,9 @@ public sealed class ChunkManager
 
     /// <summary>Chunks wanted (visible plus margin) but not built yet.</summary>
     public int PendingCount { get; private set; }
+
+    /// <summary>Active chunks whose objects and roads still wait for a rebuild after the last <see cref="Update"/>.</summary>
+    public int StaleCount { get; private set; }
 
     /// <summary>Time the last <see cref="Update"/> took, in microseconds (statistics).</summary>
     public ulong LastUpdateUsec { get; private set; }
@@ -162,8 +166,10 @@ public sealed class ChunkManager
             ReleaseFar();
         }
 
-        RefreshFogObjects();
-        BuildMissing(view, maxBuilds, budgetUsec);
+        // Stale chunks (new fog or tile version) share the per-frame budget with new builds and go first.
+        int refreshed = RefreshStale(view, maxBuilds, budgetUsec);
+        ulong spent = Time.GetTicksUsec() - start;
+        BuildMissing(view, maxBuilds - refreshed, budgetUsec > spent ? budgetUsec - spent : 0);
         LastBuilds = (int)(BuildCount - builds);
         LastUpdateUsec = Time.GetTicksUsec() - start;
     }
@@ -518,18 +524,61 @@ public sealed class ChunkManager
         }
     }
 
-    private void RefreshFogObjects()
+    // Rebuilds the objects and roads of chunks whose fog or tile version moved on, nearest to the view centre first
+    // (ties by coordinate, so the order is stable), until the build count or the time budget is used up. At least one
+    // chunk is rebuilt per call when any is stale. Returns the number rebuilt; the rest stays stale for the next frames.
+    private int RefreshStale(Rect2 view, int maxBuilds, ulong budgetUsec)
     {
         FogOfWar fog = _world!.Fog;
         TileChanges tiles = _world.Tiles;
+        _stale.Clear();
         foreach (WorldChunk chunk in _active.Values)
         {
             if (fog.GetChunkVersion(chunk.Coord.X, chunk.Coord.Y) != chunk.FogVersion
                 || tiles.GetChunkVersion(chunk.Coord.X, chunk.Coord.Y) != chunk.TileVersion)
             {
-                BuildObjects(chunk);
+                _stale.Add(chunk);
             }
         }
+
+        StaleCount = _stale.Count;
+        if (_stale.Count == 0)
+        {
+            return 0;
+        }
+
+        if (_stale.Count > 1)
+        {
+            Vector2 centre = view.GetCenter();
+            _stale.Sort((a, b) =>
+            {
+                int byDistance = ChunkRect(a.Coord.X, a.Coord.Y).GetCenter().DistanceSquaredTo(centre)
+                    .CompareTo(ChunkRect(b.Coord.X, b.Coord.Y).GetCenter().DistanceSquaredTo(centre));
+                if (byDistance != 0)
+                {
+                    return byDistance;
+                }
+
+                int byY = a.Coord.Y.CompareTo(b.Coord.Y);
+                return byY != 0 ? byY : a.Coord.X.CompareTo(b.Coord.X);
+            });
+        }
+
+        ulong start = Time.GetTicksUsec();
+        int rebuilt = 0;
+        foreach (WorldChunk chunk in _stale)
+        {
+            if (rebuilt >= maxBuilds || (rebuilt > 0 && Time.GetTicksUsec() - start >= budgetUsec))
+            {
+                break;
+            }
+
+            BuildObjects(chunk);
+            rebuilt++;
+        }
+
+        StaleCount = _stale.Count - rebuilt;
+        return rebuilt;
     }
 
     private WorldChunk Rent()

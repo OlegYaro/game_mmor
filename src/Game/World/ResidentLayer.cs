@@ -32,6 +32,9 @@ public partial class ResidentLayer : Node2D
     /// <summary>Art id of residents without a profession (or one without a sprite).</summary>
     public const string UnemployedArtId = "resident_unemployed";
 
+    /// <summary>Widest clickable part of a resident sprite, in pixels.</summary>
+    public const float HitWidth = 16f;
+
     private const int RingPoints = 16;
     private const float RingRadiusX = IsoProjection.HalfWidth * 0.55f;
     private const float RingRadiusY = IsoProjection.HalfHeight * 0.55f;
@@ -173,20 +176,27 @@ public partial class ResidentLayer : Node2D
     public Node2D? RingOf(EntityId resident) => _slots.TryGetValue(resident, out Slot? slot) ? slot.Ring : null;
 
     /// <summary>
-    /// The shown resident whose sprite covers the world point (the one standing in front when several overlap). False when
-    /// there is none. <paramref name="world"/> is in the coordinates of <see cref="WorldView.ObjectsRoot"/>.
+    /// The shown resident whose clickable part covers the world point (the one standing in front when several overlap). False
+    /// when there is none. <paramref name="world"/> is in the coordinates of <see cref="WorldView.ObjectsRoot"/>. The clickable
+    /// part is the lower two thirds of the sprite, at most <see cref="HitWidth"/> pixels wide around its centre, so a click on
+    /// a tree or a rock next to a resident (or on the empty corners of the sprite) is not taken for the resident.
     /// </summary>
-    public bool TryPick(Vector2 world, out EntityId resident)
+    public bool TryPick(Vector2 world, out EntityId resident) => TryPick(world, out resident, out _);
+
+    /// <summary>Same as <see cref="TryPick(Vector2, out EntityId)"/>; also gives the y of the resident's feet (its depth for y-sorting).</summary>
+    public bool TryPick(Vector2 world, out EntityId resident, out float footY)
     {
         resident = EntityId.None;
-        float bestY = float.MinValue;
+        footY = float.MinValue;
         foreach (Slot slot in _slots.Values)
         {
             Vector2 size = slot.Frame.Texture.Region.Size;
             Vector2 topLeft = slot.Root.Position + slot.Sprite.Position + slot.Sprite.Offset;
-            if (new Rect2(topLeft, size).HasPoint(world) && slot.Root.Position.Y > bestY)
+            float width = Math.Min(size.X, HitWidth);
+            var hit = new Rect2(topLeft + new Vector2((size.X - width) / 2, size.Y / 3), new Vector2(width, size.Y * 2 / 3));
+            if (hit.HasPoint(world) && slot.Root.Position.Y > footY)
             {
-                bestY = slot.Root.Position.Y;
+                footY = slot.Root.Position.Y;
                 resident = slot.Entity;
             }
         }
