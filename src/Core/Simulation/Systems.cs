@@ -77,7 +77,7 @@ internal sealed class MovementSystem : ISimSystem
 
     public string Name => SystemName;
 
-    public void Update(Simulation sim) => HeroRules.UpdateMovement(sim);
+    public void Update(Simulation sim) => AgentMovement.Update(sim);
 }
 
 /// <summary>

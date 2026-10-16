@@ -3,7 +3,6 @@ using Core.Entities;
 using Core.Fog;
 using Core.Heroes;
 using Core.Logging;
-using Core.Pathfinding;
 using Core.WorldGen;
 
 namespace Core.Sim;
@@ -13,10 +12,8 @@ namespace Core.Sim;
 /// and gathering. Stateless: everything lives in the components, the tile layer and the content.
 /// </summary>
 /// <remarks>
-/// <para>Paths are planned synchronously with a node limit (<see cref="NodeLimit"/>), so no search queue has to be
-/// saved: the planned path is part of the <see cref="Mover"/>. A search that runs out of nodes gives a partial path;
-/// at its end the walker plans again from where it stands. A search that stalls (the partial path is the start alone)
-/// runs once more over the whole map (<see cref="FindPath"/>).</para>
+/// <para>Walking itself (planning, steps, replanning, the search after a stall) is <see cref="AgentMovement"/>, shared
+/// with the residents; the hero adds sprinting, stamina and what an arrival or a blocked way means for its activity.</para>
 /// <para>Orders are checked when they execute, in a fixed order, and a rejected order only sets
 /// <see cref="Hero.LastOrder"/> (and logs): outside the map, unknown in the fog, impassable, unreachable, no node.</para>
 /// </remarks>
@@ -25,11 +22,8 @@ internal static class HeroRules
     /// <summary>Log category of hero events.</summary>
     public const string LogCategory = "hero";
 
-    /// <summary>
-    /// Node limit of one hero path search: the per-request default of the path queue (ADR 0003), an engine budget
-    /// that keeps a tick within NFR-02 rather than a balance number.
-    /// </summary>
-    public static int NodeLimit { get; } = new PathfinderConfig().MaxNodesPerRequest;
+    /// <summary>Node limit of one hero path search (<see cref="AgentMovement.NodeLimit"/>).</summary>
+    public static int NodeLimit => AgentMovement.NodeLimit;
 
     /// <summary>The gathering source name (<see cref="GatherDef.Source"/>) of a resource kind, or null when the hero cannot gather it.</summary>
     /// <remarks>
@@ -59,8 +53,8 @@ internal static class HeroRules
         return null;
     }
 
-    /// <summary>Chebyshev distance in tiles (diagonal steps are allowed, so it is the step count on open ground).</summary>
-    public static int Distance(int ax, int ay, int bx, int by) => Math.Max(Math.Abs(ax - bx), Math.Abs(ay - by));
+    /// <summary>Chebyshev distance in tiles (<see cref="AgentMovement.Distance"/>).</summary>
+    public static int Distance(int ax, int ay, int bx, int by) => AgentMovement.Distance(ax, ay, bx, by);
 
     /// <summary>Gives <paramref name="entity"/> the hero components: balance defaults, an inventory (with the start items or empty) and an idle mover.</summary>
     public static void AddHero(Simulation sim, EntityId entity, bool withStartItems)
@@ -95,7 +89,6 @@ internal static class HeroRules
     public static void Restore(Simulation sim, WorldState state)
     {
         GameWorld world = sim.World!;
-        int maxTile = world.Size * world.Size;
         foreach (ComponentEntry<Hero> entry in state.Heroes)
         {
             CheckAlive(sim, entry.Entity, "Hero");
@@ -132,7 +125,7 @@ internal static class HeroRules
         foreach (ComponentEntry<Mover> entry in state.Movers)
         {
             CheckAlive(sim, entry.Entity, "Mover");
-            if (!IsValidMover(entry.Value, world, maxTile))
+            if (!AgentMovement.IsValidMover(entry.Value, world.Size))
             {
                 throw new ArgumentException($"Mover of {entry.Entity} is invalid.", nameof(state));
             }
@@ -258,47 +251,41 @@ internal static class HeroRules
             LogField.Of("added", added), LogField.Of("count", count), LogField.Of("item", item));
     }
 
-    /// <summary>Movement system body: every walker advances along its path; heroes spend or regain stamina.</summary>
-    public static void UpdateMovement(Simulation sim)
+    /// <summary>
+    /// One tick of the hero's walking (the movement system calls it for each hero in entity order): it advances along its
+    /// path, sprinting while it has stamina, and spends or regains stamina.
+    /// </summary>
+    public static void Walk(Simulation sim, GameWorld world, HeroBalanceDef balance, EntityId entity, ref Mover mover)
     {
-        GameWorld? world = sim.World;
-        if (world is null)
+        Hero hero = world.Heroes.Get(entity);
+        bool moving = mover.IsMoving && sim.Positions.Has(entity);
+        bool sprintOrder = moving && mover.Sprint;
+        bool sprinting = sprintOrder && hero.Stamina > 0;
+        if (moving)
         {
-            return;
+            WalkOutcome outcome = AgentMovement.Advance(sim, world, entity, ref mover, balance.StepTicks,
+                sprinting ? balance.SprintPermille : Mover.ProgressPerTick, LogCategory);
+            if (outcome == WalkOutcome.Arrived && hero.Activity == HeroActivity.Walking)
+            {
+                hero = hero.Stop(HeroStopReason.Arrived);
+            }
+            else if (outcome == WalkOutcome.Blocked && hero.Activity != HeroActivity.Idle)
+            {
+                hero = hero.Stop(HeroStopReason.PathBlocked);
+            }
         }
 
-        HeroBalanceDef balance = sim.Content.Hero;
-        ReadOnlySpan<EntityId> owners = world.Movers.Entities;
-        Span<Mover> movers = world.Movers.Values;
-        for (int i = 0; i < owners.Length; i++)
+        // Sprinting spends stamina; walking with the sprint order on (exhausted) neither spends nor regains it.
+        if (sprinting)
         {
-            EntityId entity = owners[i];
-            bool hasHero = world.Heroes.TryGet(entity, out Hero hero);
-            bool moving = movers[i].IsMoving && sim.Positions.Has(entity);
-            bool sprintOrder = moving && movers[i].Sprint;
-            bool sprinting = sprintOrder && hasHero && hero.Stamina > 0;
-            if (moving)
-            {
-                Advance(sim, world, entity, ref movers[i], ref hero, hasHero, sprinting ? balance.SprintPermille : Mover.ProgressPerTick);
-            }
-
-            if (!hasHero)
-            {
-                continue;
-            }
-
-            // Sprinting spends stamina; walking with the sprint order on (exhausted) neither spends nor regains it.
-            if (sprinting)
-            {
-                hero = hero with { Stamina = Math.Max(0, hero.Stamina - balance.SprintStaminaDrain) };
-            }
-            else if (!sprintOrder && hero.Stamina < balance.Stamina)
-            {
-                hero = hero with { Stamina = Math.Min(balance.Stamina, hero.Stamina + balance.StaminaRegen) };
-            }
-
-            world.Heroes.Get(entity) = hero;
+            hero = hero with { Stamina = Math.Max(0, hero.Stamina - balance.SprintStaminaDrain) };
         }
+        else if (!sprintOrder && hero.Stamina < balance.Stamina)
+        {
+            hero = hero with { Stamina = Math.Min(balance.Stamina, hero.Stamina + balance.StaminaRegen) };
+        }
+
+        world.Heroes.Get(entity) = hero;
     }
 
     /// <summary>Gathering system body: heroes next to their node work on it and fill the backpack.</summary>
@@ -385,198 +372,9 @@ internal static class HeroRules
         }
     }
 
-    // Moves one walker by `rate` progress units along its path (see Mover for the units).
-    private static void Advance(Simulation sim, GameWorld world, EntityId entity, ref Mover mover, ref Hero hero, bool hasHero, int rate)
-    {
-        PassabilityGrid grid = world.Pathfinder.Grid;
-        int stepTicks = sim.Content.Hero.StepTicks;
-        IReadOnlyList<int> path = mover.Path;
-        int index = mover.StepIndex;
-        int progress = mover.StepProgress + rate;
-        bool stepStarts = mover.StepProgress == 0;
-
-        // The range check applies only on a tile (at a step boundary): mid-step the walker always finishes the step.
-        while (index < path.Count - 1 && !(stepStarts && InRange(grid, path[index], mover)))
-        {
-            int from = path[index];
-            int to = path[index + 1];
-            if (stepStarts && !CanStep(grid, from, to))
-            {
-                if (!TryReplan(world, from, mover, out path))
-                {
-                    Halt(sim, entity, ref mover, ref hero, hasHero, from, HeroStopReason.PathBlocked);
-                    return;
-                }
-
-                index = 0;
-                continue;
-            }
-
-            int cost = Mover.StepCost(stepTicks, grid.XOf(from) != grid.XOf(to) && grid.YOf(from) != grid.YOf(to));
-            if (progress < cost)
-            {
-                mover = mover with { Path = path, StepIndex = index, StepProgress = progress };
-                sim.Positions.Get(entity) = Lerp(grid, from, to, progress, cost);
-                return;
-            }
-
-            progress -= cost;
-            index++;
-            stepStarts = true;
-        }
-
-        // End of the path (or within range of the goal): leftover progress is dropped.
-        int tile = path[index];
-        sim.Positions.Get(entity) = Center(grid, tile);
-        if (InRange(grid, tile, mover) || (mover.GoalRange == 0 && tile == mover.Goal))
-        {
-            mover = Mover.Idle;
-            if (hasHero && hero.Activity == HeroActivity.Walking)
-            {
-                hero = hero.Stop(HeroStopReason.Arrived);
-            }
-
-            return;
-        }
-
-        // A partial path ran out before the goal: plan again from here.
-        if (TryReplan(world, tile, mover, out IReadOnlyList<int> next))
-        {
-            mover = mover with { Path = next, StepIndex = 0, StepProgress = 0 };
-            return;
-        }
-
-        Halt(sim, entity, ref mover, ref hero, hasHero, tile, HeroStopReason.PathBlocked);
-    }
-
-    private static void Halt(Simulation sim, EntityId entity, ref Mover mover, ref Hero hero, bool hasHero, int tile, HeroStopReason reason)
-    {
-        mover = Mover.Idle;
-        sim.Positions.Get(entity) = Center(sim.World!.Pathfinder.Grid, tile);
-        if (hasHero && hero.Activity != HeroActivity.Idle)
-        {
-            hero = hero.Stop(reason);
-        }
-
-        sim.Log.Write(sim.Tick, LogLevel.Info, LogCategory, "{entity} stopped: the way is blocked", LogField.Of("entity", entity.ToString()));
-    }
-
-    // True when a ranged mover (gathering) standing on `tile` is close enough to its goal.
-    private static bool InRange(PassabilityGrid grid, int tile, Mover mover) =>
-        mover.GoalRange > 0 && Distance(grid.XOf(tile), grid.YOf(tile), grid.XOf(mover.Goal), grid.YOf(mover.Goal)) <= mover.GoalRange;
-
-    private static bool CanStep(PassabilityGrid grid, int from, int to)
-    {
-        int x = grid.XOf(from);
-        int y = grid.YOf(from);
-        int dx = grid.XOf(to) - x;
-        int dy = grid.YOf(to) - y;
-        for (int d = 0; d < PassabilityGrid.DirectionCount; d++)
-        {
-            if (PassabilityGrid.DirectionX(d) == dx && PassabilityGrid.DirectionY(d) == dy)
-            {
-                return grid.CanStep(x, y, d);
-            }
-        }
-
-        return false;
-    }
-
-    // A new path from `from` towards the mover's goal; false when there is none or it does not leave `from`.
-    private static bool TryReplan(GameWorld world, int from, Mover mover, out IReadOnlyList<int> path)
-    {
-        var tiles = new List<int>();
-        PathResult result = FindPath(world.Pathfinder, from, mover.Goal, mover.GoalRange, tiles);
-        path = [.. tiles];
-        return result.Length > 1;
-    }
-
-    /// <summary>
-    /// The hero's path search: to the goal tile itself (<paramref name="range"/> 0) or next to it, first with
-    /// <see cref="NodeLimit"/>. When that search stalls, a partial path that is only the start, it runs once more
-    /// with <see cref="StallNodeLimit"/>.
-    /// </summary>
-    /// <remarks>
-    /// A partial result comes only after the connectivity check passed (the goal, or for an approach a tile next to
-    /// it, is in the start's component), so the goal is known to be reachable. A limited search ends on the explored
-    /// tile closest to the goal by the heuristic, often a cliff edge or a shore next to the goal; walking there and
-    /// searching again from it explores the same pocket and returns that tile alone. Without the wider search the order
-    /// was rejected as unreachable or the walker stopped with <see cref="HeroStopReason.PathBlocked"/>. The heuristic
-    /// value of a partial path's end strictly decreases from one partial search to the next, so a walker following
-    /// partial paths never cycles: it arrives or stalls, and a stall is where the wider search runs. A* clears every
-    /// node record it touches, so the result does not depend on earlier searches (NFR-04).
-    /// </remarks>
-    internal static PathResult FindPath(Pathfinder pathfinder, int start, int goal, int range, List<int> path)
-    {
-        PathResult result = Search(pathfinder, start, goal, range, path, NodeLimit);
-        if (result.Status == PathStatus.Partial && result.Length <= 1)
-        {
-            result = Search(pathfinder, start, goal, range, path, StallNodeLimit(pathfinder.Grid));
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// Node limit of the search after a stall: the whole map, capped at <see cref="PathfinderConfig.MaxNodeLimit"/>
-    /// (which keeps path costs within <see cref="int"/>). A* stops at the goal, so the search costs only the nodes the
-    /// detour needs: on generated 1024² and 2048² maps a median of 35 000–55 000 nodes (3–5 ms in Release) and at most
-    /// about 300 000 (under 40 ms), up to a million for a detour across a 2048² map (50–90 ms, ADR 0003).
-    /// </summary>
-    internal static int StallNodeLimit(PassabilityGrid grid) => Math.Min(grid.TileCount, PathfinderConfig.MaxNodeLimit);
-
-    private static PathResult Search(Pathfinder pathfinder, int start, int goal, int range, List<int> path, int nodeLimit) =>
-        range == 0 ? pathfinder.FindPath(start, goal, path, nodeLimit) : pathfinder.FindPathToAdjacent(start, goal, path, nodeLimit);
-
-    // Plans a fresh path for an order. Mid-step, the walker first finishes its step: the new path starts at the step's
-    // end and the current step is kept in front of it.
-    private static HeroOrderResult Plan(Simulation sim, GameWorld world, EntityId entity, int goal, int range, bool sprint, out Mover planned)
-    {
-        Pathfinder pathfinder = world.Pathfinder;
-        PassabilityGrid grid = pathfinder.Grid;
-        Mover current = world.Movers.Get(entity);
-        bool midStep = current.StepProgress > 0 && current.NextTile >= 0;
-        int start;
-        if (midStep)
-        {
-            start = current.NextTile;
-        }
-        else
-        {
-            Position position = sim.Positions.Get(entity);
-            if (!grid.Contains(position.TileX, position.TileY))
-            {
-                planned = Mover.Idle;
-                return HeroOrderResult.Unreachable;
-            }
-
-            start = grid.Index(position.TileX, position.TileY);
-            if (range > 0 && Distance(position.TileX, position.TileY, grid.XOf(goal), grid.YOf(goal)) <= range)
-            {
-                planned = Mover.Idle;
-                return HeroOrderResult.Accepted; // already close enough
-            }
-        }
-
-        var path = new List<int>();
-        PathResult result = FindPath(pathfinder, start, goal, range, path);
-        if (!result.HasPath || (result.Status == PathStatus.Partial && result.Length <= 1))
-        {
-            planned = Mover.Idle;
-            return HeroOrderResult.Unreachable;
-        }
-
-        if (midStep)
-        {
-            planned = new Mover(goal, range, [current.CurrentTile, .. path], 0, current.StepProgress, sprint);
-        }
-        else
-        {
-            planned = path.Count > 1 ? new Mover(goal, range, [.. path], 0, 0, sprint) : Mover.Idle;
-        }
-
-        return HeroOrderResult.Accepted;
-    }
+    // Plans a fresh path for an order (AgentMovement.TryPlan).
+    private static HeroOrderResult Plan(Simulation sim, GameWorld world, EntityId entity, int goal, int range, bool sprint, out Mover planned) =>
+        AgentMovement.TryPlan(sim, world, entity, goal, range, sprint, out planned) ? HeroOrderResult.Accepted : HeroOrderResult.Unreachable;
 
     private static HeroOrderResult CheckTarget(GameWorld world, int x, int y)
     {
@@ -634,42 +432,5 @@ internal static class HeroRules
         {
             throw new ArgumentException($"{what} belongs to {entity}, which is not alive.", nameof(entity));
         }
-    }
-
-    private static bool IsValidMover(Mover mover, GameWorld world, int maxTile)
-    {
-        IReadOnlyList<int> path = mover.Path;
-        if (path.Count == 0)
-        {
-            return mover == Mover.Idle;
-        }
-
-        if (path.Count < 2 || mover.Goal < 0 || mover.Goal >= maxTile || mover.GoalRange < 0 || mover.StepIndex < 0
-            || mover.StepIndex >= path.Count - 1 || mover.StepProgress < 0)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < path.Count; i++)
-        {
-            if (path[i] < 0 || path[i] >= maxTile
-                || (i > 0 && Distance(path[i] % world.Size, path[i] / world.Size, path[i - 1] % world.Size, path[i - 1] / world.Size) != 1))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static Position Center(PassabilityGrid grid, int tile) => Simulation.TileCenter(grid.XOf(tile), grid.YOf(tile));
-
-    private static Position Lerp(PassabilityGrid grid, int from, int to, int progress, int cost)
-    {
-        Position a = Center(grid, from);
-        Position b = Center(grid, to);
-        return new Position(
-            a.X + (int)((long)(b.X - a.X) * progress / cost),
-            a.Y + (int)((long)(b.Y - a.Y) * progress / cost));
     }
 }
