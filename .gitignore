@@ -9,6 +9,8 @@ build/
 .DS_Store
 *.log
 .tools/
+# Git worktrees created by parallel agents
+.claude/worktrees/
 
 # .NET build output
 bin/

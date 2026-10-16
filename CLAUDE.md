@@ -12,7 +12,7 @@
 - Код и комментарии на английском. README, CLAUDE.md, PROGRESS и ADR на русском.
 
 ## Команды (всё через `tools/`)
-`tools/build.sh`, `tools/test.sh` (`COVERAGE=1` для покрытия), `tools/run.sh`, `tools/smoke.sh`, `tools/export.sh`, `tools/sync-data.sh`, `tools/setup.sh` (первичная установка `.tools/`). Для Windows есть одноимённые `.ps1`.
+`tools/build.sh`, `tools/test.sh` (`COVERAGE=1` для покрытия), `tools/run.sh`, `tools/smoke.sh`, `tools/export.sh`, `tools/sync-data.sh`, `tools/schemagen.sh` (схемы в `data/schema`), `tools/artgen.sh` (процедурный арт), `tools/bench-render.sh`, `tools/setup.sh` (первичная установка `.tools/`, только bash). Для остальных есть одноимённые `.ps1` под Windows.
 
 ## Definition of Done
 Сборка без предупреждений, все тесты зелёные, новая логика покрыта тестами (Core не ниже 70% строк), `tools/smoke.sh` проходит, ADR и PROGRESS обновлены.
@@ -29,6 +29,12 @@ Godot при открытии редактора переписывает `Targe
 
 ## Процесс
 Работаем по фазам. После каждой фазы остановиться и ждать «ок» от владельца. Коммиты по Conventional Commits с ID требований, например `feat(sim): генерация по seed (FR-WORLD-01)`. Репозиторий: GitHub `OlegYaro/game_mmor`, ветка `main`; `git push` только по просьбе владельца.
+
+## Параллельная работа агентов
+- Параллельные агенты работают в отдельных `git worktree` (`.claude/worktrees/`, в git не попадает). В новом worktree сначала `ln -s /Users/krip/Gemini/Games/1/.tools .tools`.
+- Один файл правит один агент: общие места (`Simulation.cs`, `Save*`, `GameRoot`) — только в одной волне. Слияние веток и пересоздание эталонов (`UPDATE_GOLDEN=1`) делает основной поток; после слияния `contentHash` в `tests/Core.Tests/Golden/*.json` всегда пересоздаётся.
+- Хук `PostToolUse` собирает проект после правки `.cs` (`tools/hook-build.sh`); пока идут тесты, он пропускается.
+- Исследования и рутинные правки отдавать Sonnet (effort medium), сложный код с детерминизмом и сохранениями — Opus.
 
 ## Покрытие кода и долгие процессы
 - Полный замер покрытия (`COVERAGE=1`) — только в конце этапа (milestone), не после каждой волны. Настройки coverlet лежат в `tests/Core.Tests/coverage.runsettings` (только сборка Core, SingleHit), полный замер занимает около 30 секунд.

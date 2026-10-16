@@ -8,6 +8,10 @@ case "$file" in
     *.cs) ;;
     *) exit 0 ;;
 esac
+# A build into bin/Debug while a test run is using it breaks both, so skip while tests are running.
+if pgrep -f "Core.Tests|vstest.console|dotnet test" >/dev/null 2>&1; then
+    exit 0
+fi
 source "$(dirname "${BASH_SOURCE[0]}")/env.sh" || exit 0
 cd "$ROOT" || exit 0
 out="$(dotnet build Game.sln --nologo -v q -clp:NoSummary 2>&1)"
