@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/recipes.schema.json",
+  "items": [
+    {
+      "id": "recipe_lumber",
+      "building": "sawmill",
+      "inputs": [ { "item": "wood", "count": 2 } ],
+      "outputs": [ { "item": "lumber", "count": 1 } ],
+      "cycleTicks": 600,
+      "skill": "crafting",
+      "provisional": true
+    },
+    {
+      "id": "recipe_stone_block",
+      "building": "stonecutter",
+      "inputs": [ { "item": "stone", "count": 2 } ],
+      "outputs": [ { "item": "stone_block", "count": 1 } ],
+      "cycleTicks": 900,
+      "skill": "mining",
+      "provisional": true
+    }
+  ]
+}

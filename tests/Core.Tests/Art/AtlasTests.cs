@@ -16,6 +16,9 @@ public sealed class AtlasTests
          "resident_carrier", "resident_lumberjack", "resident_stonemason", "resident_farmer", "resident_miner", "resident_guard", "resident_specialist", "resident_unemployed",
          "sapling", "stump"];
 
+    // Every building of data/buildings has at least level 1 (BuildingSpecsMatchTheBuildingData checks the full list).
+    private static readonly string[] _buildingIds = ["campfire", "house", "storage", "field", "sawmill", "stonecutter"];
+
     [Fact]
     public void GenerationIsDeterministic()
     {
@@ -60,6 +63,14 @@ public sealed class AtlasTests
         foreach (string id in _objectIds)
         {
             Assert.Contains(id, ids);
+        }
+
+        foreach (string building in _buildingIds)
+        {
+            for (int stage = 0; stage < BuildingArt.Stages; stage++)
+            {
+                Assert.Contains(BuildingArt.FrameId(building, 1, stage), ids);
+            }
         }
 
         foreach (string kind in new[] { "trail", "road" })

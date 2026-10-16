@@ -34,6 +34,8 @@ public static class BuildingArt
         new("house", 2, 2, 3, 28),
         new("storage", 3, 2, 2, 20),
         new("field", 3, 3, 1, 8),
+        new("sawmill", 3, 2, 1, 22),
+        new("stonecutter", 2, 2, 1, 22),
     ];
 
     private static readonly Rgba Dirt = Rgba.Hex(0x8B7355);
@@ -41,6 +43,10 @@ public static class BuildingArt
     private static readonly Rgba Stone = Rgba.Hex(0x8E9094);
     private static readonly Rgba Door = Rgba.Hex(0x3B2A1A);
     private static readonly Rgba Window = Rgba.Hex(0xBFE3F5);
+    private static readonly Rgba Bark = Rgba.Hex(0x6E4B2A);
+    private static readonly Rgba CutWood = Rgba.Hex(0xD9B98A);
+    private static readonly Rgba Steel = Rgba.Hex(0xB8BEC6);
+    private static readonly Rgba CutStone = Rgba.Hex(0xC9CBCE);
 
     /// <summary>Frame width in pixels.</summary>
     public static int FrameWidth(BuildingSpec b) => 16 * (b.Width + b.Height);
@@ -100,6 +106,8 @@ public static class BuildingArt
             case "campfire": Campfire(c, g); break;
             case "house": House(c, g, level); break;
             case "storage": Storage(c, g, level); break;
+            case "sawmill": Sawmill(c, g); break;
+            case "stonecutter": Stonecutter(c, g); break;
             default: throw new ArgumentException("Unknown building id " + b.Id, nameof(b));
         }
 
@@ -270,19 +278,171 @@ public static class BuildingArt
         c.FillAndOutline([eaves[2], eaves[1], apex], s.Roof.Scale(88), s.Roof.Scale(45));
     }
 
-    // A small cube whose bottom corner is at (x, y).
-    private static void Crate(Canvas c, int x, int y, int size)
+    // Open shed on posts at the back of the yard; in front a saw bench with a circular blade cutting a log, a pile of
+    // logs on the left and a stack of boards on the right.
+    private static void Sawmill(Canvas c, Geo g)
     {
-        Rgba wood = Rgba.Hex(0xA9783F);
+        Pt[] shed = Diamond(g.Cx + 2, g.Cy - 6, 24, 12);
+        ShedBack(c, shed, 13);
+
+        // Log pile under the left eave: three logs below, two on top, cut ends towards the viewer.
+        foreach ((int dx, int dy) in new[] { (-27, 6), (-22, 8), (-17, 10), (-25, 2), (-20, 4) })
+        {
+            Log(c, new Pt(g.Cx + dx + 12, g.Cy + dy - 6), new Pt(g.Cx + dx, g.Cy + dy), 4);
+        }
+
+        ShedFront(c, shed, 13, 9, Rgba.Hex(0x8A6A44));
+
+        // Saw bench along the front: a plank top on two legs, a log lying on it and the blade standing through the top.
+        Pt benchLeft = new(g.Cx - 8, g.Cy + 6);
+        Pt benchRight = new(g.Cx + 12, g.Cy + 16);
+        foreach (Pt leg in new[] { benchLeft, benchRight })
+        {
+            c.FillRect(leg.X, leg.Y - 4, 2, 5, Wood.Scale(70));
+        }
+
+        for (int i = 0; i < 2; i++)
+        {
+            c.Line(benchLeft.X - 1, benchLeft.Y - 5 + i, benchRight.X + 2, benchRight.Y - 5 + i, i == 0 ? CutWood : CutWood.Scale(70));
+        }
+
+        Log(c, new Pt(benchLeft.X - 3, benchLeft.Y - 6), new Pt(benchLeft.X + 7, benchLeft.Y - 1), 4);
+        Blade(c, new Pt(g.Cx + 5, g.Cy + 5), 6);
+
+        // Finished boards stacked on the right.
+        for (int layer = 0; layer < 4; layer++)
+        {
+            Rgba board = layer % 2 == 0 ? CutWood : CutWood.Shift(-18);
+            Pt back = new(g.Cx + 30, g.Cy + 2 - (2 * layer));
+            Pt front = new(g.Cx + 18, g.Cy + 8 - (2 * layer));
+            c.Line(back.X, back.Y, front.X, front.Y, board);
+            c.Line(back.X, back.Y + 1, front.X, front.Y + 1, board.Scale(70));
+        }
+    }
+
+    // Open shed at the back; in front a rough stone slab with a half-cut block and a chisel, cut blocks stacked in a
+    // pyramid on the left and rough stones on the right.
+    private static void Stonecutter(Canvas c, Geo g)
+    {
+        Pt[] shed = Diamond(g.Cx + 2, g.Cy - 6, 16, 8);
+        ShedBack(c, shed, 12);
+        ShedFront(c, shed, 12, 7, Rgba.Hex(0x6B7380));
+
+        // Rough stones: irregular lumps.
+        foreach ((int dx, int dy, int r) in new[] { (17, 5, 3), (22, 3, 3), (20, 8, 2), (25, 6, 2) })
+        {
+            Disc(c, new Pt(g.Cx + dx, g.Cy + dy - r), r, Stone.Shift(-10), Stone.Scale(55));
+            c.Set(g.Cx + dx - 1, g.Cy + dy - (2 * r) + 1, Stone.Shift(26));
+        }
+
+        // Cut blocks: three, two and one, back to front within each row.
+        foreach ((int dx, int dy) in new[] { (-24, 6), (-20, 8), (-16, 10), (-22, 1), (-18, 3), (-20, -4) })
+        {
+            Cube(c, g.Cx + dx, g.Cy + dy, 8, CutStone, 62);
+        }
+
+        // Workbench: a rough slab with a half-cut block and a chisel on it.
+        Cube(c, g.Cx + 2, g.Cy + 13, 10, Stone, 50);
+        Cube(c, g.Cx + 1, g.Cy + 6, 6, CutStone, 62);
+        c.Line(g.Cx + 5, g.Cy + 3, g.Cx + 8, g.Cy, Steel.Scale(70));
+        c.Set(g.Cx + 8, g.Cy, Wood);
+    }
+
+    // Posts at the back, left and right corners of the shed ground diamond (top, right, bottom, left order).
+    private static void ShedBack(Canvas c, Pt[] ground, int postH)
+    {
+        foreach (Pt p in new[] { ground[0], ground[3], ground[1] })
+        {
+            Post(c, p, postH);
+        }
+    }
+
+    // The front post and a hip roof over the shed; the roof hides whatever stands under it above the eaves.
+    private static void ShedFront(Canvas c, Pt[] ground, int postH, int roofH, Rgba roof)
+    {
+        Post(c, ground[2], postH);
+        int cx = ground[0].X;
+        int cy = ground[3].Y;
+        int hw = ground[1].X - cx;
+        int hh = cy - ground[0].Y;
+        Pt[] eaves = Diamond(cx, cy - postH, hw + 3, hh + 2);
+        Pt apex = new(cx, cy - postH - roofH);
+        c.FillAndOutline([eaves[3], eaves[0], apex], roof.Scale(90), roof.Scale(45));
+        c.FillAndOutline([eaves[0], eaves[1], apex], roof, roof.Scale(45));
+        c.FillAndOutline([eaves[3], eaves[2], apex], roof.Scale(78), roof.Scale(45));
+        c.FillAndOutline([eaves[2], eaves[1], apex], roof.Scale(88), roof.Scale(45));
+    }
+
+    private static void Post(Canvas c, Pt foot, int height)
+    {
+        c.FillRect(foot.X - 1, foot.Y - height, 1, height + 1, Wood);
+        c.FillRect(foot.X, foot.Y - height, 1, height + 1, Wood.Shift(30));
+    }
+
+    // A log lying from `back` to `front`, `thick` pixels tall, its light cut end facing the viewer.
+    private static void Log(Canvas c, Pt back, Pt front, int thick)
+    {
+        for (int i = 0; i < thick; i++)
+        {
+            Rgba shade = i == 0 ? Bark.Shift(26) : i == thick - 1 ? Bark.Scale(60) : Bark;
+            c.Line(back.X, back.Y - thick + 1 + i, front.X, front.Y - thick + 1 + i, shade);
+        }
+
+        int r = (thick / 2) + 1;
+        Pt end = new(front.X, front.Y - (thick / 2));
+        Disc(c, end, r, CutWood, Bark.Scale(60));
+        c.Set(end.X, end.Y, CutWood.Scale(75));
+    }
+
+    // Circular saw blade standing upright with its centre at `hub`: steel disc, darker teeth on the rim, dark hub.
+    private static void Blade(Canvas c, Pt hub, int r)
+    {
+        Disc(c, hub, r, Steel, Steel.Scale(55));
+        foreach ((int dx, int dy) in new[] { (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1) })
+        {
+            int len = dx != 0 && dy != 0 ? r * 3 / 4 : r;
+            c.Set(hub.X + (dx * (len + 1)), hub.Y + (dy * (len + 1)), Steel.Scale(45));
+        }
+
+        c.Line(hub.X - (r / 2), hub.Y - (r / 2), hub.X + (r / 2), hub.Y + (r / 2), Steel.Shift(30));
+        c.FillRect(hub.X - 1, hub.Y - 1, 2, 2, Door);
+    }
+
+    // Filled disc of radius `r` around `centre` with a 1px rim; all integer.
+    private static void Disc(Canvas c, Pt centre, int r, Rgba fill, Rgba rim)
+    {
+        int outer = (r * r) + r;
+        int inner = ((r - 1) * (r - 1)) + r - 1;
+        for (int dy = -r; dy <= r; dy++)
+        {
+            for (int dx = -r; dx <= r; dx++)
+            {
+                int d = (dx * dx) + (dy * dy);
+                if (d <= outer)
+                {
+                    c.Set(centre.X + dx, centre.Y + dy, d <= inner ? fill : rim);
+                }
+            }
+        }
+    }
+
+    // A small cube whose bottom corner is at (x, y).
+    private static void Crate(Canvas c, int x, int y, int size) => Cube(c, x, y, size, Rgba.Hex(0xA9783F), 40);
+
+    // A small cube of `color` whose bottom corner is at (x, y): darker left face, full right face, lighter top; the
+    // outline is `color` scaled to `outlinePercent`.
+    private static void Cube(Canvas c, int x, int y, int size, Rgba color, int outlinePercent)
+    {
         int hw = size / 2;
         int hh = Math.Max(1, size / 4);
         Pt bottom = new(x, y);
         Pt left = new(x - hw, y - hh);
         Pt right = new(x + hw, y - hh);
-        c.FillAndOutline([left, bottom, Up(bottom, size - hh), Up(left, size - hh)], wood.Scale(78), wood.Scale(40));
-        c.FillAndOutline([bottom, right, Up(right, size - hh), Up(bottom, size - hh)], wood, wood.Scale(40));
+        Rgba outline = color.Scale(outlinePercent);
+        c.FillAndOutline([left, bottom, Up(bottom, size - hh), Up(left, size - hh)], color.Scale(78), outline);
+        c.FillAndOutline([bottom, right, Up(right, size - hh), Up(bottom, size - hh)], color, outline);
         Pt tb = Up(bottom, size - hh);
-        c.FillAndOutline([Up(left, size - hh), new Pt(tb.X, tb.Y - hh), Up(right, size - hh), tb], wood.Shift(22), wood.Scale(40));
+        c.FillAndOutline([Up(left, size - hh), new Pt(tb.X, tb.Y - hh), Up(right, size - hh), tb], color.Shift(22), outline);
     }
 
     // Index of the first pixel row that has any opaque pixel.

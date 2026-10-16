@@ -46,6 +46,7 @@ public sealed class ContentCatalog
         Buildings = defs.OfType<BuildingDef>().ToArray();
         Professions = defs.OfType<ProfessionDef>().ToArray();
         RelationModifiers = defs.OfType<RelationModifierDef>().ToArray();
+        Recipes = defs.OfType<RecipeDef>().ToArray();
     }
 
     /// <summary>
@@ -101,6 +102,9 @@ public sealed class ContentCatalog
 
     /// <summary>All relation modifier reasons, ordered by id (data/balance/relations.json).</summary>
     public IReadOnlyList<RelationModifierDef> RelationModifiers { get; }
+
+    /// <summary>All workshop recipes, ordered by id (data/recipes/*.json); loaded in M3a, run by workshops from M3b.</summary>
+    public IReadOnlyList<RecipeDef> Recipes { get; }
 
     /// <summary>Number of definitions.</summary>
     public int Count => _defs.Length;
@@ -251,6 +255,7 @@ public sealed class ContentCatalog
                 RoadsBalanceFile f => f.Items,
                 RegrowthBalanceFile f => f.Items,
                 NameListFile f => f.Items,
+                RecipeFile f => f.Items,
                 _ => throw new JsonException("Unexpected file content."),
             };
         }
@@ -373,6 +378,11 @@ public sealed class ContentCatalog
             else if (def is ProfessionDef profession)
             {
                 CheckProfession(file, index, profession, errors);
+            }
+            else if (def is RecipeDef recipe)
+            {
+                AddConsistency(file, index, recipe.CheckConsistency(), errors);
+                CheckRecipe(file, index, recipe, byId, errors);
             }
 
             if (def is RaceDef race)
@@ -558,6 +568,33 @@ public sealed class ContentCatalog
                     CheckTarget<ProfessionDef>(file, path, building.Id, requirement.Value, "profession", byId, errors);
                 }
             }
+        }
+    }
+
+    private static void CheckRecipe(string file, int index, RecipeDef recipe, Dictionary<string, IContentDef> byId, List<ContentError> errors)
+    {
+        CheckTarget<BuildingDef>(file, $"$.items[{index}].building", recipe.Id, recipe.Building, "building", byId, errors);
+        foreach ((string name, IReadOnlyList<ItemAmountDef> list) in new[] { ("inputs", recipe.Inputs), ("outputs", recipe.Outputs) })
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                CheckTarget<ItemDef>(file, $"$.items[{index}].{name}[{i}].item", recipe.Id, list[i].Item, "item", byId, errors);
+            }
+        }
+
+        if (recipe.Specialist is not { } specialist)
+        {
+            return;
+        }
+
+        string path = $"$.items[{index}].specialist";
+        if (byId.TryGetValue(specialist, out IContentDef? found) && found is ProfessionDef { Kind: not "specialist" })
+        {
+            errors.Add(new ContentError(ContentErrorKind.Reference, file, path, $"Recipe '{recipe.Id}' needs '{specialist}', which is not a specialist profession."));
+        }
+        else
+        {
+            CheckTarget<ProfessionDef>(file, path, recipe.Id, specialist, "profession", byId, errors);
         }
     }
 

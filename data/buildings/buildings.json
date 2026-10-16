@@ -92,6 +92,40 @@
           "work": { "job": "farm", "slots": 2, "cycleTicks": 400, "item": "vegetable", "yield": 6 }
         }
       ]
+    },
+    {
+      "id": "sawmill",
+      "category": "production",
+      "footprint": { "width": 3, "height": 2 },
+      "outsideTerritory": false,
+      "placement": "flat",
+      "rotatable": true,
+      "provisional": true,
+      "levels": [
+        {
+          "cost": [ { "item": "wood", "count": 25 }, { "item": "stone", "count": 5 } ],
+          "buildTicks": 100,
+          "moveTicks": 33,
+          "requirements": []
+        }
+      ]
+    },
+    {
+      "id": "stonecutter",
+      "category": "production",
+      "footprint": { "width": 2, "height": 2 },
+      "outsideTerritory": false,
+      "placement": "flat",
+      "rotatable": true,
+      "provisional": true,
+      "levels": [
+        {
+          "cost": [ { "item": "wood", "count": 20 }, { "item": "stone", "count": 10 } ],
+          "buildTicks": 100,
+          "moveTicks": 33,
+          "requirements": []
+        }
+      ]
     }
   ]
 }

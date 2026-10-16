@@ -141,11 +141,11 @@ public sealed class CivilizationContentTests
     {
         ContentCatalog catalog = RealCatalog();
 
-        Assert.Equal(["campfire", "field", "house", "storage"], catalog.Buildings.Select(b => b.Id));
+        Assert.Equal(["campfire", "field", "house", "sawmill", "stonecutter", "storage"], catalog.Buildings.Select(b => b.Id));
         Assert.All(catalog.Buildings, b => Assert.True(b.Provisional));
         BuildingDef campfire = catalog.Buildings[0];
         BuildingDef house = catalog.Buildings[2];
-        BuildingDef storage = catalog.Buildings[3];
+        BuildingDef storage = catalog.Buildings[5];
 
         Assert.Equal("settlement_center", campfire.Category);
         Assert.True(campfire.OutsideTerritory);
@@ -157,8 +157,8 @@ public sealed class CivilizationContentTests
         Assert.Equal([2, 3, 4], house.Levels.Select(l => l.Capacity));
         Assert.All(house.Levels, l => Assert.Empty(l.Requirements)); // the era requirement is lifted for M2 (no residents before M3)
         Assert.Equal(["camp", "village"], storage.Levels.Select(l => l.Requirements.Single().Value));
-        Assert.Equal([false, false, true, true], catalog.Buildings.Select(b => b.Rotatable));
-        Assert.Equal([33, 33, 33, 33, 40, 33, 40], catalog.Buildings.SelectMany(b => b.Levels).Select(l => l.MoveTicks));
+        Assert.Equal([false, false, true, true, true, true], catalog.Buildings.Select(b => b.Rotatable));
+        Assert.Equal([33, 33, 33, 33, 40, 33, 33, 33, 40], catalog.Buildings.SelectMany(b => b.Levels).Select(l => l.MoveTicks));
         Assert.All(catalog.Buildings.SelectMany(b => b.Levels), l => Assert.Equal(Math.Max(1, l.BuildTicks / 3), l.MoveTicks));
 
         Assert.Equal(2, storage.Levels.Count);

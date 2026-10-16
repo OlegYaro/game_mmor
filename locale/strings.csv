@@ -5,6 +5,8 @@ item.wheat.name,Пшеница,Wheat
 item.berries.name,Ягоды,Berries
 item.vegetable.name,Овощи,Vegetables
 item.gold.name,Золото,Gold
+item.lumber.name,Доски,Lumber
+item.stone_block.name,Каменные блоки,Stone block
 ui.hud.day,День,Day
 ui.hud.night,Ночь,Night
 ui.speed.paused,Пауза,Paused
@@ -112,6 +114,8 @@ building.campfire.name,Костёр,Campfire
 building.house.name,Дом,House
 building.storage.name,Склад,Storage
 building.field.name,Поле,Field
+building.sawmill.name,Лесопилка,Sawmill
+building.stonecutter.name,Каменотёсная,Stonecutter
 ui.res.tooltip,В рюкзаке | на складах,In the backpack | in the storages
 ui.build.title,Строительство (B - закрыть),Build (B to close)
 ui.build.category.settlement_center,Центр,Center

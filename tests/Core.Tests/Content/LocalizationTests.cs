@@ -110,4 +110,26 @@ public sealed class LocalizationTests
             Assert.Contains(item.EffectiveNameKey, rows.Keys);
         }
     }
+
+    /// <summary>
+    /// The build menu (src/Game/Ui/BuildMenu.cs) lists every building of the catalog under a tab per category, so each
+    /// building needs its name and each used category its tab title. Keys as built by src/Game/Ui/BuildingText.cs.
+    /// </summary>
+    [Fact]
+    [Trait("Req", "FR-UI-09")]
+    [Trait("Req", "FR-BUILD-01")]
+    public void EveryBuildingHasANameAndACategoryKey()
+    {
+        Dictionary<string, string[]> rows = ReadCsv(out _);
+        ContentCatalog catalog = ContentCatalog.Load(TestPaths.LoadDataSource()).Catalog!;
+
+        foreach (BuildingDef building in catalog.Buildings)
+        {
+            Assert.Contains("building." + building.Id.Replace(':', '.') + ".name", rows.Keys);
+            Assert.Contains("ui.build.category." + building.Category, rows.Keys);
+        }
+
+        Assert.Contains("building.sawmill.name", rows.Keys);
+        Assert.Contains("building.stonecutter.name", rows.Keys);
+    }
 }

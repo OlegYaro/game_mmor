@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RecipeFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "building": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$",
+            "description": "Id of the building whose residents work this recipe."
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "item": {
+                  "type": "string",
+                  "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                }
+              },
+              "required": [
+                "item",
+                "count"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Items taken per cycle; at least one entry, no item twice."
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/properties/items/items/properties/inputs/items"
+            },
+            "description": "Items made per cycle; at least one entry, no item twice."
+          },
+          "cycleTicks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000,
+            "description": "Ticks of one cycle at base speed; 600 ticks are 60 seconds at 10 Hz (provisional)."
+          },
+          "skill": {
+            "type": "string",
+            "pattern": "^(construction|mining|farming|hunting|cooking|crafting|smithing|medicine|trading|knowledge|melee|shooting)$",
+            "description": "The skill that speeds the work up."
+          },
+          "provisional": {
+            "type": "boolean",
+            "description": "True while the inputs, outputs and cycle are placeholders; balance is tuned by the bot simulation (docs/research/economy-six-chains.md)."
+          },
+          "specialist": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null,
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$",
+            "description": "Optional id of a specialist profession the recipe needs; omitted when any worker may do it."
+          }
+        },
+        "required": [
+          "id",
+          "building",
+          "inputs",
+          "outputs",
+          "cycleTicks",
+          "skill",
+          "provisional"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

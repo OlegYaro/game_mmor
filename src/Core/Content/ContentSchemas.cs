@@ -39,6 +39,7 @@ public static class ContentCategories
         new("names", "names.schema.json", ContentJsonContext.Default.NameListFile),
         new("professions", "professions.schema.json", ContentJsonContext.Default.ProfessionFile),
         new("races", "races.schema.json", ContentJsonContext.Default.RaceFile),
+        new("recipes", "recipes.schema.json", ContentJsonContext.Default.RecipeFile),
         new("worldgen", "worldgen.schema.json", ContentJsonContext.Default.WorldGenFile),
     ];
 

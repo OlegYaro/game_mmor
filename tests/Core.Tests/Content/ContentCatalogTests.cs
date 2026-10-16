@@ -44,7 +44,8 @@ public sealed class ContentCatalogTests
         Assert.Equal(7, catalog.Time.DaysPerWeek);
         Assert.Equal(15, catalog.Time.DaysPerSeason);
         Assert.Equal(4, catalog.Time.SeasonsPerYear);
-        Assert.Equal(["berries", "gold", "stone", "vegetable", "wheat", "wood"], catalog.Items.Select(i => i.Id));
+        Assert.Equal(["berries", "gold", "lumber", "stone", "stone_block", "vegetable", "wheat", "wood"], catalog.Items.Select(i => i.Id));
+        Assert.Equal(["recipe_lumber", "recipe_stone_block"], catalog.Recipes.Select(r => r.Id));
         Assert.Equal(new FogBalanceDef("fog", HeroDay: 24, HeroNight: 12, VillagerDay: 16, VillagerNight: 8, TowerDay: 32, TowerNight: 32), catalog.Fog);
         Assert.Equal(new SaveBalanceDef("saves", ManualSlots: 5, AutosavesKept: 3), catalog.Saves);
     }
@@ -55,19 +56,19 @@ public sealed class ContentCatalogTests
     {
         ContentCatalog catalog = ContentCatalog.Load(TestPaths.LoadDataSource()).Catalog!;
 
-        // Sorted ordinal over all 41 ids (balance, items, world, eras, races, professions, relation reasons, buildings).
+        // Sorted ordinal over all 47 ids (balance, items, world, eras, races, professions, relation reasons, buildings, recipes).
         Assert.True(catalog.TryGetId("fog", out DefId fog));
         Assert.True(catalog.TryGetId("stone", out DefId stone));
         Assert.True(catalog.TryGetId("time", out DefId time));
         Assert.True(catalog.TryGetId("wood", out DefId wood));
         Assert.True(catalog.TryGetId("world", out DefId world));
         Assert.Equal(new DefId(12), fog);
-        Assert.Equal(new DefId(31), stone);
-        Assert.Equal(new DefId(34), time);
-        Assert.Equal(new DefId(40), wood);
-        Assert.Equal(new DefId(41), world);
+        Assert.Equal(new DefId(35), stone);
+        Assert.Equal(new DefId(40), time);
+        Assert.Equal(new DefId(46), wood);
+        Assert.Equal(new DefId(47), world);
         Assert.Equal("wood", catalog.Get(wood).Id);
-        Assert.Equal(41, catalog.Count);
+        Assert.Equal(47, catalog.Count);
         Assert.False(catalog.TryGetId("nope", out _));
         Assert.Throws<KeyNotFoundException>(() => catalog.Get(new DefId(0)));
         Assert.Throws<InvalidCastException>(() => catalog.Get<ItemDef>(time));
