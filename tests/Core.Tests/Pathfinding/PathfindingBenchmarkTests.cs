@@ -132,6 +132,101 @@ public sealed class PathfindingBenchmarkTests(ITestOutputHelper output)
         Assert.Equal(0, partial);
     }
 
+    /// <summary>
+    /// The trail and road cost layer (FR-WORLD-15): time per expanded node with the game's tile layer as the cost
+    /// provider (some tiles trails and roads, so the search reads a cost per neighbour and uses the road cost in the
+    /// heuristic) against the same layer while it is uniform, and against the same costs read from a plain array. The
+    /// heuristic gets weaker with roads, so a search expands more nodes; the target is the price per node: about 10 % more.
+    /// </summary>
+    [Fact]
+    [Trait("Req", "FR-WORLD-15")]
+    [Trait("Req", "NFR-02")]
+    [Trait("Category", "Benchmark")]
+    public void TheRoadCostLayerKeepsTheTimePerNode()
+    {
+        WorldMap world = WorldGenTestData.GoldenWorld(0);
+        var plainTiles = new Core.Tiles.TileChanges(world, Core.Tests.Sim.SimTestData.Real.Roads);
+        var roadTiles = new Core.Tiles.TileChanges(world, Core.Tests.Sim.SimTestData.Real.Roads);
+        var plain = new Pathfinder(new PassabilityGrid(world.Terrain, plainTiles, plainTiles));
+        var roads = new Pathfinder(new PassabilityGrid(world.Terrain, roadTiles, roadTiles));
+        int mainland = plain.Connectivity.GetComponent(world.Start.X, world.Start.Y);
+        var rng = new Xoshiro256StarStar(5);
+        for (int i = 0; i < 4000; i++)
+        {
+            int tile = RandomTileIn(roads, mainland, rng, -1, 0);
+            int counter = i % 4 == 0 ? Core.Tests.Sim.SimTestData.Real.Roads.RoadThreshold : Core.Tests.Sim.SimTestData.Real.Roads.TrailThreshold;
+            while (roadTiles.GetWalkCounter(tile % world.Size, tile / world.Size) < counter)
+            {
+                roadTiles.Trample(tile % world.Size, tile / world.Size);
+            }
+        }
+
+        int trails = roadTiles.TrailTiles;
+        int roadCount = roadTiles.RoadTiles;
+        Assert.True(plain.Grid.HasUniformCost);
+        Assert.False(roads.Grid.HasUniformCost);
+        var pairs = new (int Start, int Goal)[300];
+        for (int i = 0; i < pairs.Length; i++)
+        {
+            int start = RandomTileIn(plain, mainland, rng, -1, 0);
+            pairs[i] = (start, RandomTileIn(plain, mainland, rng, start, 48));
+        }
+
+        // Alternate the two layers a few rounds and keep each one's best round, against timer noise.
+        var path = new List<int>();
+        double plainNs = double.MaxValue;
+        double roadNs = double.MaxValue;
+        long plainNodes = 0;
+        long roadNodes = 0;
+        for (int round = 0; round < 5; round++)
+        {
+            (double ns, long nodes) = Measure(plain);
+            plainNs = Math.Min(plainNs, ns);
+            plainNodes = nodes;
+            (ns, nodes) = Measure(roads);
+            roadNs = Math.Min(roadNs, ns);
+            roadNodes = nodes;
+        }
+
+        // The same costs from a plain array: the price of the tile layer's own lookup, with the very same searches.
+        var array = new TestCost(world.Size, roadTiles.MinCost);
+        for (int i = 0; i < world.Size * world.Size; i++)
+        {
+            array.Set(i % world.Size, i / world.Size, roadTiles.GetCost(i % world.Size, i / world.Size));
+        }
+
+        var arrayLayer = new Pathfinder(new PassabilityGrid(world.Terrain, plainTiles, array));
+        double arrayNs = double.MaxValue;
+        for (int round = 0; round < 5; round++)
+        {
+            arrayNs = Math.Min(arrayNs, Measure(arrayLayer).Ns);
+        }
+
+        double overhead = (roadNs / plainNs) - 1;
+        double lookup = (roadNs / arrayNs) - 1;
+        output.WriteLine(string.Create(CultureInfo.InvariantCulture,
+            $"512², {pairs.Length} searches up to 48 tiles: uniform layer {plainNs:F1} ns/node ({plainNodes / pairs.Length} nodes/search); " +
+            $"{trails} trails and {roadCount} roads {roadNs:F1} ns/node ({roadNodes / pairs.Length} nodes/search, x{(double)roadNodes / plainNodes:F2}); " +
+            $"per-node overhead {overhead * 100:F1} % (the same costs from a plain array: {arrayNs:F1} ns/node, the tile layer's lookup {lookup * 100:+0.0;-0.0} %)"));
+
+        // Loose bounds for noisy runners: the lookup costs no more than an array read; the whole per-node price (with the
+        // larger open list of the weaker heuristic) stays well under a quarter. Measured on macOS: 5-10 %.
+        Assert.InRange(lookup, -1.0, 0.10);
+        Assert.InRange(overhead, -1.0, 0.25);
+
+        (double Ns, long Nodes) Measure(Pathfinder pathfinder)
+        {
+            long nodes = 0;
+            var stopwatch = Stopwatch.StartNew();
+            foreach ((int start, int goal) in pairs)
+            {
+                nodes += pathfinder.FindPath(start, goal, path, PathfinderConfig.MaxNodeLimit).ExpandedNodes;
+            }
+
+            return (stopwatch.Elapsed.TotalMilliseconds * 1_000_000.0 / Math.Max(1, nodes), nodes);
+        }
+    }
+
     [Fact]
     [Trait("Req", "FR-HERO-01")]
     [Trait("Category", "Benchmark")]

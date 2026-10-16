@@ -85,6 +85,71 @@ public sealed class PathfinderTests
         Assert.True(blocked > 50, $"blocked {blocked}");
     }
 
+    /// <summary>
+    /// A cost layer whose cheap tiles lie in a rectangle (trails and roads around a settlement, FR-WORLD-15): the
+    /// heuristic adds the plain-ground surcharge for steps outside it, and paths (to a tile and next to one) stay as
+    /// cheap as the reference Dijkstra finds.
+    /// </summary>
+    [Fact]
+    [Trait("Req", "FR-HERO-01")]
+    [Trait("Req", "FR-WORLD-15")]
+    public void PathsStayOptimalWhenTheHeuristicUsesTheCheapArea()
+    {
+        var path = new List<int>();
+        int found = 0;
+        for (ulong seed = 1; seed <= 100; seed++)
+        {
+            var rng = new Xoshiro256StarStar(seed * 6151);
+            int size = rng.NextInt(8, 41);
+            TestMap map = PathTestMaps.Random(seed + 5000, size, blockedPermille: rng.NextInt(0, 200), variableCost: true);
+            int x0 = rng.NextInt(size);
+            int y0 = rng.NextInt(size);
+            var area = new TileArea(x0, y0, Math.Min(size - 1, x0 + rng.NextInt(1, 12)), Math.Min(size - 1, y0 + rng.NextInt(1, 12)));
+            map.Cost!.CheapArea = area;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    map.Cost.Set(x, y, area.DistanceFrom(x, y) == 0 ? rng.NextInt(3, 13) : rng.NextInt(PathCosts.Straight, 25));
+                }
+            }
+
+            for (int pair = 0; pair < 12; pair++)
+            {
+                int start = rng.NextInt(size * size);
+                int goal = rng.NextInt(size * size);
+                int[] dist = map.Dijkstra(start);
+                PathResult result = map.Pathfinder.FindPath(start, goal, path, Limit);
+                if (result.Status == PathStatus.Found)
+                {
+                    Assert.Equal(dist[goal], result.Cost);
+                    map.AssertValidPath(path, start, result.Cost);
+                    found++;
+                }
+
+                int best = int.MaxValue;
+                for (int d = 0; d < PassabilityGrid.DirectionCount; d++)
+                {
+                    int nx = (goal % size) + PassabilityGrid.DirectionX(d);
+                    int ny = (goal / size) + PassabilityGrid.DirectionY(d);
+                    if (map.RefHeight(nx, ny) >= 0)
+                    {
+                        best = Math.Min(best, dist[map.Index(nx, ny)]);
+                    }
+                }
+
+                PathResult approach = map.Pathfinder.FindPathToAdjacent(start, goal, path, Limit);
+                if (approach.Status == PathStatus.Found)
+                {
+                    Assert.Equal(best, approach.Cost);
+                    found++;
+                }
+            }
+        }
+
+        Assert.True(found > 400, $"found {found}");
+    }
+
     [Theory]
     [Trait("Req", "FR-HERO-01")]
     [InlineData(false)]

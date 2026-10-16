@@ -10,7 +10,7 @@ using ConsoleType = Core.DevConsole.DevConsole;
 
 namespace Core.Tests.DevConsoleTests;
 
-/// <summary>Work and food console commands (NFR-07, FR-NPC-06, FR-NPC-07, FR-ECO-10): jobs, setprofession, setpriority, food.</summary>
+/// <summary>Work, food and tile console commands (NFR-07, FR-NPC-06, FR-NPC-07, FR-ECO-10, FR-WORLD-04, FR-WORLD-15): jobs, setprofession, setpriority, food, tile.</summary>
 [Collection(Core.Tests.Buildings.BuildingTestWorld.Collection)]
 public sealed class DevConsoleWorkTests
 {
@@ -127,5 +127,31 @@ public sealed class DevConsoleWorkTests
         sim.World.DaysWithoutFood = 3;
         sim.World.LastLeaveDay = 1;
         Assert.Equal("food 5 units in storages | 2 residents eat 2 a day | lasts 2 days | SHORTAGE 3 days (work at 500‰, last left on day 1)", console.Execute("food").Lines[0]);
+    }
+
+    [Fact]
+    [Trait("Req", "NFR-07")]
+    [Trait("Req", "FR-WORLD-04")]
+    [Trait("Req", "FR-WORLD-15")]
+    public void TilePrintsTheFloraAndWalkCountsOrOneTile()
+    {
+        (Simulation sim, _) = NewSettlement();
+        ConsoleType console = Console(sim);
+        GameWorld world = sim.World!;
+        Assert.Equal("flora 0 tiles (stumps, saplings, grown trees) | walked 0 tiles | trails 0 | roads 0", console.Execute("tile").Text);
+
+        (int x, int y) = Heroes.HeroTestWorld.NearestNode(sim, Core.WorldGen.ResourceKind.Tree);
+        world.Tiles.TakeResource(x, y, int.MaxValue);
+        for (int i = 0; i < 10; i++)
+        {
+            world.Tiles.Trample(x, y);
+        }
+
+        Assert.Equal($"tile {x},{y}: node None (0) | flora stump since tick {sim.Tick} | walk 40 (trail) | occupant none", console.Execute($"tile {x} {y}").Text);
+        Assert.Equal("flora 1 tiles (stumps, saplings, grown trees) | walked 1 tiles | trails 1 | roads 0", console.Execute("tile").Text);
+        Assert.False(console.Execute("tile 1").Success);
+        Assert.False(console.Execute("tile a b").Success);
+        Assert.False(console.Execute($"tile {world.Size} 0").Success);
+        Assert.False(Console(new Simulation(1, SimTestData.Real)).Execute("tile").Success);
     }
 }
