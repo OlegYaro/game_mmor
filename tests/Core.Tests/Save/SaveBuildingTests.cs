@@ -11,8 +11,13 @@ using static Core.Tests.Buildings.BuildingTestWorld;
 namespace Core.Tests.Save;
 
 /// <summary>Saves with buildings in every state, a storage stock and building orders in the queue (FR-SAVE-02/04, FR-BUILD-02, 09, 13).</summary>
+[Collection(Core.Tests.Buildings.BuildingTestWorld.Collection)]
 public sealed class SaveBuildingTests
 {
+    // One settlement (house under construction) for all the damaged-save cases, as an indented save.
+    private static readonly Lazy<byte[]> _constructing = new(() =>
+        SaveGame.ToBytes(BuildSettlement(BuildingState.Constructing), new SaveWriteOptions(Indented: true)));
+
     private static SaveLoadResult Load(byte[] bytes) => SaveGame.Read(bytes, SimTestData.Real);
 
     /// <summary>
@@ -137,8 +142,7 @@ public sealed class SaveBuildingTests
     [InlineData("dead owner")]
     public void InvalidBuildingsAreRejected(string damage)
     {
-        Simulation sim = BuildSettlement(BuildingState.Constructing);
-        byte[] bytes = Edit(sim, body =>
+        byte[] bytes = Edit(_constructing.Value, body =>
         {
             JsonArray buildings = body["components"]!["building"]!.AsArray();
             JsonObject campfire = buildings[0]!.AsObject();
@@ -173,6 +177,43 @@ public sealed class SaveBuildingTests
         Assert.Equal(SaveErrorKind.InvalidState, result.Error!.Kind);
     }
 
+    [Fact]
+    [Trait("Req", "FR-SAVE-04")]
+    [Trait("Req", "NFR-04")]
+    public void PendingBuildingOrdersAreHashedWithTheirPayload()
+    {
+        var house = new EntityId(3, 1);
+        ISimCommand[] orders =
+        [
+            new PlaceBuildingCommand("house", 4, 5, 1),
+            new CancelBuildingCommand(house),
+            new UpgradeBuildingCommand(house),
+            new MoveBuildingCommand(house, 6, 7, 1),
+            new DemolishBuildingCommand(house),
+        ];
+        ISimCommand[] changed =
+        [
+            new PlaceBuildingCommand("house", 4, 5, 0),
+            new CancelBuildingCommand(house with { Generation = 2 }),
+            new UpgradeBuildingCommand(house with { Index = 4 }),
+            new MoveBuildingCommand(house, 6, 8, 1),
+            new DemolishBuildingCommand(house with { Generation = 2 }),
+        ];
+
+        for (int i = 0; i < orders.Length; i++)
+        {
+            Assert.Equal(CommandsHash(orders[i]), CommandsHash(CommandDto.FromCommand(orders[i]).ToCommand()));
+            Assert.NotEqual(CommandsHash(orders[i]), CommandsHash(changed[i]));
+        }
+    }
+
+    private static ulong CommandsHash(ISimCommand command)
+    {
+        var sim = new Simulation(1, SimTestData.Real);
+        sim.Enqueue(command);
+        return sim.ComputeHashes().TryGetHash(Simulation.CommandsHashName, out ulong hash) ? hash : 0;
+    }
+
     private static JsonObject Body(Simulation sim)
     {
         byte[] indented = SaveGame.ToBytes(sim, new SaveWriteOptions(Indented: true));
@@ -180,11 +221,10 @@ public sealed class SaveBuildingTests
         return JsonNode.Parse(Encoding.UTF8.GetString(indented, newline + 1, indented.Length - newline - 1))!.AsObject();
     }
 
-    private static byte[] Edit(Simulation sim, Action<JsonObject> edit)
+    private static byte[] Edit(byte[] indented, Action<JsonObject> edit)
     {
-        byte[] indented = SaveGame.ToBytes(sim, new SaveWriteOptions(Indented: true));
         int newline = Array.IndexOf(indented, (byte)'\n');
-        JsonObject body = Body(sim);
+        JsonObject body = JsonNode.Parse(Encoding.UTF8.GetString(indented, newline + 1, indented.Length - newline - 1))!.AsObject();
         edit(body);
         return [.. indented.AsSpan(0, newline + 1), .. Encoding.UTF8.GetBytes(body.ToJsonString())];
     }

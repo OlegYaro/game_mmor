@@ -6,12 +6,20 @@ using Core.Sim;
 using Core.Tests.Content;
 using Core.Tests.Heroes;
 using Core.Tests.Sim;
+using Core.WorldGen;
 
 namespace Core.Tests.Buildings;
 
 /// <summary>Helpers for building tests on a small real game (64², the hero test seed).</summary>
 internal static class BuildingTestWorld
 {
+    /// <summary>
+    /// xUnit collection of the building test classes. They all drive the same hot code (ticks, placement scans), and run
+    /// in parallel under coverage instrumentation the shared hit counters made them about 20 times slower; run one
+    /// after another they cost seconds.
+    /// </summary>
+    public const string Collection = "buildings";
+
     /// <summary>
     /// Extra building types for rules the shipped data has no example of: a level-1 era requirement, a specialist
     /// requirement, and a storage whose second level needs nothing (stock growth).
@@ -46,8 +54,15 @@ internal static class BuildingTestWorld
     /// <summary>The real data plus <see cref="ExtraBuildings"/>.</summary>
     public static ContentCatalog Extended => _extended.Value;
 
+    // The 64² map of the hero test seed, generated once: building tests create a new game each, and the map never changes.
+    private static readonly Lazy<WorldMap> _map = new(() => WorldGenerator.Generate(new WorldGenRequest(HeroTestWorld.Seed, 64, SimTestData.Real.WorldGen)));
+
+    /// <summary>The shared 64² map of <see cref="HeroTestWorld.Seed"/>.</summary>
+    public static WorldMap SharedMap => _map.Value;
+
+    /// <summary>A new 64² game of the hero test seed on the shared map (the extended content has the same world parameters).</summary>
     public static Simulation NewGame(ContentCatalog? content = null) =>
-        Simulation.CreateNewGame(content ?? SimTestData.Real, new NewGameOptions(HeroTestWorld.Seed, 64, Difficulty.Normal));
+        Simulation.CreateNewGame(content ?? SimTestData.Real, new NewGameOptions(HeroTestWorld.Seed, 64, Difficulty.Normal), null, _map.Value);
 
     /// <summary>Puts items straight into the hero's backpack (no command, no tick).</summary>
     public static void Give(Simulation sim, string item, int count)

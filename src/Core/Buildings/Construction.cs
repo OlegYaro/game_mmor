@@ -129,7 +129,11 @@ public static class Construction
     }
 
     /// <summary>The era of the player's settlement (from <see cref="SettlementPopulation"/>).</summary>
-    public static EraDef CurrentEra(Simulation sim) => EraFor(sim?.Content!, SettlementPopulation(sim!));
+    public static EraDef CurrentEra(Simulation sim)
+    {
+        ArgumentNullException.ThrowIfNull(sim);
+        return EraFor(sim.Content, SettlementPopulation(sim));
+    }
 
     /// <summary>The player's settlement center (any state), or <see cref="EntityId.None"/> when there is none.</summary>
     public static EntityId FindCenter(Simulation sim)
@@ -189,9 +193,12 @@ public static class Construction
             || TerritoryAt(sim, building.Def, building.TargetX, building.TargetY, building.TargetRotation).ContainsArea(x, y, width, height));
     }
 
-    /// <summary>True when <paramref name="building"/> is a storage whose stock can be used (built and active).</summary>
-    public static bool IsAvailableStorage(GameWorld world, EntityId entity, Building building) =>
-        building.State == BuildingState.Active && building.Settlement == Building.PlayerSettlement && (world?.Inventories.Has(entity) ?? false);
+    /// <summary>True when <paramref name="building"/> of <paramref name="entity"/> is a storage whose stock can be used (built and active).</summary>
+    public static bool IsAvailableStorage(GameWorld world, EntityId entity, Building building)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        return building.State == BuildingState.Active && building.Settlement == Building.PlayerSettlement && world.Inventories.Has(entity);
+    }
 
     /// <summary>How many <paramref name="item"/> the player can spend: the hero's backpack plus the available storages.</summary>
     public static int CountAvailable(Simulation sim, DefId item)

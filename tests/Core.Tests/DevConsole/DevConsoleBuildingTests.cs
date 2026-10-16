@@ -11,6 +11,7 @@ using ConsoleType = Core.DevConsole.DevConsole;
 namespace Core.Tests.DevConsoleTests;
 
 /// <summary>Building console commands (NFR-07, FR-BUILD-01, 02, 09, 12, 13): build, check, upgrade, movebuilding, demolish, cancelbuilding, buildings.</summary>
+[Collection(Core.Tests.Buildings.BuildingTestWorld.Collection)]
 public sealed class DevConsoleBuildingTests
 {
     private readonly SimLog _log = new();

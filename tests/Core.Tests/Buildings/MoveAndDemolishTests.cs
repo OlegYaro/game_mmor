@@ -10,6 +10,7 @@ using static Core.Tests.Buildings.BuildingTestWorld;
 namespace Core.Tests.Buildings;
 
 /// <summary>Moving (FR-BUILD-13, E2, E3) and demolishing (FR-BUILD-12, E4, E5, E6) buildings.</summary>
+[Collection(BuildingTestWorld.Collection)]
 public sealed class MoveAndDemolishTests
 {
     [Fact]

@@ -9,6 +9,7 @@ using static Core.Tests.Buildings.BuildingTestWorld;
 namespace Core.Tests.Buildings;
 
 /// <summary>Upgrades (FR-BUILD-09) and cancelling (FR-BUILD-12): same entity, payment at start, 100% back on cancel.</summary>
+[Collection(BuildingTestWorld.Collection)]
 public sealed class UpgradeAndCancelTests
 {
     [Fact]

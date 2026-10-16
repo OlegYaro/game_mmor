@@ -8,6 +8,7 @@ using static Core.Tests.Buildings.BuildingTestWorld;
 namespace Core.Tests.Buildings;
 
 /// <summary>Territory and era (FR-BUILD-06, A1) and the refund function (FR-BUILD-12, E5).</summary>
+[Collection(BuildingTestWorld.Collection)]
 public sealed class TerritoryAndRefundTests
 {
     [Theory]

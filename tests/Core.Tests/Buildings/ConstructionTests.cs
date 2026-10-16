@@ -10,6 +10,7 @@ using static Core.Tests.Buildings.BuildingTestWorld;
 namespace Core.Tests.Buildings;
 
 /// <summary>Placing and constructing (FR-BUILD-02, A2): payment at once, reserved tiles, build ticks, the storage stock.</summary>
+[Collection(BuildingTestWorld.Collection)]
 public sealed class ConstructionTests
 {
     [Fact]
@@ -123,6 +124,17 @@ public sealed class ConstructionTests
         Assert.True(sim.World!.Buildings.Has(campfire));
         Assert.Equal(1, sim.World.Tiles.OccupiedTiles);
         Assert.Contains(sim.Log.GetEvents(), e => e.Level == LogLevel.Warning && e.Render().Contains("is a building", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [Trait("Req", "FR-SAVE-05")]
+    public void AGameOnASharedMapEqualsAFreshGameAndTheMapMustMatchTheOptions()
+    {
+        var options = new NewGameOptions(HeroTestWorld.Seed, 64, Difficulty.Normal);
+
+        Assert.Null(NewGame().ComputeHashes().FindFirstMismatch(Simulation.CreateNewGame(SimTestData.Real, options).ComputeHashes()));
+        Assert.Throws<ArgumentException>(() => Simulation.CreateNewGame(SimTestData.Real, options with { Seed = options.Seed + 1 }, null, SharedMap));
+        Assert.Throws<ArgumentException>(() => Simulation.CreateNewGame(SimTestData.Real, options with { MapSize = 128 }, null, SharedMap));
     }
 
     [Fact]

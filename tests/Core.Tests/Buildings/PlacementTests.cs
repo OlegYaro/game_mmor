@@ -10,6 +10,7 @@ using static Core.Tests.Buildings.BuildingTestWorld;
 namespace Core.Tests.Buildings;
 
 /// <summary>The one placement check (FR-BUILD-01, FR-BUILD-06): every refusal reason and the valid case.</summary>
+[Collection(BuildingTestWorld.Collection)]
 public sealed class PlacementTests
 {
     [Fact]

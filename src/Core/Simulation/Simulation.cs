@@ -307,7 +307,22 @@ public sealed class Simulation : IStateHashable
         ArgumentNullException.ThrowIfNull(content);
         ArgumentNullException.ThrowIfNull(options);
         options.Validate();
-        WorldMap map = WorldGenerator.Generate(new WorldGenRequest(options.Seed, options.MapSize, content.WorldGen));
+        return CreateNewGame(content, options, log, WorldGenerator.Generate(new WorldGenRequest(options.Seed, options.MapSize, content.WorldGen)));
+    }
+
+    // Test hook: starts a game on a map generated before for the same seed and size (maps never change after
+    // generation, so tests that create many games share one and skip the world generation).
+    internal static Simulation CreateNewGame(ContentCatalog content, NewGameOptions options, SimLog? log, WorldMap map)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(map);
+        options.Validate();
+        if (map.Seed != options.Seed || map.Size != options.MapSize)
+        {
+            throw new ArgumentException($"The map was generated for seed {map.Seed} and size {map.Size}, not for these options.", nameof(map));
+        }
+
         var sim = new Simulation(content, log, new RngStreams(options.Seed), new EntityRegistry(), CreateDefaultSystems(),
             options.Difficulty, map, map.ComputeHash());
         GameWorld world = sim.World!;

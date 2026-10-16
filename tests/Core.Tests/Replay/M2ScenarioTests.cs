@@ -12,6 +12,7 @@ namespace Core.Tests.Replay;
 /// hashes, runs the same twice, fits the tick budget, ends with the expected settlement, and a save + load in any
 /// building state continues exactly like the uninterrupted run.
 /// </summary>
+[Collection(Core.Tests.Buildings.BuildingTestWorld.Collection)]
 public sealed class M2ScenarioTests(ITestOutputHelper output)
 {
     [Fact]
