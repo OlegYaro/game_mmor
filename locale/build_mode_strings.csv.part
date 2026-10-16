@@ -1,0 +1,27 @@
+build.reason.no_world,Нет мира,No world
+build.reason.unknown_building,Неизвестное здание,Unknown building
+build.reason.invalid_rotation,Недопустимый поворот,Invalid rotation
+build.reason.out_of_map,За краем карты,Outside the map
+build.reason.not_explored,Местность не исследована,Area not explored
+build.reason.water,Нельзя строить на воде,Cannot build on water
+build.reason.not_flat,Нужна ровная земля,Ground must be flat
+build.reason.resource_in_the_way,Мешает ресурс: сначала соберите его,A resource is in the way: gather it first
+build.reason.occupied,Место занято,Tile is occupied
+build.reason.unit_in_the_way,На месте стоит герой,A unit is in the way
+build.reason.no_center,Сначала постройте костёр,Build a campfire first
+build.reason.center_exists,Костёр уже есть,A campfire already exists
+build.reason.outside_territory,Вне территории поселения,Outside the settlement territory
+build.reason.requirement_not_met,Требование не выполнено,Requirement not met
+build.reason.not_enough_materials,Не хватает материалов,Not enough materials
+build.reason.not_a_building,Это не здание,Not a building
+build.reason.busy,Здание занято,Building is busy
+build.reason.max_level,Максимальный уровень,Maximum level
+build.reason.nothing_to_cancel,Нечего отменять,Nothing to cancel
+build.reason.center_not_removable,Костёр нельзя снести,The campfire cannot be demolished
+build.reason.last_storage,Последний склад нельзя снести,The last storage cannot be demolished
+build.reason.center_in_use,Вокруг костра уже есть здания,Other buildings stand around the campfire
+build.reason.buildings_outside_territory,Здания окажутся вне территории,Buildings would end up outside the territory
+build.reason.same_place,То же место,Same place
+build.hint.place,ЛКМ: построить / ПКМ или Esc: отмена,LMB: build / RMB or Esc: cancel
+build.hint.place_rotate,ЛКМ: построить / R: поворот / ПКМ или Esc: отмена,LMB: build / R: rotate / RMB or Esc: cancel
+build.hint.move,ЛКМ: перенести / R: поворот / ПКМ или Esc: отмена,LMB: move / R: rotate / RMB or Esc: cancel

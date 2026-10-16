@@ -187,6 +187,6 @@ public static class WorldRenderSmoke
         }
 
         GD.Print($"Smoke world render: map {MapSize}, {view.Chunks.Active.Count} chunks, start chunk {ground} ground + {objects} -> {revealedObjects} object cells");
-        return null;
+        return BuildingRenderSmoke.Check(view, sim);
     }
 }
