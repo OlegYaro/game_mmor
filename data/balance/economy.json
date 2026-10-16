@@ -26,6 +26,7 @@
       "thinkIntervalTicks": 10,
       "skillSpeedPermillePerPoint": 25,
       "initialSkillMax": 6,
+      "jobSearchMarginTiles": 8,
       "autoAssignPattern": [ "carrier", "lumberjack", "farmer", "stonemason" ]
     }
   ]

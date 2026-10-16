@@ -157,6 +157,12 @@
             "maximum": 20,
             "description": "A newcomer starts with each skill between 0 and this value (provisional)."
           },
+          "jobSearchMarginTiles": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 64,
+            "description": "Tiles beyond the territory border where residents still look for resource nodes to work (provisional)."
+          },
           "autoAssignPattern": {
             "type": "array",
             "items": {
@@ -193,6 +199,7 @@
           "thinkIntervalTicks",
           "skillSpeedPermillePerPoint",
           "initialSkillMax",
+          "jobSearchMarginTiles",
           "autoAssignPattern"
         ],
         "additionalProperties": false

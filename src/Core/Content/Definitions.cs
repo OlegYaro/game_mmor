@@ -81,7 +81,7 @@ public sealed record ItemDef(
     /// <returns>(JSON path below the definition, message) per problem.</returns>
     public IEnumerable<(string Path, string Message)> CheckConsistency()
     {
-        if (FoodValue > 0 && Category != "food")
+        if (FoodValue > 0 && Category != ItemCategories.Food)
         {
             yield return ("foodValue", $"Item '{Id}' has a foodValue but is not in the food category.");
         }
@@ -93,6 +93,38 @@ public static class ItemCategories
 {
     /// <summary>Pattern of an item category.</summary>
     public const string Pattern = "^(resource|food|material|currency)$";
+
+    /// <summary>Category of edible items (<see cref="ItemDef.FoodValue"/> above 0).</summary>
+    public const string Food = "food";
+
+    /// <summary>Category of money (the tax is paid in it).</summary>
+    public const string Currency = "currency";
+
+    /// <summary>
+    /// The categories in <see cref="Pattern"/> order. Category <c>i</c> is bit <c>1 &lt;&lt; i</c> of a storage filter
+    /// mask (FR-ECO-01), so the order is append only.
+    /// </summary>
+    public static IReadOnlyList<string> All { get; } = ["resource", "food", "material", "currency"];
+
+    /// <summary>Mask with every category's bit set.</summary>
+    public static int AllMask => (1 << All.Count) - 1;
+
+    /// <summary>
+    /// The filter bit of <paramref name="category"/>, or 0 for an item without a category (such items pass every
+    /// filter: a filter can only exclude what it can name).
+    /// </summary>
+    public static int BitOf(string? category)
+    {
+        for (int i = 0; i < All.Count; i++)
+        {
+            if (string.Equals(All[i], category, StringComparison.Ordinal))
+            {
+                return 1 << i;
+            }
+        }
+
+        return 0;
+    }
 }
 
 /// <summary>Builds localization keys from content ids (FR-UI-09).</summary>

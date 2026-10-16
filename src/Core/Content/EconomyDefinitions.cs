@@ -33,6 +33,7 @@ namespace Core.Content;
 /// <param name="ThinkIntervalTicks">Ticks between two decisions of an idle resident.</param>
 /// <param name="SkillSpeedPermillePerPoint">Work speed gain per skill point, in thousandths.</param>
 /// <param name="InitialSkillMax">A newcomer starts with each skill between 0 and this value.</param>
+/// <param name="JobSearchMarginTiles">Tiles beyond the territory border where residents still look for resource nodes to work.</param>
 /// <param name="AutoAssignPattern">Profession ids handed to newcomers in turn, wrapping around; ordinary professions only.</param>
 public sealed record EconomyBalanceDef(
     [property: RegularExpression(ContentId.Pattern)] string Id,
@@ -59,6 +60,7 @@ public sealed record EconomyBalanceDef(
     [property: Range(1, 1000)] [property: Description("Ticks between two decisions of an idle resident (provisional).")] int ThinkIntervalTicks,
     [property: Range(0, 100)] [property: Description("Work speed gain per skill point, in thousandths (provisional).")] int SkillSpeedPermillePerPoint,
     [property: Range(0, 20)] [property: Description("A newcomer starts with each skill between 0 and this value (provisional).")] int InitialSkillMax,
+    [property: Range(0, 64)] [property: Description("Tiles beyond the territory border where residents still look for resource nodes to work (provisional).")] int JobSearchMarginTiles,
     [property: Description("Profession ids handed to newcomers in turn, wrapping around. Ordinary professions only; at least one.")] IReadOnlyList<string> AutoAssignPattern) : IContentDef
 {
     /// <summary>Checks the cross-field rules that attributes cannot express.</summary>
