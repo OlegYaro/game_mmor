@@ -99,6 +99,81 @@ public static class IsoProjection
         return false;
     }
 
+    /// <summary>Half width, in pixels, of the clickable part of an object sprite around its tile centre.</summary>
+    public const int ObjectHitHalfWidth = 12;
+
+    /// <summary>Pixels above the tile centre that an object sprite (32×32, origin (16, 24)) covers.</summary>
+    public const int ObjectHitAbove = 24;
+
+    /// <summary>Pixels below the tile centre that an object sprite covers.</summary>
+    public const int ObjectHitBelow = 4;
+
+    /// <summary>
+    /// The tile whose object sprite (a tree, rock or bush that rises above its tile) covers world pixel
+    /// (<paramref name="px"/>, <paramref name="py"/>), preferring the tile nearest to the camera. A click on a crown
+    /// lands on a ground tile further back, so the tiles in front of the ground pick are tested, with their centres
+    /// lifted by their own heights. Tiles outside the map and tiles without an object are skipped.
+    /// </summary>
+    /// <param name="px">World pixel x.</param>
+    /// <param name="py">World pixel y.</param>
+    /// <param name="mapSize">Side of the map in tiles.</param>
+    /// <param name="heightAt">Visual height step of an on-map tile.</param>
+    /// <param name="hasObject">True when a visible object stands on an on-map tile (false for unexplored tiles).</param>
+    /// <param name="tile">The tile of the covering object.</param>
+    /// <returns>False when no object sprite covers the pixel.</returns>
+    public static bool PickObject(int px, int py, int mapSize, Func<int, int, int> heightAt, Func<int, int, bool> hasObject, out (int X, int Y) tile)
+    {
+        ArgumentNullException.ThrowIfNull(heightAt);
+        ArgumentNullException.ThrowIfNull(hasObject);
+        (int gx, int gy) = TileAtPixel(px, py);
+
+        // A tile k = dx + dy rows in front lies 8k px lower on screen; its sprite reaches ObjectHitAbove plus the lift of
+        // its height above that, so the farthest tile that can still cover the pixel is (above + max lift) / 8 rows away.
+        // Tiles one step behind the ground pick are included: a click on a sprite's lower corner lands on a neighbour.
+        int maxRows = (ObjectHitAbove + (HeightStep * TerrainMap.MaxHeight)) / HalfHeight;
+        bool found = false;
+        int bestSum = int.MinValue;
+        int bestY = int.MinValue;
+        (int X, int Y) best = default;
+        for (int dx = -1; dx <= maxRows; dx++)
+        {
+            for (int dy = -1; dy <= maxRows; dy++)
+            {
+                int cx = gx + dx;
+                int cy = gy + dy;
+                if ((uint)cx >= (uint)mapSize || (uint)cy >= (uint)mapSize || !hasObject(cx, cy))
+                {
+                    continue;
+                }
+
+                (int centerX, int centerY) = TileCenter(cx, cy, heightAt(cx, cy));
+                if (Math.Abs(px - centerX) > ObjectHitHalfWidth || py < centerY - ObjectHitAbove || py > centerY + ObjectHitBelow)
+                {
+                    continue;
+                }
+
+                // Nearest to the camera = drawn last = on top: the larger x + y, then the larger y.
+                int sum = cx + cy;
+                if (!found || sum > bestSum || (sum == bestSum && cy > bestY))
+                {
+                    found = true;
+                    bestSum = sum;
+                    bestY = cy;
+                    best = (cx, cy);
+                }
+            }
+        }
+
+        if (found)
+        {
+            tile = best;
+            return true;
+        }
+
+        tile = default;
+        return false;
+    }
+
     /// <summary>
     /// World point of a fixed-point <see cref="Position"/> in 1/<see cref="Position.UnitsPerTile"/> pixel (divide by
     /// <see cref="Position.UnitsPerTile"/> for pixels). The centre of a tile maps to <see cref="TileCenter(int, int)"/>.

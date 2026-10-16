@@ -1,4 +1,6 @@
 using Core.Entities;
+using Core.Fog;
+using Core.Geometry;
 using Core.Heroes;
 using Core.Pathfinding;
 using Core.Sim;
@@ -110,11 +112,8 @@ public partial class PlayerInput : Node
         GetViewport().SetInputAsHandled();
     }
 
-    // Object sprites are 32x32 with the origin at (16, 24) above the tile centre (tools/ArtGen/ObjectArt).
-    private const int SpriteHalfWidth = 12;
-    private const int SpriteAbove = 24;
-    private const int SpriteBelow = 4;
-
+    // A tree, rock or bush sprite rises above its tile, so a click on its crown lands on a tile further back: prefer a
+    // visible resource in front whose sprite covers the clicked point (IsoProjection.PickObject, tested in Core).
     private static (int X, int Y) ResourceUnderPoint(WorldView view, CoreSimulation sim, Vector2 screen, int pickedX, int pickedY)
     {
         WorldArt? art = view.Chunks.Art;
@@ -124,27 +123,15 @@ public partial class PlayerInput : Node
         }
 
         Vector2 point = view.Camera.ScreenToWorld(screen);
-        // Tiles nearer to the camera than the picked one, nearest first; their sprites reach over the picked tile.
-        ReadOnlySpan<(int Dx, int Dy)> candidates = [(1, 1), (1, 0), (0, 1)];
-        foreach ((int dx, int dy) in candidates)
-        {
-            int cx = pickedX + dx;
-            int cy = pickedY + dy;
-            if (!world.Map.Terrain.Contains(cx, cy) || world.Tiles.GetEffectiveResource(cx, cy) == ResourceKind.None)
-            {
-                continue;
-            }
-
-            Core.WorldGen.TerrainMap terrain = world.Map.Terrain;
-            int height = art.VisualHeight(terrain.GetBiome(cx, cy), terrain.GetFeatures(cx, cy), terrain.GetHeight(cx, cy));
-            (int px, int py) = Core.Geometry.IsoProjection.TileCenter(cx, cy, height);
-            if (Math.Abs(point.X - px) <= SpriteHalfWidth && point.Y >= py - SpriteAbove && point.Y <= py + SpriteBelow)
-            {
-                return (cx, cy);
-            }
-        }
-
-        return (pickedX, pickedY);
+        TerrainMap terrain = world.Map.Terrain;
+        bool found = IsoProjection.PickObject(
+            (int)Mathf.Floor(point.X),
+            (int)Mathf.Floor(point.Y),
+            world.Size,
+            (x, y) => art.VisualHeight(terrain.GetBiome(x, y), terrain.GetFeatures(x, y), terrain.GetHeight(x, y)),
+            (x, y) => world.Fog.GetState(x, y) != FogState.Unknown && world.Tiles.GetEffectiveResource(x, y) != ResourceKind.None,
+            out (int X, int Y) tile);
+        return found ? tile : (pickedX, pickedY);
     }
 
     public override void _Process(double delta)
