@@ -18,9 +18,6 @@ public partial class EntityLayer : Node2D
     /// <summary>Art id of the hero sprite in the objects atlas.</summary>
     public const string HeroArtId = "hero";
 
-    private const double FallbackTickSeconds = 0.1;
-    private const float SnapDistancePixels = 3f * IsoProjection.TileWidth;
-
     private Simulation? _sim;
     private WorldArt? _art;
     private Node2D? _heroRoot;
@@ -61,17 +58,8 @@ public partial class EntityLayer : Node2D
         Unbind();
         _sim = simulation;
         _art = art;
-        if (!art.Table.TryGet(HeroArtId, out AtlasCell cell))
+        if (!EntityMotion.TryMakeObjectTexture(art, HeroArtId, out AtlasTexture texture, out Vector2 offset))
         {
-            GD.PushError($"EntityLayer: the art table has no '{HeroArtId}' cell.");
-            return;
-        }
-
-        AtlasImage? image = art.Table.Images.FirstOrDefault(i => i.Id == cell.Atlas);
-        Texture2D? atlas = image is not null && ResourceLoader.Exists(image.ResourcePath) ? GD.Load<Texture2D>(image.ResourcePath) : null;
-        if (atlas is null)
-        {
-            GD.PushError($"EntityLayer: the atlas of '{HeroArtId}' cannot be loaded.");
             return;
         }
 
@@ -79,9 +67,9 @@ public partial class EntityLayer : Node2D
         _sprite = new Sprite2D
         {
             Name = "HeroSprite",
-            Texture = new AtlasTexture { Atlas = atlas, Region = new Rect2(cell.Region.Position, cell.Region.Size) },
+            Texture = texture,
             Centered = false,
-            Offset = -new Vector2(cell.Origin.X, cell.Origin.Y),
+            Offset = offset,
         };
         _heroRoot.AddChild(_sprite);
         _marker = new TargetMarker { Name = "TargetMarker", Visible = false };
@@ -138,7 +126,7 @@ public partial class EntityLayer : Node2D
             bool had = _heroRoot.Visible;
             if (Sample())
             {
-                bool snap = !had || previous.DistanceTo(_curGround) > SnapDistancePixels;
+                bool snap = !had || previous.DistanceTo(_curGround) > EntityMotion.SnapDistancePixels;
                 _prevGround = snap ? _curGround : previous;
                 _prevLift = snap ? _curLift : previousLift;
                 _sinceTick = 0;
@@ -149,7 +137,7 @@ public partial class EntityLayer : Node2D
             _sinceTick += delta;
         }
 
-        double tickSeconds = Math.Max(TickSeconds?.Invoke() ?? FallbackTickSeconds, 0.001);
+        double tickSeconds = Math.Max(TickSeconds?.Invoke() ?? EntityMotion.FallbackTickSeconds, 0.001);
         Apply((float)Math.Clamp(_sinceTick / tickSeconds, 0.0, 1.0));
     }
 
@@ -170,18 +158,13 @@ public partial class EntityLayer : Node2D
             return false;
         }
 
-        (long px, long py) = IsoProjection.PixelOfPosition(position);
-        _curGround = new Vector2((float)px / Core.Entities.Position.UnitsPerTile, (float)py / Core.Entities.Position.UnitsPerTile);
-        _curLift = IsoProjection.HeightStep * HeightAt(world, position.TileX, position.TileY);
+        _curGround = EntityMotion.GroundPoint(position);
+        _curLift = EntityMotion.Lift(world, _art, position.TileX, position.TileY);
         UpdateMarker(world, hero);
         return true;
     }
 
-    private int HeightAt(GameWorld world, int x, int y)
-    {
-        TerrainMap terrain = world.Map.Terrain;
-        return terrain.Contains(x, y) ? _art!.VisualHeight(terrain.GetBiome(x, y), terrain.GetFeatures(x, y), terrain.GetHeight(x, y)) : 0;
-    }
+    private int HeightAt(GameWorld world, int x, int y) => EntityMotion.HeightAt(world, _art!, x, y);
 
     private void Apply(float alpha)
     {

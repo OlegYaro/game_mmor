@@ -1,0 +1,7 @@
+keys,ru,en
+ui.residents.toast.arrived,Пришёл житель,A resident has arrived
+ui.residents.toast.left_hungry,Житель ушёл голодным,A resident left hungry
+ui.residents.toast.food_low,Еды хватит на {0} дн.,Food will last {0} more days
+ui.residents.toast.food_last_day,Еды хватит меньше чем на день,Food will last less than a day
+ui.residents.toast.food_shortage,Еда кончилась: работа замедлена,Out of food: work is slowed down
+ui.residents.toast.tax,Налог: +{0} золота,Tax: +{0} gold
