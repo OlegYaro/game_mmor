@@ -178,6 +178,10 @@ public sealed class EconomyContentTests
             ("leaveIntervalDays", 0), ("taxPerResidentPerDay", -1), ("maxResidents", 0), ("arrivalHour", 24),
             ("arrivalFreeSlotPoints", 101), ("arrivalMaxSlots", 0), ("arrivalFoodDays", 0), ("arrivalFamePointsDivisor", 0),
             ("arrivalChanceCapPermille", 1001), ("haulCapacity", 0), ("thinkIntervalTicks", 0),
+
+            // A ban of 0 ticks would end in the tick it was given, and a save of that tick would hold an ended ban
+            // (review of M3a).
+            ("jobRetryCooldownTicks", 0),
             ("skillSpeedPermillePerPoint", 101), ("initialSkillMax", 21),
         ];
         foreach ((string member, int value) in bad)
@@ -401,6 +405,48 @@ public sealed class EconomyContentTests
         AssertSingleError(
             LoadWith("buildings/buildings.json", items => Work(items)["yield"] = 0),
             ContentErrorKind.Validation, "buildings/buildings.json", "$.items[3].levels[0].work.yield");
+    }
+
+    /// <summary>
+    /// Review of M3a: an upgrade keeps the building's work (the saved output and the jobs name the item of the current
+    /// level, and the output exists while the building is upgraded), so work may not appear, disappear or change its job
+    /// or item between levels; slots, cycle and yield may change.
+    /// </summary>
+    [Fact]
+    [Trait("Req", "FR-BUILD-06")]
+    [Trait("Req", "FR-SAVE-02")]
+    public void WorkKeepsItsJobAndItemOverTheLevels()
+    {
+        static JsonArray Levels(JsonArray items, string id) => Item(items, id)["levels"]!.AsArray();
+
+        static void AddFieldLevel(JsonArray items, Action<JsonObject> edit)
+        {
+            JsonObject level = Levels(items, "field")[0]!.DeepClone().AsObject();
+            edit(level);
+            Levels(items, "field").Add(level);
+        }
+
+        ContentLoadResult better = LoadWith("buildings/buildings.json", items => AddFieldLevel(items, level =>
+        {
+            level["work"]!["slots"] = 3;
+            level["work"]!["cycleTicks"] = 300;
+            level["work"]!["yield"] = 8;
+        }));
+        Assert.Empty(better.Errors);
+        Assert.Equal(new WorkDef("farm", 3, 300, "vegetable", 8), better.Catalog!.Buildings.Single(b => b.Id == "field").Levels[1].Work);
+
+        AssertSingleError(
+            LoadWith("buildings/buildings.json", items => AddFieldLevel(items, level => level["work"]!["item"] = "wood")),
+            ContentErrorKind.Validation, "buildings/buildings.json", "$.items[3].levels[1].work");
+        AssertSingleError(
+            LoadWith("buildings/buildings.json", items => AddFieldLevel(items, level => level["work"]!["job"] = "haul")),
+            ContentErrorKind.Validation, "buildings/buildings.json", "$.items[3].levels[1].work");
+        AssertSingleError(
+            LoadWith("buildings/buildings.json", items => AddFieldLevel(items, level => level.Remove("work"))),
+            ContentErrorKind.Validation, "buildings/buildings.json", "$.items[3].levels[1].work");
+        AssertSingleError(
+            LoadWith("buildings/buildings.json", items => Levels(items, "house")[1]!["work"] = Levels(items, "field")[0]!["work"]!.DeepClone()),
+            ContentErrorKind.Validation, "buildings/buildings.json", "$.items[1].levels[1].work");
     }
 
     [Fact]

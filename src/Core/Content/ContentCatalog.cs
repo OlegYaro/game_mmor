@@ -533,6 +533,14 @@ public sealed class ContentCatalog
                 CheckTarget<ItemDef>(file, $"$.items[{index}].levels[{level}].work.item", building.Id, work.Item, "item", byId, errors);
             }
 
+            if (level > 0 && !IsSameWork(building.Levels[0].Work, levelDef.Work))
+            {
+                // An upgrade keeps the building's work: its output exists while it is upgraded and the saved output and
+                // jobs name the item of the current level (EconomyRules.Restore, review of M3a).
+                errors.Add(new ContentError(ContentErrorKind.Validation, file, $"$.items[{index}].levels[{level}].work",
+                    $"Building '{building.Id}' level {level + 1} changes its work; every level needs the same job and item, or no level has work."));
+            }
+
             for (int i = 0; i < levelDef.Requirements.Count; i++)
             {
                 RequirementDef requirement = levelDef.Requirements[i];
@@ -552,6 +560,11 @@ public sealed class ContentCatalog
             }
         }
     }
+
+    // Both levels without work, or both with the same job and item (slots, cycle and yield may differ).
+    private static bool IsSameWork(WorkDef? first, WorkDef? other) =>
+        first is null ? other is null
+            : other is not null && string.Equals(first.Job, other.Job, StringComparison.Ordinal) && string.Equals(first.Item, other.Item, StringComparison.Ordinal);
 
     // Reports a Reference error when `target` is missing or is not a definition of type T.
     private static void CheckTarget<T>(string file, string path, string owner, string target, string what, Dictionary<string, IContentDef> byId, List<ContentError> errors)

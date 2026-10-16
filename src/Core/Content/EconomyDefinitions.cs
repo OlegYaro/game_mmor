@@ -59,7 +59,7 @@ public sealed record EconomyBalanceDef(
     [property: Range(0, 1000)] [property: Description("Largest arrival chance, in thousandths (provisional).")] int ArrivalChanceCapPermille,
     [property: Range(1, 1000)] [property: Description("Items a carrier moves in one trip (provisional).")] int HaulCapacity,
     [property: Range(1, 1000)] [property: Description("Stacks of one item a storage holds at most, so that one good cannot fill it (provisional).")] int StorageStacksPerItem,
-    [property: Range(0, 1000000)] [property: Description("Ticks a failed job stays banned for the resident (provisional).")] int JobRetryCooldownTicks,
+    [property: Range(1, 1000000)] [property: Description("Ticks a failed job stays banned for the resident, at least 1 so a ban outlives the tick it was given in (provisional).")] int JobRetryCooldownTicks,
     [property: Range(1, 1000)] [property: Description("Ticks between two decisions of an idle resident (provisional).")] int ThinkIntervalTicks,
     [property: Range(1, 1000000)] [property: Description("Longest wait between two looks of a resident that keeps finding no work; the wait doubles from thinkIntervalTicks after every look that found nothing (provisional).")] int IdleThinkMaxIntervalTicks,
     [property: Range(0, 100)] [property: Description("Work speed gain per skill point, in thousandths (provisional).")] int SkillSpeedPermillePerPoint,

@@ -141,9 +141,9 @@
           },
           "jobRetryCooldownTicks": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 1000000,
-            "description": "Ticks a failed job stays banned for the resident (provisional)."
+            "description": "Ticks a failed job stays banned for the resident, at least 1 so a ban outlives the tick it was given in (provisional)."
           },
           "thinkIntervalTicks": {
             "type": "integer",
