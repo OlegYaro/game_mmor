@@ -1,4 +1,5 @@
 using Core.Geometry;
+using Core.Tiles;
 using Core.WorldGen;
 using Godot;
 
@@ -42,6 +43,12 @@ public enum WorldObject : byte
 
     /// <summary>Coal vein tile.</summary>
     CoalVein = 11,
+
+    /// <summary>Planted sapling (flora, shown where no special object or node is).</summary>
+    Sapling = 12,
+
+    /// <summary>Stump of a felled tree (flora).</summary>
+    Stump = 13,
 }
 
 /// <summary>
@@ -65,13 +72,16 @@ public sealed class WorldArt
     /// <summary>Number of art variants per ground kind and height.</summary>
     public const int Variants = 3;
 
+    /// <summary>Number of art variants per road overlay kind.</summary>
+    public const int OverlayVariants = 4;
+
     private const int LandKinds = 4;
     private const int WaterKind = 4;
     private const int Heights = TerrainMap.MaxHeight + 1;
 
     private static readonly string[] _landNames = ["meadow", "forest", "mountain", "wasteland"];
     private static readonly string[] _objectIds =
-        [WorldNames.StartMarkerArtId, "poi_chest", "poi_ruins", "poi_lair", WorldNames.SettlementSiteArtId, "tree", "rock", "ore", "berry_bush", "coal", "ore_vein", "coal_vein"];
+        [WorldNames.StartMarkerArtId, "poi_chest", "poi_ruins", "poi_lair", WorldNames.SettlementSiteArtId, "tree", "rock", "ore", "berry_bush", "coal", "ore_vein", "coal_vein", "sapling", "stump"];
 
     private static WorldArt? _shared;
 
@@ -81,6 +91,9 @@ public sealed class WorldArt
     // River tiles per land kind × height × variant (the bank biome shows on the sides of raised river blocks).
     private readonly (int Source, Vector2I Coords)[] _river = new (int, Vector2I)[LandKinds * Heights * Variants];
     private readonly Vector2I[] _objects = new Vector2I[_objectIds.Length];
+
+    // Road overlay tiles (ground source, one alternative per height step) per class (trail, road) × variant.
+    private readonly Vector2I[] _overlays = new Vector2I[2 * OverlayVariants];
 
     private WorldArt(TileSet tileSet) => TileSet = tileSet;
 
@@ -193,19 +206,51 @@ public sealed class WorldArt
             built._objects[i] = AddTile(objects, cell, objectUnit, heights: Heights);
         }
 
+        // Overlays live in the tiles atlas next to the ground, so they share its source; alternative h lifts them h steps.
+        for (int c = 0; c < 2; c++)
+        {
+            for (int v = 0; v < OverlayVariants; v++)
+            {
+                string id = $"{(c == 0 ? "trail" : "road")}_v{v}";
+                if (!table.TryGet(id, out AtlasCell cell) || cell.Kind != "overlay")
+                {
+                    error = $"Art table has no overlay cell '{id}'.";
+                    return false;
+                }
+
+                built._overlays[(c * OverlayVariants) + v] = AddTile(ground, cell, groundUnit, heights: Heights);
+            }
+        }
+
         art = built;
         error = string.Empty;
         return true;
     }
 
     /// <summary>Deterministic art variant 0..2 of tile (<paramref name="x"/>, <paramref name="y"/>): a coordinate hash, no RNG state.</summary>
-    public static int VariantOf(int x, int y)
+    public static int VariantOf(int x, int y) => (int)(CoordinateHash(x, y) % Variants);
+
+    /// <summary>Deterministic road overlay variant 0..3 of tile (<paramref name="x"/>, <paramref name="y"/>).</summary>
+    public static int OverlayVariantOf(int x, int y) => (int)(CoordinateHash(x, y) % OverlayVariants);
+
+    /// <summary>
+    /// Overlay cell of a trail or road (source <see cref="GroundSource"/>; the alternative is the height step), or null for
+    /// plain ground.
+    /// </summary>
+    public Vector2I? OverlayTile(RoadClass road, int variant) => road switch
+    {
+        RoadClass.Trail => _overlays[variant],
+        RoadClass.Road => _overlays[OverlayVariants + variant],
+        _ => null,
+    };
+
+    private static uint CoordinateHash(int x, int y)
     {
         uint h = unchecked(((uint)x * 0x9E3779B1u) ^ ((uint)y * 0x85EBCA77u));
         h ^= h >> 15;
         h = unchecked(h * 0x2C1B3C6Du);
         h ^= h >> 12;
-        return (int)(h % Variants);
+        return h;
     }
 
     /// <summary>Minimap/biome colour class of a tile: land biomes 0–3, water 4, river 5.</summary>

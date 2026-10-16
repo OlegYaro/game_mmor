@@ -2,6 +2,7 @@ using Core.Content;
 using Core.Fog;
 using Core.Geometry;
 using Core.Sim;
+using Core.Tiles;
 using Core.WorldGen;
 using Game.World;
 using Godot;
@@ -388,6 +389,86 @@ public static class WorldRenderSmoke
         return CheckGather(view, sim, world);
     }
 
+    // The hero walks to and fro until a tile becomes a trail; the roads layer of its chunk then holds that overlay cell (FR-WORLD-15).
+    private static string? CheckRoads(WorldView view, CoreSimulation sim, GameWorld world)
+    {
+        Core.Entities.EntityId hero = world.HeroEntity;
+        Core.Pathfinding.PassabilityGrid grid = world.Pathfinder.Grid;
+        Core.Entities.Position from = sim.Positions.Get(hero);
+        (int X, int Y)? far = null;
+        for (int d = 8; d >= 3 && far is null; d--)
+        {
+            foreach ((int dx, int dy) in new[] { (d, 0), (0, d), (-d, 0), (0, -d) })
+            {
+                bool clear = true;
+                for (int i = 0; i <= d && clear; i++)
+                {
+                    clear = grid.IsPassable(from.TileX + (Math.Sign(dx) * i), from.TileY + (Math.Sign(dy) * i));
+                }
+
+                if (clear)
+                {
+                    far = (from.TileX + dx, from.TileY + dy);
+                    break;
+                }
+            }
+        }
+
+        if (far is null)
+        {
+            return "roads: no straight walkable line near the hero";
+        }
+
+        (int X, int Y)[] ends = [(from.TileX, from.TileY), far.Value];
+        int trail = -1;
+        for (int trip = 0; trip < 200 && trail < 0; trip++)
+        {
+            sim.Enqueue(new MoveHeroCommand(ends[(trip + 1) % 2].X, ends[(trip + 1) % 2].Y));
+            for (int i = 0; i < 600; i++)
+            {
+                sim.Step();
+                if (world.Heroes.Get(hero).Activity == Core.Heroes.HeroActivity.Idle && i > 0)
+                {
+                    break;
+                }
+            }
+
+            for (int i = 0; i <= 8 && trail < 0; i++)
+            {
+                int x = from.TileX + (Math.Sign(far.Value.X - from.TileX) * i);
+                int y = from.TileY + (Math.Sign(far.Value.Y - from.TileY) * i);
+                if (world.Tiles.GetRoadClass(x, y) != RoadClass.None)
+                {
+                    trail = (y * world.Size) + x;
+                }
+            }
+        }
+
+        if (trail < 0)
+        {
+            return "roads: no trail appeared after 200 trips of the hero";
+        }
+
+        int tx = trail % world.Size;
+        int ty = trail / world.Size;
+        RoadClass road = world.Tiles.GetRoadClass(tx, ty);
+        view.BuildNow();
+        WorldChunk chunk = view.Chunks.Active[ChunkCoord.OfTile(tx, ty)];
+        WorldArt art = view.Chunks.Art!;
+        var cell = new Vector2I(tx, ty);
+        Vector2I? want = art.OverlayTile(road, WorldArt.OverlayVariantOf(tx, ty));
+        int expected = view.Chunks.ExpectedRoadCount(chunk.Coord);
+        int roadCells = chunk.Roads.GetUsedCells().Count;
+        if (want is null || chunk.Roads.GetCellSourceId(cell) != WorldArt.GroundSource || chunk.Roads.GetCellAtlasCoords(cell) != want
+            || chunk.Roads.GetCellAlternativeTile(cell) != art.VisualHeight(world.Map.Terrain.GetBiome(tx, ty), world.Map.Terrain.GetFeatures(tx, ty), world.Map.Terrain.GetHeight(tx, ty)) || roadCells != expected || expected == 0)
+        {
+            return $"roads: {road} at {tx},{ty} is not in the roads layer ({roadCells} cells, want {expected})";
+        }
+
+        GD.Print($"Smoke world render: walked tile {tx},{ty} is a {road} and the roads layer shows it ({roadCells} cells)");
+        return null;
+    }
+
     private static string? CheckGather(WorldView view, CoreSimulation sim, GameWorld world)
     {
         Core.Entities.EntityId hero = world.HeroEntity;
@@ -433,12 +514,19 @@ public static class WorldRenderSmoke
             }
 
             view.BuildNow();
-            if (chunk.Objects.GetCellSourceId(cell) != -1)
+            if (world.Tiles.GetFlora(x, y) != FloraState.Stump)
             {
-                return $"gather: the tree at {x},{y} is still drawn after it was cut";
+                return $"gather: no stump at {x},{y} after the tree was cut ({world.Tiles.GetFlora(x, y)})";
             }
 
-            return null;
+            WorldArt art = view.Chunks.Art!;
+            if (chunk.Objects.GetCellSourceId(cell) != WorldArt.ObjectSource || chunk.Objects.GetCellAtlasCoords(cell) != art.ObjectTile(WorldObject.Stump))
+            {
+                return $"gather: the tree at {x},{y} is not drawn as a stump after it was cut";
+            }
+
+            GD.Print($"Smoke world render: felled tree at {x},{y} shows a stump");
+            return CheckRoads(view, sim, world);
         }
 
         return $"gather: no reachable tree near the hero to test ({trees.Count} candidates, last order {world.Heroes.Get(hero).LastOrder})";

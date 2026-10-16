@@ -7,12 +7,13 @@ using Godot;
 
 namespace Game.World;
 
-/// <summary>The two layers of one 32×32 chunk (ADR 0010): flat ground and y-sorted objects. Cells use map coordinates.</summary>
+/// <summary>The three layers of one 32×32 chunk (ADR 0010): flat ground, road overlays and y-sorted objects. Cells use map coordinates.</summary>
 public sealed class WorldChunk
 {
-    internal WorldChunk(TileMapLayer ground, TileMapLayer objects)
+    internal WorldChunk(TileMapLayer ground, TileMapLayer roads, TileMapLayer objects)
     {
         Ground = ground;
+        Roads = roads;
         Objects = objects;
     }
 
@@ -21,6 +22,12 @@ public sealed class WorldChunk
 
     /// <summary>Ground layer (no y-sort, one rendering quadrant per chunk).</summary>
     public TileMapLayer Ground { get; }
+
+    /// <summary>
+    /// Road overlay layer: trail and road diamonds over the ground of explored tiles (no y-sort, same z as the ground, drawn
+    /// right after it). Cells use map coordinates.
+    /// </summary>
+    public TileMapLayer Roads { get; }
 
     /// <summary>Objects layer (y-sorted under the shared objects root).</summary>
     public TileMapLayer Objects { get; }
@@ -31,7 +38,7 @@ public sealed class WorldChunk
     /// <summary>Fog chunk version the objects layer was built for.</summary>
     internal long FogVersion { get; set; }
 
-    /// <summary>Tile-change (resources, occupancy) chunk version the objects layer was built for.</summary>
+    /// <summary>Tile-change (resources, flora, roads, occupancy) chunk version the objects layer was built for.</summary>
     internal long TileVersion { get; set; }
 }
 
@@ -377,6 +384,8 @@ public sealed class ChunkManager
         ground.ZIndex = GroundZBase + coord.X + coord.Y;
         ground.Visible = true;
         BuildObjects(chunk);
+        chunk.Roads.ZIndex = ground.ZIndex;
+        chunk.Roads.Visible = true;
         chunk.Objects.Visible = true;
     }
 
@@ -394,6 +403,67 @@ public sealed class ChunkManager
         {
             layer.SetCell(new Vector2I(x, y), WorldArt.ObjectSource, art.ObjectTile(obj), heights[(y * size) + x]);
         }
+
+        BuildRoads(chunk);
+    }
+
+    // Trail and road overlays on explored tiles, lifted like the ground tile they lie on. CollectObjects has just filled
+    // _fogChunk for this chunk.
+    private void BuildRoads(WorldChunk chunk)
+    {
+        TileMapLayer layer = chunk.Roads;
+        layer.Clear();
+        TileChanges tiles = _world!.Tiles;
+        if (tiles.TrailTiles == 0 && tiles.RoadTiles == 0)
+        {
+            return;
+        }
+
+        WorldArt art = _art!;
+        TerrainMap terrain = _world.Map.Terrain;
+        int x0 = chunk.Coord.X * ChunkCoord.Size;
+        int y0 = chunk.Coord.Y * ChunkCoord.Size;
+        for (int ly = 0; ly < ChunkCoord.Size; ly++)
+        {
+            for (int lx = 0; lx < ChunkCoord.Size; lx++)
+            {
+                int x = x0 + lx;
+                int y = y0 + ly;
+                if (_fogChunk[(ly * ChunkCoord.Size) + lx] == (byte)FogState.Unknown
+                    || art.OverlayTile(tiles.GetRoadClass(x, y), WorldArt.OverlayVariantOf(x, y)) is not { } cell)
+                {
+                    continue;
+                }
+
+                int height = art.VisualHeight(terrain.GetBiome(x, y), terrain.GetFeatures(x, y), terrain.GetHeight(x, y));
+                layer.SetCell(new Vector2I(x, y), WorldArt.GroundSource, cell, height);
+            }
+        }
+    }
+
+    /// <summary>Number of road overlay cells a chunk must show for the current fog and roads (smoke test).</summary>
+    public int ExpectedRoadCount(ChunkCoord coord)
+    {
+        if (_world is null)
+        {
+            return 0;
+        }
+
+        CollectObjects(coord);
+        int count = 0;
+        for (int ly = 0; ly < ChunkCoord.Size; ly++)
+        {
+            for (int lx = 0; lx < ChunkCoord.Size; lx++)
+            {
+                if (_fogChunk[(ly * ChunkCoord.Size) + lx] != (byte)FogState.Unknown
+                    && _world.Tiles.GetRoadClass((coord.X * ChunkCoord.Size) + lx, (coord.Y * ChunkCoord.Size) + ly) != RoadClass.None)
+                {
+                    count++;
+                }
+            }
+        }
+
+        return count;
     }
 
     // Fills _objects with one object per explored tile of the chunk: specials (start, points, sites; lower
@@ -432,7 +502,14 @@ public sealed class ChunkManager
                     continue;
                 }
 
-                WorldObject? obj = WorldArt.ObjectOf(tiles.GetEffectiveResource(x0 + lx, y0 + ly));
+                // Flora first: a stump or a sapling is no node (a grown tree is a Tree resource below).
+                WorldObject? obj = tiles.FloraTiles == 0 ? null : tiles.GetFlora(x0 + lx, y0 + ly) switch
+                {
+                    FloraState.Stump => WorldObject.Stump,
+                    FloraState.Sapling => WorldObject.Sapling,
+                    _ => null,
+                };
+                obj ??= WorldArt.ObjectOf(tiles.GetEffectiveResource(x0 + lx, y0 + ly));
                 if (obj is not null)
                 {
                     _objects.Add((x0 + lx, y0 + ly, obj.Value));
@@ -475,6 +552,16 @@ public sealed class ChunkManager
             NavigationEnabled = false,
             OcclusionEnabled = false,
         };
+        var roads = new TileMapLayer
+        {
+            Name = $"Roads{_groundRoot.GetChildCount()}",
+            TileSet = tileSet,
+            YSortEnabled = false,
+            RenderingQuadrantSize = ChunkCoord.Size,
+            CollisionEnabled = false,
+            NavigationEnabled = false,
+            OcclusionEnabled = false,
+        };
         var objects = new TileMapLayer
         {
             Name = $"Objects{_groundRoot.GetChildCount()}",
@@ -485,15 +572,18 @@ public sealed class ChunkManager
             OcclusionEnabled = false,
         };
         _groundRoot.AddChild(ground);
+        _groundRoot.AddChild(roads);
         _objectsRoot.AddChild(objects);
-        return new WorldChunk(ground, objects);
+        return new WorldChunk(ground, roads, objects);
     }
 
     private void Deactivate(WorldChunk chunk)
     {
         chunk.Ground.Clear();
+        chunk.Roads.Clear();
         chunk.Objects.Clear();
         chunk.Ground.Visible = false;
+        chunk.Roads.Visible = false;
         chunk.Objects.Visible = false;
         chunk.IsActive = false;
         _pool.Add(chunk);
