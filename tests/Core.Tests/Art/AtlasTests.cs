@@ -12,7 +12,9 @@ public sealed class AtlasTests
 {
     private static readonly string[] _biomes = ["meadow", "forest", "mountain", "wasteland"];
     private static readonly string[] _objectIds =
-        ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker", "coal", "ore_vein", "coal_vein", "hero"];
+        ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker", "coal", "ore_vein", "coal_vein", "hero",
+         "resident_carrier", "resident_lumberjack", "resident_stonemason", "resident_farmer", "resident_miner", "resident_guard", "resident_specialist", "resident_unemployed",
+         "sapling", "stump"];
 
     [Fact]
     public void GenerationIsDeterministic()
@@ -58,6 +60,17 @@ public sealed class AtlasTests
         foreach (string id in _objectIds)
         {
             Assert.Contains(id, ids);
+        }
+
+        foreach (string kind in new[] { "trail", "road" })
+        {
+            for (int v = 0; v < 4; v++)
+            {
+                AtlasCell overlay = art.Cells.Single(c => c.Id == $"{kind}_v{v}");
+                Assert.Equal(("tiles", "overlay", 32, 16, 16, 8, 0), (overlay.Atlas, overlay.Kind, overlay.W, overlay.H, overlay.OriginX, overlay.OriginY, overlay.Height));
+                Assert.Equal(0, art.Tiles.Get(overlay.X, overlay.Y).A);
+                Assert.NotEqual(0, art.Tiles.Get(overlay.X + 16, overlay.Y + 8).A);
+            }
         }
 
         foreach (AtlasCell tile in art.Cells.Where(c => c.Kind == "tile"))

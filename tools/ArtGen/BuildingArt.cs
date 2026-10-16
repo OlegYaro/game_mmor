@@ -33,6 +33,7 @@ public static class BuildingArt
         new("campfire", 1, 1, 1, 14),
         new("house", 2, 2, 3, 28),
         new("storage", 3, 2, 2, 20),
+        new("field", 3, 3, 1, 8),
     ];
 
     private static readonly Rgba Dirt = Rgba.Hex(0x8B7355);
@@ -56,8 +57,13 @@ public static class BuildingArt
     /// <summary>Draws one frame.</summary>
     public static Canvas Draw(BuildingSpec b, int level, int stage)
     {
-        Canvas final = DrawFinal(b, level);
         Geo g = new(b);
+        if (b.Id == "field")
+        {
+            return Field(g, stage);
+        }
+
+        Canvas final = DrawFinal(b, level);
         return stage switch
         {
             0 => Staked(final, g),
@@ -95,6 +101,60 @@ public static class BuildingArt
             case "house": House(c, g, level); break;
             case "storage": Storage(c, g, level); break;
             default: throw new ArgumentException("Unknown building id " + b.Id, nameof(b));
+        }
+
+        return c;
+    }
+
+    // Field stages: s0 pegged-out plot, s1 furrows, s2 green sprouts, s3 ripe wheat. Furrows run parallel to the top-right edge.
+    private static Canvas Field(Geo g, int stage)
+    {
+        if (stage == 0)
+        {
+            return Staked(new Canvas(g.W, g.H), g);
+        }
+
+        Canvas c = new(g.W, g.H);
+        Rgba soil = Rgba.Hex(0x7A5A3A);
+        c.FillAndOutline(Diamond(g.Cx, g.Cy, g.Hw, g.Hh), soil, soil.Scale(60));
+        Pt[] d = Diamond(g.Cx, g.Cy, g.Hw - 4, g.Hh - 2);
+        const int rows = 8;
+        const int steps = 14;
+        for (int i = 1; i < rows; i++)
+        {
+            Pt a = Lerp(d[0], d[3], i, rows);
+            Pt z = Lerp(d[1], d[2], i, rows);
+            c.Line(a.X, a.Y, z.X, z.Y, soil.Scale(62));
+            c.Line(a.X, a.Y - 1, z.X, z.Y - 1, soil.Shift(22));
+        }
+
+        if (stage == 1)
+        {
+            return c;
+        }
+
+        Rgba sprout = Rgba.Hex(0x5BB04A);
+        Rgba stalk = Rgba.Hex(0xD9B94A);
+        for (int i = 1; i < rows; i++)
+        {
+            Pt a = Lerp(d[0], d[3], i, rows);
+            Pt z = Lerp(d[1], d[2], i, rows);
+            for (int u = 1; u < steps; u++)
+            {
+                Pt p = Lerp(a, z, u, steps);
+                if (stage == 2)
+                {
+                    c.FillRect(p.X, p.Y - 3, 1, 3, sprout);
+                    c.Set(p.X - 1, p.Y - 3, sprout.Shift(24));
+                    c.Set(p.X + 1, p.Y - 3, sprout.Shift(24));
+                }
+                else
+                {
+                    c.FillRect(p.X, p.Y - 7, 1, 7, stalk.Scale(80));
+                    c.FillRect(p.X, p.Y - 8, 2, 4, stalk);
+                    c.Set(p.X, p.Y - 9, stalk.Shift(20));
+                }
+            }
         }
 
         return c;
