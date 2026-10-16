@@ -91,6 +91,9 @@ public partial class PlayerInput : Node
             return;
         }
 
+        // A tree, rock or bush sprite rises above its tile, so a click on its crown lands on a tile further back:
+        // prefer a resource in front whose sprite covers the clicked point.
+        (x, y) = ResourceUnderPoint(view, sim, click.Position, x, y);
         ResourceKind resource = sim.World!.Tiles.GetEffectiveResource(x, y);
         bool sprint = Input.IsPhysicalKeyPressed(Key.Shift);
         if (resource is ResourceKind.Tree or ResourceKind.Stone or ResourceKind.BerryBush)
@@ -105,6 +108,43 @@ public partial class PlayerInput : Node
         _steering = false;
         _clickTick = sim.Tick;
         GetViewport().SetInputAsHandled();
+    }
+
+    // Object sprites are 32x32 with the origin at (16, 24) above the tile centre (tools/ArtGen/ObjectArt).
+    private const int SpriteHalfWidth = 12;
+    private const int SpriteAbove = 24;
+    private const int SpriteBelow = 4;
+
+    private static (int X, int Y) ResourceUnderPoint(WorldView view, CoreSimulation sim, Vector2 screen, int pickedX, int pickedY)
+    {
+        WorldArt? art = view.Chunks.Art;
+        if (art is null || sim.World is not { } world)
+        {
+            return (pickedX, pickedY);
+        }
+
+        Vector2 point = view.Camera.ScreenToWorld(screen);
+        // Tiles nearer to the camera than the picked one, nearest first; their sprites reach over the picked tile.
+        ReadOnlySpan<(int Dx, int Dy)> candidates = [(1, 1), (1, 0), (0, 1)];
+        foreach ((int dx, int dy) in candidates)
+        {
+            int cx = pickedX + dx;
+            int cy = pickedY + dy;
+            if (!world.Map.Terrain.Contains(cx, cy) || world.Tiles.GetEffectiveResource(cx, cy) == ResourceKind.None)
+            {
+                continue;
+            }
+
+            Core.WorldGen.TerrainMap terrain = world.Map.Terrain;
+            int height = art.VisualHeight(terrain.GetBiome(cx, cy), terrain.GetFeatures(cx, cy), terrain.GetHeight(cx, cy));
+            (int px, int py) = Core.Geometry.IsoProjection.TileCenter(cx, cy, height);
+            if (Math.Abs(point.X - px) <= SpriteHalfWidth && point.Y >= py - SpriteAbove && point.Y <= py + SpriteBelow)
+            {
+                return (cx, cy);
+            }
+        }
+
+        return (pickedX, pickedY);
     }
 
     public override void _Process(double delta)
