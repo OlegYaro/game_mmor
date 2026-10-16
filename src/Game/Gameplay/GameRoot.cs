@@ -95,10 +95,39 @@ public partial class GameRoot : Node
         GetNode<BuildMenu>("Ui/BuildMenu").Bind(host);
         GetNode<InspectorPanel>("Ui/InspectorPanel").Bind(host);
         GetNode<BuildingMessages>("Ui/BuildingMessages").Bind(host);
+        WireBuildingUi();
         DevConsolePanel console = GetNode<DevConsolePanel>("Ui/DevConsolePanel");
         console.Bind(host);
         console.CameraRequested += (x, y) => CenterCamera(x, y);
         OnSimulationChanged();
+    }
+
+    // Connects the build menu, the inspector and the build mode through their events (only the Game layer knows all three).
+    private void WireBuildingUi()
+    {
+        var menu = GetNode<BuildMenu>("Ui/BuildMenu");
+        var inspector = GetNode<InspectorPanel>("Ui/InspectorPanel");
+        menu.BuildingChosen += id => BuildMode.Begin(id);
+        inspector.MoveRequested += entity => BuildMode.BeginMove(entity);
+        BuildMode.ToggleRequested += menu.ToggleVisible;
+        BuildMode.ActiveChanged += () =>
+        {
+            if (BuildMode.IsActive)
+            {
+                Selection.Clear();
+            }
+        };
+        Selection.BuildingSelected += entity =>
+        {
+            if (entity == Core.Entities.EntityId.None)
+            {
+                inspector.Hide();
+            }
+            else
+            {
+                inspector.Show(entity);
+            }
+        };
     }
 
     private void OnSimulationChanged()

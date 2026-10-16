@@ -71,3 +71,99 @@ ui.toast.load_version,Сохранение сделано в более ново
 ui.toast.load_worldgen,Сохранение несовместимо с этим генератором мира,The save does not match this world generator
 ui.toast.start_failed,Не удалось начать игру,Could not start the game
 ui.error.world_missing,Сцена мира не найдена (World/WorldView.tscn). Карта недоступна,World scene not found (World/WorldView.tscn). The map is unavailable
+hero.order.outside_map,Эта точка за краем карты,That spot is beyond the map edge
+hero.order.unexplored,Эта местность ещё не исследована,That area is not explored yet
+hero.order.impassable,Туда нельзя пройти,You cannot walk there
+hero.order.unreachable,Туда нет пути,There is no path there
+hero.order.no_resource,Здесь нечего добывать,There is nothing to gather here
+hero.stop.path_blocked,Путь преграждён,The way is blocked
+hero.stop.backpack_full,Рюкзак полон,The backpack is full
+hero.stop.no_resource,Здесь нечего добывать,There is nothing to gather here
+build.reason.no_world,Нет мира,No world
+build.reason.unknown_building,Неизвестное здание,Unknown building
+build.reason.invalid_rotation,Недопустимый поворот,Invalid rotation
+build.reason.out_of_map,За краем карты,Outside the map
+build.reason.not_explored,Местность не исследована,Area not explored
+build.reason.water,Нельзя строить на воде,Cannot build on water
+build.reason.not_flat,Нужна ровная земля,Ground must be flat
+build.reason.resource_in_the_way,Мешает ресурс: сначала соберите его,A resource is in the way: gather it first
+build.reason.occupied,Место занято,Tile is occupied
+build.reason.unit_in_the_way,На месте стоит герой,A unit is in the way
+build.reason.no_center,Сначала постройте костёр,Build a campfire first
+build.reason.center_exists,Костёр уже есть,A campfire already exists
+build.reason.outside_territory,Вне территории поселения,Outside the settlement territory
+build.reason.requirement_not_met,Требование не выполнено,Requirement not met
+build.reason.not_enough_materials,Не хватает материалов,Not enough materials
+build.reason.not_a_building,Это не здание,Not a building
+build.reason.busy,Здание занято,Building is busy
+build.reason.max_level,Максимальный уровень,Maximum level
+build.reason.nothing_to_cancel,Нечего отменять,Nothing to cancel
+build.reason.center_not_removable,Костёр нельзя снести,The campfire cannot be demolished
+build.reason.last_storage,Последний склад нельзя снести,The last storage cannot be demolished
+build.reason.center_in_use,Вокруг костра уже есть здания,Other buildings stand around the campfire
+build.reason.buildings_outside_territory,Здания окажутся вне территории,Buildings would end up outside the territory
+build.reason.same_place,То же место,Same place
+build.hint.place,ЛКМ: построить / ПКМ или Esc: отмена,LMB: build / RMB or Esc: cancel
+build.hint.place_rotate,ЛКМ: построить / R: поворот / ПКМ или Esc: отмена,LMB: build / R: rotate / RMB or Esc: cancel
+build.hint.move,ЛКМ: перенести / R: поворот / ПКМ или Esc: отмена,LMB: move / R: rotate / RMB or Esc: cancel
+building.campfire.name,Костёр,Campfire
+building.house.name,Дом,House
+building.storage.name,Склад,Storage
+ui.res.tooltip,В рюкзаке | на складах,In the backpack | in the storages
+ui.build.title,Строительство (B - закрыть),Build (B to close)
+ui.build.category.settlement_center,Центр,Center
+ui.build.category.housing,Жильё,Housing
+ui.build.category.storage,Хранение,Storage
+ui.build.category.production,Производство,Production
+ui.build.reason.center_exists,Центр поселения уже есть,The settlement already has a center
+ui.build.reason.no_center,Сначала постройте центр (костёр),Build the center (campfire) first
+ui.build.reason.requirement,Не выполнено требование уровня,A requirement is not met
+ui.build.reason.materials,Не хватает: {0},Missing: {0}
+ui.build.tooltip,"{0}
+Стоимость: {1}
+Время стройки: {2} с","{0}
+Cost: {1}
+Build time: {2} s"
+ui.inspector.upgrade,Улучшить,Upgrade
+ui.inspector.move,Перенести,Move
+ui.inspector.demolish,Снести,Demolish
+ui.inspector.cancel,Отменить,Cancel
+ui.inspector.close,Закрыть,Close
+ui.inspector.level,Уровень {0} из {1},Level {0} of {1}
+ui.inspector.state,Состояние,State
+ui.inspector.state.constructing,стройка,under construction
+ui.inspector.state.active,готово,ready
+ui.inspector.state.upgrading,улучшение,upgrading
+ui.inspector.state.moving,перенос,being moved
+ui.inspector.progress,Готово {0}% (осталось {1} с),{0}% done ({1} s left)
+ui.inspector.stock,Содержимое,Contents
+ui.inspector.stock_empty,пусто,empty
+ui.inspector.stacks,Ячеек занято: {0} из {1},Stacks used: {0} of {1}
+ui.inspector.upgrade_cost,Доплата: {0} ({1} с),Extra cost: {0} ({1} s)
+ui.inspector.refund,Вернётся: {0},Refund: {0}
+ui.inspector.demolish_confirm,Снести «{0}»? Вернётся: {1},Demolish {0}? Refund: {1}
+ui.build.result.no_world,Нет мира,There is no world
+ui.build.result.unknown_building,Неизвестное здание,Unknown building
+ui.build.result.invalid_rotation,Недопустимый поворот,Invalid rotation
+ui.build.result.out_of_map,За пределами карты,Outside the map
+ui.build.result.not_explored,Местность не исследована,The area is not explored
+ui.build.result.water,Нельзя строить на воде,Cannot build on water
+ui.build.result.not_flat,Нужна ровная земля,The ground must be flat
+ui.build.result.resource_in_the_way,Мешает ресурс: сначала добудьте его,A resource is in the way: gather it first
+ui.build.result.occupied,Место занято,The place is occupied
+ui.build.result.unit_in_the_way,На месте стоит герой,The hero stands in the way
+ui.build.result.no_center,Сначала постройте центр (костёр),Build the center (campfire) first
+ui.build.result.center_exists,Центр поселения уже есть,The settlement already has a center
+ui.build.result.outside_territory,Вне территории поселения,Outside the settlement territory
+ui.build.result.requirement_not_met,Не выполнено требование уровня,A requirement is not met
+ui.build.result.not_enough_materials,Не хватает материалов,Not enough materials
+ui.build.result.not_a_building,Это не здание,This is not a building
+ui.build.result.busy,Здание занято: идёт стройка или перенос,The building is busy: construction or move in progress
+ui.build.result.max_level,Достигнут последний уровень,Already at the last level
+ui.build.result.nothing_to_cancel,Нечего отменять,Nothing to cancel
+ui.build.result.center_not_removable,Центр поселения нельзя снести,The settlement center cannot be demolished
+ui.build.result.last_storage,Последний склад нельзя снести,The last storage cannot be demolished
+ui.build.result.center_in_use,Вокруг центра уже есть здания,Other buildings stand around the center
+ui.build.result.buildings_outside_territory,Часть зданий окажется вне территории,Some buildings would end up outside the territory
+ui.build.result.same_place,Это то же самое место,This is the same place
+ui.build.result.items_lost,Часть вещей не поместилась и пропала,Some items did not fit and were lost

@@ -5,18 +5,78 @@ namespace Core.Tests.Content;
 public sealed class LocalizationTests
 {
     // Godot translation CSV: first column "keys", then one column per locale code (docs: localization_using_spreadsheets).
-    private static Dictionary<string, string[]> ReadCsv(out string[] header)
+    // Values may be quoted (commas and line breaks inside quotes, "" for a quote).
+    internal static Dictionary<string, string[]> ReadCsv(out string[] header)
     {
-        string[] lines = File.ReadAllLines(Path.Combine(TestPaths.Locale, "strings.csv"));
-        header = lines[0].Split(',');
+        List<string[]> records = ParseCsv(File.ReadAllText(Path.Combine(TestPaths.Locale, "strings.csv")));
+        header = records[0];
         Dictionary<string, string[]> rows = new(StringComparer.Ordinal);
-        foreach (string line in lines.Skip(1).Where(l => l.Length > 0))
+        foreach (string[] cells in records.Skip(1))
         {
-            string[] cells = line.Split(',');
             Assert.True(rows.TryAdd(cells[0], cells), "Duplicate key " + cells[0]);
         }
 
         return rows;
+    }
+
+    private static List<string[]> ParseCsv(string text)
+    {
+        List<string[]> records = [];
+        List<string> cells = [];
+        System.Text.StringBuilder cell = new();
+        bool quoted = false;
+        for (int i = 0; i < text.Length; i++)
+        {
+            char c = text[i];
+            if (quoted)
+            {
+                if (c == '"' && i + 1 < text.Length && text[i + 1] == '"')
+                {
+                    cell.Append('"');
+                    i++;
+                }
+                else if (c == '"')
+                {
+                    quoted = false;
+                }
+                else
+                {
+                    cell.Append(c);
+                }
+            }
+            else if (c == '"')
+            {
+                quoted = true;
+            }
+            else if (c == ',')
+            {
+                cells.Add(cell.ToString());
+                cell.Clear();
+            }
+            else if (c == '\n')
+            {
+                cells.Add(cell.ToString());
+                cell.Clear();
+                if (cells.Count > 1 || cells[0].Length > 0)
+                {
+                    records.Add([.. cells]);
+                }
+
+                cells.Clear();
+            }
+            else if (c != '\r')
+            {
+                cell.Append(c);
+            }
+        }
+
+        if (cell.Length > 0 || cells.Count > 0)
+        {
+            cells.Add(cell.ToString());
+            records.Add([.. cells]);
+        }
+
+        return records;
     }
 
     [Fact]

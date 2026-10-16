@@ -1,8 +1,0 @@
-hero.order.outside_map,Эта точка за краем карты,That spot is beyond the map edge
-hero.order.unexplored,Эта местность ещё не исследована,That area is not explored yet
-hero.order.impassable,Туда нельзя пройти,You cannot walk there
-hero.order.unreachable,Туда нет пути,There is no path there
-hero.order.no_resource,Здесь нечего добывать,There is nothing to gather here
-hero.stop.path_blocked,Путь преграждён,The way is blocked
-hero.stop.backpack_full,Рюкзак полон,The backpack is full
-hero.stop.no_resource,Здесь нечего добывать,There is nothing to gather here
