@@ -1,0 +1,14 @@
+{
+  "description": "Bot simulation (docs/research/economy-six-chains.md): a settlement set up at the start, then no orders for the given days. Run by tests/Core.Tests/Simulation/BotSimulationTests.cs; golden CSVs bot_<residents>.csv.",
+  "seed": 1001,
+  "mapSize": 256,
+  "days": 100,
+  "houses": 4,
+  "fields": 2,
+  "give": [
+    { "item": "wood", "count": 150 },
+    { "item": "stone", "count": 40 },
+    { "item": "berries", "count": 120 }
+  ],
+  "residents": [ 5, 12, 40 ]
+}

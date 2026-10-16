@@ -13,6 +13,7 @@
 
 ## Команды (всё через `tools/`)
 `tools/build.sh`, `tools/test.sh` (`COVERAGE=1` для покрытия), `tools/run.sh`, `tools/smoke.sh`, `tools/export.sh`, `tools/sync-data.sh`, `tools/schemagen.sh` (схемы в `data/schema`), `tools/artgen.sh` (процедурный арт), `tools/bench-render.sh`, `tools/setup.sh` (первичная установка `.tools/`, только bash). Для остальных есть одноимённые `.ps1` под Windows.
+Категории `Benchmark` и `Simulation` (бот-симуляция) при `COVERAGE=1` без своего `--filter` пропускаются; запускать отдельно: `tools/test.sh --filter Category=Simulation`.
 
 ## Definition of Done
 Сборка без предупреждений, все тесты зелёные, новая логика покрыта тестами (Core не ниже 70% строк), `tools/smoke.sh` проходит, ADR и PROGRESS обновлены.

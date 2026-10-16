@@ -30,9 +30,9 @@ jobs:
 
       # Time-limited benchmarks are excluded here: coverlet instrumentation slows the code down (2048x2048 generation
       # takes ~9 s instead of ~6 s against an 8 s limit) and shared runners are slower still. They run in the
-      # `benchmarks` job below, without coverage.
+      # `benchmarks` job below, without coverage. The bot simulation runs in the `simulation` job.
       - name: Test with coverage
-        run: dotnet test tests/Core.Tests/Core.Tests.csproj -c Release --no-build --nologo --filter "Category!=Benchmark" --collect:"XPlat Code Coverage" --settings tests/Core.Tests/coverage.runsettings --results-directory TestResults
+        run: dotnet test tests/Core.Tests/Core.Tests.csproj -c Release --no-build --nologo --filter "Category!=Benchmark&Category!=Simulation" --collect:"XPlat Code Coverage" --settings tests/Core.Tests/coverage.runsettings --results-directory TestResults
 
       - name: Schemas up to date
         shell: bash
@@ -78,6 +78,28 @@ jobs:
 
       - name: Benchmarks (no coverage)
         run: dotnet test tests/Core.Tests/Core.Tests.csproj -c Release --no-build --nologo --filter "Category=Benchmark"
+
+  simulation:
+    name: bot simulation (${{ matrix.os }}, informational)
+    runs-on: ${{ matrix.os }}
+    # The 100-day bot runs compare against golden CSVs; a balance drift must not turn the whole CI red.
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: dotnet build tests/Core.Tests/Core.Tests.csproj -c Release --nologo
+
+      - name: Bot simulation (no coverage)
+        run: dotnet test tests/Core.Tests/Core.Tests.csproj -c Release --no-build --nologo --filter "Category=Simulation"
 
   smoke:
     name: smoke (ubuntu-latest)
