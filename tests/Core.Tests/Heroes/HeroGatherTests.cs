@@ -164,6 +164,60 @@ public sealed class HeroGatherTests
         StepUntil(sim, () => !MoverOf(sim).IsMoving, limit: 10);
     }
 
+    /// <summary>
+    /// Review of M3a: a tree grown from a sapling where the map has none keeps its stock in the flora; felled while the
+    /// hero walks to it, it leaves a stump, and the hero stops with the same reason as at a felled map tree.
+    /// </summary>
+    [Fact]
+    [Trait("Req", "FR-HERO-02")]
+    [Trait("Req", "FR-WORLD-04")]
+    public void AGrownTreeFelledBeforeTheHeroArrivesStopsTheApproachAsDepleted()
+    {
+        Simulation sim = NewGame();
+        GameWorld world = sim.World!;
+        sim.Enqueue(new RevealAllCommand());
+        sim.Step();
+        (int x, int y) = PlantableTile(sim, minDistance: 5);
+        Assert.True(world.Tiles.Plant(x, y));
+        world.Tiles.GrowFlora(sim.Content.Regrowth with { SaplingGrowDays = 0 }, sim.Content.WorldGen.Resources.Trees, sim.Calendar.TicksPerDay);
+        Assert.Equal(Core.Tiles.FloraState.Tree, world.Tiles.GetFlora(x, y));
+        Assert.Equal(ResourceKind.None, world.Map.GetResource(x, y));
+
+        sim.Enqueue(new GatherCommand(x, y));
+        sim.Step();
+        Assert.Equal(HeroActivity.Gathering, HeroOf(sim).Activity);
+        Assert.True(MoverOf(sim).IsMoving);
+
+        // A resident fells it in the meantime.
+        Assert.True(world.Tiles.TakeResource(x, y, world.Tiles.GetEffectiveAmount(x, y)) > 0);
+        Assert.Equal(Core.Tiles.FloraState.Stump, world.Tiles.GetFlora(x, y));
+        sim.Step();
+        Assert.Equal(HeroActivity.Idle, HeroOf(sim).Activity);
+        Assert.Equal(HeroStopReason.Depleted, HeroOf(sim).LastStop);
+    }
+
+    // The nearest tile (ring by ring, row by row) at least `minDistance` from the hero where a sapling may go.
+    private static (int X, int Y) PlantableTile(Simulation sim, int minDistance)
+    {
+        (int hx, int hy) = HeroTile(sim);
+        Core.Tiles.TileChanges tiles = sim.World!.Tiles;
+        for (int r = minDistance; r < 40; r++)
+        {
+            for (int y = hy - r; y <= hy + r; y++)
+            {
+                for (int x = hx - r; x <= hx + r; x++)
+                {
+                    if (HeroRules.Distance(hx, hy, x, y) == r && sim.World.Map.Terrain.Contains(x, y) && tiles.CanPlant(x, y))
+                    {
+                        return (x, y);
+                    }
+                }
+            }
+        }
+
+        throw new InvalidOperationException("No plantable tile near the hero.");
+    }
+
     [Fact]
     [Trait("Req", "FR-HERO-02")]
     [Trait("Req", "FR-HERO-01")]

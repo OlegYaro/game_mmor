@@ -4,6 +4,7 @@ using Core.Entities;
 using Core.Fog;
 using Core.Heroes;
 using Core.Logging;
+using Core.Tiles;
 using Core.WorldGen;
 
 namespace Core.Sim;
@@ -325,7 +326,10 @@ internal static class HeroRules
         GatherDef? def = FindGatherDef(balance, world.Tiles.GetEffectiveResource(x, y));
         if (def is null)
         {
-            hero = hero.Stop(world.Tiles.IsResourceChanged(x, y) ? HeroStopReason.Depleted : HeroStopReason.NoResource);
+            // Worked out: a map node whose stock ran out, or a stump, which a tree grown off the map's trees also leaves
+            // (its stock lives in the flora, so the resource layer never marks it).
+            bool depleted = world.Tiles.IsResourceChanged(x, y) || world.Tiles.GetFlora(x, y) == FloraState.Stump;
+            hero = hero.Stop(depleted ? HeroStopReason.Depleted : HeroStopReason.NoResource);
             world.Movers.Get(entity) = mover.Halt();
             return;
         }
