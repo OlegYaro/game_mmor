@@ -67,7 +67,22 @@ internal sealed class ConstructionSystem : ISimSystem
 }
 
 /// <summary>
-/// Fourth system: homeless residents move into free house places, and once a day at the arrival hour a newcomer may
+/// Fourth system: at the first tick of every game day the residents eat from the storages, a shortage slows the work
+/// and sends hungry residents away, and the tax arrives (FR-ECO-10, FR-ECO-06). Runs after the construction, so a
+/// storage finished this tick already holds food, and before the residents, so a resident who leaves takes its first
+/// step this tick. Simulations without a world skip it.
+/// </summary>
+internal sealed class EconomySystem : ISimSystem
+{
+    public const string SystemName = "economy";
+
+    public string Name => SystemName;
+
+    public void Update(Simulation sim) => Core.Economy.EconomyRules.Update(sim);
+}
+
+/// <summary>
+/// Fifth system: homeless residents move into free house places, and once a day at the arrival hour a newcomer may
 /// arrive (FR-NPC-01, E2). Runs after the construction, so a house finished this tick already offers its places, and
 /// before the movement, so a newcomer takes its first step in the tick it appears. Simulations without a world skip it.
 /// </summary>
@@ -81,7 +96,7 @@ internal sealed class ResidentSystem : ISimSystem
 }
 
 /// <summary>
-/// Fifth system: walkers (the hero, residents) advance along their paths and heroes spend or regain stamina
+/// Sixth system: walkers (the hero, residents) advance along their paths and heroes spend or regain stamina
 /// (FR-HERO-01, FR-NPC-02). Runs after the commands, so an order moves the hero in the tick it executes, and before the
 /// fog, so sight follows the new position. Simulations without a world skip it.
 /// </summary>
@@ -95,7 +110,22 @@ internal sealed class MovementSystem : ISimSystem
 }
 
 /// <summary>
-/// Sixth system: heroes standing next to their node work on it and fill the backpack (FR-HERO-02, FR-WORLD-05). Runs
+/// Seventh system: residents work (FR-NPC-06, FR-NPC-07, ADR 0009): a resident with a job checks it and moves it on
+/// (arrived, a work cycle done, the load handed in), an idle one whose think tick has come looks for a job on the board
+/// or walks to a free tile next to the center. Runs after the movement, so work starts in the tick a resident arrives.
+/// Simulations without a world skip it.
+/// </summary>
+internal sealed class JobSystem : ISimSystem
+{
+    public const string SystemName = "jobs";
+
+    public string Name => SystemName;
+
+    public void Update(Simulation sim) => Core.Jobs.JobRules.Update(sim);
+}
+
+/// <summary>
+/// Eighth system: heroes standing next to their node work on it and fill the backpack (FR-HERO-02, FR-WORLD-05). Runs
 /// after the movement, so gathering starts in the tick the hero arrives. Simulations without a world skip it.
 /// </summary>
 internal sealed class GatherSystem : ISimSystem

@@ -1,4 +1,5 @@
 using Core.Content;
+using Core.Economy;
 using Core.Entities;
 using Core.Heroes;
 using Core.Logging;
@@ -104,8 +105,9 @@ internal static class BuildingRules
     }
 
     /// <summary>
-    /// Executes <see cref="DemolishBuildingCommand"/>: refund (E5) and the storage's stock go to the other storages, then
-    /// the backpack; a house's residents lose their home and move into other houses with free places, if any.
+    /// Executes <see cref="DemolishBuildingCommand"/>: refund (E5), the storage's stock and a field's waiting output go to
+    /// the other storages, then the backpack; a house's residents lose their home and move into other houses with free
+    /// places, if any.
     /// </summary>
     public static void OrderDemolish(Simulation sim, EntityId entity)
     {
@@ -132,6 +134,11 @@ internal static class BuildingRules
                     returned.Add(new ItemAmountDef(sim.Content.Get(slot.Item).Id, slot.Count));
                 }
             }
+        }
+
+        if (world.WorkOutputs.TryGet(entity, out WorkOutput output) && output.Count > 0)
+        {
+            returned.Add(new ItemAmountDef(Construction.LevelOf(sim.Content, building).Work!.Item, output.Count));
         }
 
         returned.AddRange(Construction.Refund(def, 1, building.Level, sim.Content.Construction.DemolishRefundPermille));
@@ -193,7 +200,7 @@ internal static class BuildingRules
     /// <summary>
     /// Construction system body: every construction, upgrade and move counts down one tick (the tick of the order
     /// counts as the first) and ends at 0: a construction or an upgrade becomes active (a storage gets or grows its
-    /// stock), a move takes the new place and frees the old tiles.
+    /// stock, a building where residents work gets its output), a move takes the new place and frees the old tiles.
     /// </summary>
     public static void Update(Simulation sim)
     {
@@ -349,6 +356,11 @@ internal static class BuildingRules
             sim.Buffer.Add(entity, new Inventory(stock.Backpack.Concat(new ItemSlot[extra]), []));
         }
 
+        if (level.Work is not null && !world.WorkOutputs.Has(entity))
+        {
+            sim.Buffer.Add(entity, new WorkOutput(0));
+        }
+
         building = building with { State = BuildingState.Active, TicksLeft = 0 };
         sim.Log.Write(sim.Tick, LogLevel.Info, LogCategory, "{building} {id} level {level}: {state} done",
             LogField.Of("building", entity.ToString()), LogField.Of("id", def.Id), LogField.Of("level", building.Level),
@@ -390,8 +402,8 @@ internal static class BuildingRules
         }
     }
 
-    // Puts items into the available storages (entity order), then the hero's backpack; returns what did not fit (E6),
-    // one entry per item in first-appearance order.
+    // Puts items into the available storages that take them (entity order, filters respected), then the hero's backpack;
+    // returns what did not fit (E6), one entry per item in first-appearance order.
     private static List<ItemAmountDef> Deliver(Simulation sim, IReadOnlyList<ItemAmountDef> items)
     {
         GameWorld world = sim.World!;
@@ -401,19 +413,7 @@ internal static class BuildingRules
         {
             sim.Content.TryGetId(entry.Item, out DefId item);
             int stackSize = sim.Content.Get<ItemDef>(item).StackSize;
-            int left = entry.Count;
-            ReadOnlySpan<EntityId> owners = world.Buildings.Entities;
-            Span<Building> buildings = world.Buildings.Values;
-            for (int i = 0; i < owners.Length && left > 0; i++)
-            {
-                if (Construction.IsAvailableStorage(world, owners[i], buildings[i]))
-                {
-                    ref Inventory stock = ref world.Inventories.Get(owners[i]);
-                    stock = stock.Add(item, left, stackSize, out int added);
-                    left -= added;
-                }
-            }
-
+            int left = entry.Count - Storages.DeliverToStorages(sim, item, entry.Count);
             if (left > 0 && hero != EntityId.None && world.Inventories.Has(hero))
             {
                 ref Inventory backpack = ref world.Inventories.Get(hero);

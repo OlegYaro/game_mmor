@@ -27,7 +27,7 @@ public sealed class ResidentScenarioTests(ITestOutputHelper output)
         Assert.Equal(ResidentScenario.Options, golden.Replay.NewGame);
         Assert.InRange(golden.Replay.EndTick, 1, ResidentScenario.TickBudget);
         output.WriteLine($"scenario_m3a_residents ends at tick {golden.Replay.EndTick} with {golden.Replay.Commands.Count} commands");
-        Assert.Equal(6, golden.Replay.Commands.Count); // two gives and four placements; nobody orders the residents
+        Assert.Equal(8, golden.Replay.Commands.Count); // two gives, four placements, a walk and the hand-in; nobody orders the residents
         Assert.Equal(2, golden.Replay.Commands.Count(c => c.Command is GiveItemCommand));
 
         ReplayPlayer player = ReplayPlayer.Start(golden.Replay, SimTestData.Real);
@@ -48,7 +48,7 @@ public sealed class ResidentScenarioTests(ITestOutputHelper output)
         Assert.Equal(ResidentScenario.Newcomers, world.Residents.Count);
         Assert.All(world.Residents.Values.ToArray(), r =>
         {
-            Assert.Equal(ResidentState.Idle, r.State);
+            Assert.NotEqual(ResidentState.Arriving, r.State);
             Assert.NotEqual(EntityId.None, r.Home);
         });
         Assert.Equal(4, world.Buildings.Count);

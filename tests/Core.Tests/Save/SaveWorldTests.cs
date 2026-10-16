@@ -80,9 +80,10 @@ public sealed class SaveWorldTests
         JsonObject body = Body(bytes);
 
         Assert.Equal(
-            ["tick", "rng", "entities", "components", "commands", "game", "fog", "tiles", "settlement"],
+            ["tick", "rng", "entities", "components", "commands", "game", "fog", "tiles", "settlement", "jobs"],
             body.Select(p => p.Key));
-        Assert.Equal(["position", "revealer", "hero", "inventory", "mover", "building", "resident"], body["components"]!.AsObject().Select(p => p.Key));
+        Assert.Equal(["position", "revealer", "hero", "inventory", "mover", "building", "resident", "job", "workOutput", "storageFilter"],
+            body["components"]!.AsObject().Select(p => p.Key));
         Assert.Empty(body["components"]!["building"]!.AsArray());
         Assert.Empty(body["components"]!["resident"]!.AsArray());
         Assert.Equal("camp", (string?)body["settlement"]!["reachedEra"]);

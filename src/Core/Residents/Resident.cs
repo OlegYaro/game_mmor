@@ -1,6 +1,7 @@
 using Core.Content;
 using Core.Determinism;
 using Core.Entities;
+using Core.Jobs;
 
 namespace Core.Residents;
 
@@ -13,13 +14,13 @@ public enum ResidentState : byte
     /// <summary>In the settlement, waiting for work.</summary>
     Idle = 1,
 
-    /// <summary>Walking to a job (job board, next wave).</summary>
+    /// <summary>Walking: to a job's target, with a load to a storage, or to a free tile next to the center.</summary>
     Walking = 2,
 
-    /// <summary>Working on a job (job board, next wave).</summary>
+    /// <summary>Working next to a job's target (<see cref="JobPhase.Working"/>).</summary>
     Working = 3,
 
-    /// <summary>Leaving the settlement (food shortage, next wave).</summary>
+    /// <summary>Leaving the settlement for good (food shortage): walks to where newcomers come from and disappears there.</summary>
     Leaving = 4,
 }
 
@@ -111,21 +112,19 @@ public readonly record struct SkillSet(ulong Bits) : IStateHashable
 }
 
 /// <summary>
-/// A resident of the player's settlement (FR-NPC-01, FR-NPC-02, ADR 0009). It also has a <see cref="Position"/> and a
-/// <see cref="Heroes.Mover"/>; it walks with the shared agent movement.
+/// A resident of the player's settlement (FR-NPC-01, FR-NPC-02, ADR 0009). It also has a <see cref="Position"/>, a
+/// <see cref="Heroes.Mover"/> (it walks with the shared agent movement), a <see cref="Fog.Revealer"/> of the villager
+/// kind and a <see cref="ResidentJob"/> (its job and load).
 /// </summary>
 /// <param name="Name">Index of the first name in the <c>human_names</c> list (<see cref="NameListDef"/>).</param>
 /// <param name="Profession">Profession (<see cref="ProfessionDef"/>).</param>
 /// <param name="Skills">The twelve skill levels.</param>
 /// <param name="Home">The house it lives in, or <see cref="EntityId.None"/> when homeless.</param>
 /// <param name="State">What it is doing.</param>
-/// <param name="Job">The job it holds on the job board (next wave), <see cref="NoJob"/> while it holds none.</param>
-public readonly record struct Resident(int Name, DefId Profession, SkillSet Skills, EntityId Home, ResidentState State, int Job) : IComponent
+/// <param name="Priorities">Its priority 0–4 for every job type (FR-NPC-06); the profession's types start at 1.</param>
+public readonly record struct Resident(int Name, DefId Profession, SkillSet Skills, EntityId Home, ResidentState State, WorkPriorities Priorities) : IComponent
 {
-    /// <summary>Value of <see cref="Job"/> without a job.</summary>
-    public const int NoJob = 0;
-
-    /// <summary>Writes the name index, profession, skills, home, state (one byte) and job.</summary>
+    /// <summary>Writes the name index, profession, skills, home, state (one byte) and priorities.</summary>
     public void WriteState(StateWriter writer)
     {
         ArgumentNullException.ThrowIfNull(writer);
@@ -134,6 +133,6 @@ public readonly record struct Resident(int Name, DefId Profession, SkillSet Skil
         Skills.WriteState(writer);
         Home.WriteState(writer);
         writer.WriteByte((byte)State);
-        writer.WriteInt32(Job);
+        Priorities.WriteState(writer);
     }
 }

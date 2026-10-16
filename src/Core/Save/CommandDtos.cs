@@ -29,6 +29,10 @@ namespace Core.Save;
 [JsonDerivedType(typeof(MoveBuildingCommandDto), MoveBuildingCommand.KindName)]
 [JsonDerivedType(typeof(DemolishBuildingCommandDto), DemolishBuildingCommand.KindName)]
 [JsonDerivedType(typeof(SpawnResidentCommandDto), SpawnResidentCommand.KindName)]
+[JsonDerivedType(typeof(SetWorkPriorityCommandDto), SetWorkPriorityCommand.KindName)]
+[JsonDerivedType(typeof(SetProfessionCommandDto), SetProfessionCommand.KindName)]
+[JsonDerivedType(typeof(SetStorageFilterCommandDto), SetStorageFilterCommand.KindName)]
+[JsonDerivedType(typeof(DepositHeroItemsCommandDto), DepositHeroItemsCommand.KindName)]
 public abstract record CommandDto
 {
     /// <summary>JSON name of the discriminator property.</summary>
@@ -58,6 +62,10 @@ public abstract record CommandDto
             MoveBuildingCommand c => new MoveBuildingCommandDto(c.Building.Index, c.Building.Generation, c.X, c.Y, c.Rotation),
             DemolishBuildingCommand c => new DemolishBuildingCommandDto(c.Building.Index, c.Building.Generation),
             SpawnResidentCommand c => new SpawnResidentCommandDto(c.Profession),
+            SetWorkPriorityCommand c => new SetWorkPriorityCommandDto(c.Resident.Index, c.Resident.Generation, c.JobType, c.Priority),
+            SetProfessionCommand c => new SetProfessionCommandDto(c.Resident.Index, c.Resident.Generation, c.Profession),
+            SetStorageFilterCommand c => new SetStorageFilterCommandDto(c.Storage.Index, c.Storage.Generation, c.Categories),
+            DepositHeroItemsCommand c => new DepositHeroItemsCommandDto(c.Storage.Index, c.Storage.Generation),
             _ => throw new NotSupportedException($"Command kind '{command.Kind}' ({command.GetType().Name}) has no CommandDto."),
         };
     }
@@ -179,4 +187,44 @@ public sealed record SpawnResidentCommandDto(string Profession) : CommandDto
 {
     /// <inheritdoc />
     public override ISimCommand ToCommand() => new SpawnResidentCommand(Profession);
+}
+
+/// <summary>DTO of <see cref="SetWorkPriorityCommand"/>.</summary>
+/// <param name="Index">Resident entity slot index.</param>
+/// <param name="Generation">Resident entity generation.</param>
+/// <param name="Job">Job type name.</param>
+/// <param name="Priority">Priority 0 to 4.</param>
+public sealed record SetWorkPriorityCommandDto(int Index, int Generation, string Job, int Priority) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new SetWorkPriorityCommand(new EntityId(Index, Generation), Job, Priority);
+}
+
+/// <summary>DTO of <see cref="SetProfessionCommand"/>.</summary>
+/// <param name="Index">Resident entity slot index.</param>
+/// <param name="Generation">Resident entity generation.</param>
+/// <param name="Profession">Profession id.</param>
+public sealed record SetProfessionCommandDto(int Index, int Generation, string Profession) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new SetProfessionCommand(new EntityId(Index, Generation), Profession);
+}
+
+/// <summary>DTO of <see cref="SetStorageFilterCommand"/>.</summary>
+/// <param name="Index">Storage entity slot index.</param>
+/// <param name="Generation">Storage entity generation.</param>
+/// <param name="Categories">Allowed categories as a bit mask (bit i: <see cref="Content.ItemCategories.All"/>[i]).</param>
+public sealed record SetStorageFilterCommandDto(int Index, int Generation, int Categories) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new SetStorageFilterCommand(new EntityId(Index, Generation), Categories);
+}
+
+/// <summary>DTO of <see cref="DepositHeroItemsCommand"/>.</summary>
+/// <param name="Index">Storage entity slot index.</param>
+/// <param name="Generation">Storage entity generation.</param>
+public sealed record DepositHeroItemsCommandDto(int Index, int Generation) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new DepositHeroItemsCommand(new EntityId(Index, Generation));
 }

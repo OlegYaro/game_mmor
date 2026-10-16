@@ -101,18 +101,20 @@ internal static class SaveTestData
     public const ulong V4SampleSeed = 0x5A5E_0004;
 
     /// <summary>
-    /// Script of the frozen <c>Golden/save_v4.sav</c> (first format with residents and the reached era): a normal 64²
-    /// game; 100 wood and 30 berries given in tick 1; a campfire and two houses built near the hero; a blacksmith and an
-    /// automatic resident (a lumberjack) spawned at the center; then mornings run until the first newcomer arrives, and
-    /// the save is taken 3 ticks into its walk, with a pending spawn of a farmer.
+    /// Script of the frozen <c>Golden/save_v4.sav</c> (first format with residents, the reached era, jobs, reservations,
+    /// field outputs, storage filters and the food state; made again on 16.10.2026 when the job board joined format v4
+    /// before its release): a normal 64² game; 150 wood and 30 berries given in tick 1; a campfire, two houses, a storage
+    /// (that refuses money) and a field built near the hero; a blacksmith, an automatic resident (a lumberjack) and a
+    /// farmer spawned at the center; then mornings run until the first newcomer arrives, and the save is taken 3 ticks
+    /// into its walk, while the others work, with a pending spawn of a farmer.
     /// </summary>
     public static Simulation BuildV4Sample()
     {
         Simulation sim = Simulation.CreateNewGame(SimTestData.Real, new NewGameOptions(V4SampleSeed, 64, Difficulty.Normal));
-        sim.Enqueue(new GiveItemCommand("wood", 100));
+        sim.Enqueue(new GiveItemCommand("wood", 150));
         sim.Enqueue(new GiveItemCommand("berries", 30));
         sim.Step();
-        foreach (string building in new[] { "campfire", "house", "house" })
+        foreach (string building in new[] { "campfire", "house", "house", "storage", "field" })
         {
             (int x, int y) = Buildings.BuildingTestWorld.FindSpot(sim, building);
             sim.Enqueue(new PlaceBuildingCommand(building, x, y));
@@ -120,10 +122,12 @@ internal static class SaveTestData
             Heroes.HeroTestWorld.StepUntil(sim, () => sim.World!.Buildings.Values[^1].State == Core.Buildings.BuildingState.Active);
         }
 
+        sim.Enqueue(new SetStorageFilterCommand(sim.World!.Buildings.Entities[3], 0b0111));
         sim.Enqueue(new SpawnResidentCommand("blacksmith"));
         sim.Enqueue(new SpawnResidentCommand());
+        sim.Enqueue(new SpawnResidentCommand("farmer"));
         sim.Step();
-        Heroes.HeroTestWorld.StepUntil(sim, () => sim.World!.Residents.Count == 3, limit: 100_000);
+        Heroes.HeroTestWorld.StepUntil(sim, () => sim.World!.Residents.Count == 4, limit: 100_000);
         sim.Step(3);
         sim.Enqueue(new SpawnResidentCommand("farmer"));
         return sim;

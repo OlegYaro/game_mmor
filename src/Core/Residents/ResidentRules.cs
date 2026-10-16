@@ -2,7 +2,9 @@ using Core.Buildings;
 using Core.Content;
 using Core.Determinism;
 using Core.Entities;
+using Core.Fog;
 using Core.Heroes;
+using Core.Jobs;
 using Core.Logging;
 using Core.Pathfinding;
 using Core.Sim;
@@ -11,7 +13,7 @@ namespace Core.Residents;
 
 /// <summary>
 /// The residents' rules (FR-NPC-01, FR-NPC-02, ADR 0009): newcomers, the console spawn, housing (moving in, eviction),
-/// the reached era, walking and loading saved residents. Stateless: everything lives in the components, the world and
+/// the reached era, walking, leaving the settlement and loading saved residents. Stateless: everything lives in the components, the world and
 /// the content. Read-only rules for the game are in <see cref="Housing"/> and <see cref="Arrivals"/>.
 /// </summary>
 /// <remarks>
@@ -57,7 +59,11 @@ internal static class ResidentRules
 
         WalkOutcome outcome = AgentMovement.Advance(sim, world, entity, ref mover, sim.Content.Economy.ResidentStepTicks, Mover.ProgressPerTick, LogCategory);
         ref Resident resident = ref world.Residents.Get(entity);
-        if (outcome != WalkOutcome.Walking && resident.State == ResidentState.Arriving)
+        if (outcome != WalkOutcome.Walking && resident.State == ResidentState.Leaving)
+        {
+            Gone(sim, world, entity, resident);
+        }
+        else if (outcome != WalkOutcome.Walking && resident.State == ResidentState.Arriving)
         {
             // Arrived at the center, or the way got blocked: the newcomer stays where it is and waits for work.
             resident = resident with { State = ResidentState.Idle };
@@ -112,6 +118,34 @@ internal static class ResidentRules
     }
 
     /// <summary>
+    /// <paramref name="entity"/> leaves the settlement for good (food shortage, A5): its job ends and its load goes to the
+    /// storages, it gives up its home and walks to where newcomers come from (<see cref="Arrivals.FindSpawnTile"/>),
+    /// where it disappears; with no way out it disappears at once. It still counts for the population (and the era)
+    /// until it is gone, but it no longer eats, pays tax or takes a house place.
+    /// </summary>
+    public static void Leave(Simulation sim, EntityId entity)
+    {
+        GameWorld world = sim.World!;
+        int lost = JobRules.CancelForLeaving(sim, world, entity);
+        ref Resident resident = ref world.Residents.Get(entity);
+        resident = resident with { State = ResidentState.Leaving, Home = EntityId.None };
+        Report(sim, world, ResidentEventKind.LeftHungry, entity, resident);
+        if (lost > 0)
+        {
+            Log(sim, LogLevel.Warning, $"{entity} took {lost} items with it: no storage had room");
+        }
+
+        int exit = Arrivals.FindSpawnTile(sim, Arrivals.MeetingTiles(sim));
+        if (exit >= 0 && AgentMovement.TryPlan(sim, world, entity, exit, 0, sprint: false, out Mover mover) && mover.IsMoving)
+        {
+            world.Movers.Get(entity) = mover;
+            return;
+        }
+
+        Gone(sim, world, entity, resident);
+    }
+
+    /// <summary>
     /// The residents of a demolished <paramref name="house"/> lose their home; each moves into the nearest house with a
     /// free place, if any (<see cref="Housing.FindHome"/>), and stays homeless otherwise. Called after the house is gone.
     /// </summary>
@@ -156,7 +190,9 @@ internal static class ResidentRules
                 throw new ArgumentException($"Resident {entry.Entity} must be alive and have a position and a mover.", nameof(state));
             }
 
-            if (r.Name < 0 || r.Name >= names || !professionOk || !r.Skills.IsValid() || !homeOk || !Enum.IsDefined(r.State) || r.Job != Resident.NoJob)
+            bool leavingOk = r.State != ResidentState.Leaving || r.Home == EntityId.None;
+            if (r.Name < 0 || r.Name >= names || !professionOk || !r.Skills.IsValid() || !homeOk || !Enum.IsDefined(r.State) || !r.Priorities.IsValid()
+                || !leavingOk)
             {
                 throw new ArgumentException($"Resident of {entry.Entity} is invalid: {r}.", nameof(state));
             }
@@ -223,23 +259,33 @@ internal static class ResidentRules
         }
 
         PassabilityGrid grid = world.Pathfinder.Grid;
-        var resident = new Resident(name, profession, SkillSet.From(skills), home, state, Resident.NoJob);
+        var resident = new Resident(name, profession, SkillSet.From(skills), home, state, WorkPriorities.ForProfession(sim.Content.Get<ProfessionDef>(profession)));
         EntityId entity = sim.Entities.Create();
         sim.Positions.Add(entity, Simulation.TileCenter(grid.XOf(tile), grid.YOf(tile)));
+        world.Revealers.Add(entity, new Revealer(RevealerKind.Villager));
         world.Movers.Add(entity, mover);
         world.Residents.Add(entity, resident);
+        world.Jobs.Add(entity, ResidentJob.Idle(sim.Tick));
         world.ReachedEra = IdOf(sim.Content, Construction.CurrentEra(sim).Id);
         Report(sim, world, kind, entity, resident);
     }
 
-    // Homeless residents, in entity order, move into the nearest house with a free place.
+    // A leaving resident reached the edge (or has no way out): it is removed after the system (the stores are being
+    // iterated), and reported now.
+    private static void Gone(Simulation sim, GameWorld world, EntityId entity, Resident resident)
+    {
+        Report(sim, world, ResidentEventKind.Left, entity, resident);
+        sim.Buffer.Destroy(entity);
+    }
+
+    // Homeless residents, in entity order, move into the nearest house with a free place; leaving ones stay homeless.
     private static void HouseHomeless(Simulation sim, GameWorld world)
     {
         ReadOnlySpan<EntityId> owners = world.Residents.Entities;
         Span<Resident> residents = world.Residents.Values;
         for (int i = 0; i < owners.Length; i++)
         {
-            if (residents[i].Home != EntityId.None)
+            if (residents[i].Home != EntityId.None || residents[i].State == ResidentState.Leaving)
             {
                 continue;
             }
@@ -277,7 +323,7 @@ internal static class ResidentRules
         string name = NameOf(sim.Content, resident);
         string profession = sim.Content.Get(resident.Profession).Id;
         world.AddResidentEvent(sim.Tick, kind, entity, name, profession, resident.Home, position.TileX, position.TileY);
-        sim.Log.Write(sim.Tick, kind == ResidentEventKind.Evicted ? LogLevel.Warning : LogLevel.Info, LogCategory,
+        sim.Log.Write(sim.Tick, kind is ResidentEventKind.Evicted or ResidentEventKind.LeftHungry ? LogLevel.Warning : LogLevel.Info, LogCategory,
             "{name} ({entity}, {profession}) {kind} at {x},{y}; home {home}",
             LogField.Of("name", name), LogField.Of("entity", entity.ToString()), LogField.Of("profession", profession),
             LogField.Of("kind", kind.ToString()), LogField.Of("x", position.TileX), LogField.Of("y", position.TileY),

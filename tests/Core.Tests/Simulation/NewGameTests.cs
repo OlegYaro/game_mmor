@@ -56,7 +56,8 @@ public sealed class NewGameTests
 
         Assert.Equal(
             [Simulation.CalendarHashName, Simulation.RngHashName, Simulation.EntitiesHashName, Simulation.ComponentsHashName,
-                Simulation.CommandsHashName, Simulation.GameHashName, Simulation.FogHashName, Simulation.TilesHashName, Simulation.ResidentsHashName],
+                Simulation.CommandsHashName, Simulation.GameHashName, Simulation.FogHashName, Simulation.TilesHashName, Simulation.ResidentsHashName,
+                Simulation.JobsHashName, Simulation.EconomyHashName],
             a.ComputeHashes().Entries.Select(e => e.Name));
         Assert.NotEqual(a.World.MapHash, NewGame(seed: 0xF07).World!.MapHash);
     }
@@ -101,7 +102,8 @@ public sealed class NewGameTests
         Assert.Equal(
             [
                 Simulation.PositionStoreName, Simulation.RevealerStoreName, Simulation.HeroStoreName, Simulation.InventoryStoreName, Simulation.MoverStoreName,
-                Simulation.BuildingStoreName, Simulation.ResidentStoreName,
+                Simulation.BuildingStoreName, Simulation.ResidentStoreName, Simulation.JobStoreName, Simulation.WorkOutputStoreName,
+                Simulation.StorageFilterStoreName,
             ],
             sim.Entities.Stores.Select(s => s.Name));
         Assert.Equal(marker, world.HeroEntity);

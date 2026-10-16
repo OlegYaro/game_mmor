@@ -2,9 +2,11 @@ using System.Runtime.InteropServices;
 using Core.Buildings;
 using Core.Content;
 using Core.Determinism;
+using Core.Economy;
 using Core.Entities;
 using Core.Fog;
 using Core.Heroes;
+using Core.Jobs;
 using Core.Pathfinding;
 using Core.Residents;
 using Core.Tiles;
@@ -28,6 +30,12 @@ namespace Core.Sim;
 /// <param name="Tiles">Tile changes against the generated map (<see cref="TileChanges"/>).</param>
 /// <param name="Residents">Resident components in ascending entity index order.</param>
 /// <param name="ReachedEra">The highest era the player's settlement has reached (<see cref="GameWorld.ReachedEra"/>).</param>
+/// <param name="Jobs">Resident job components in ascending entity index order.</param>
+/// <param name="WorkOutputs">Work output components of buildings in ascending entity index order.</param>
+/// <param name="StorageFilters">Storage filter components in ascending entity index order.</param>
+/// <param name="Reservations">Reservations and banned targets of the job board.</param>
+/// <param name="DaysWithoutFood">Days in a row the settlement could not eat its fill (<see cref="GameWorld.DaysWithoutFood"/>).</param>
+/// <param name="LastLeaveDay">Day the last hungry resident left during this shortage; -1 when none did (<see cref="GameWorld.LastLeaveDay"/>).</param>
 public sealed record WorldState(
     int MapSize,
     int GeneratorVersion,
@@ -40,7 +48,13 @@ public sealed record WorldState(
     IReadOnlyList<ComponentEntry<Building>> Buildings,
     TileChangesState Tiles,
     IReadOnlyList<ComponentEntry<Resident>> Residents,
-    DefId ReachedEra);
+    DefId ReachedEra,
+    IReadOnlyList<ComponentEntry<ResidentJob>> Jobs,
+    IReadOnlyList<ComponentEntry<WorkOutput>> WorkOutputs,
+    IReadOnlyList<ComponentEntry<StorageFilter>> StorageFilters,
+    ReservationsState Reservations,
+    int DaysWithoutFood,
+    long LastLeaveDay);
 
 /// <summary>
 /// The world of a game simulation (<see cref="Simulation.CreateNewGame"/>): the generated map, the tile changes, the
@@ -61,6 +75,10 @@ public sealed record WorldState(
 /// <para>Residents: <see cref="Residents"/> (with a <see cref="Position"/> and a <see cref="Movers"/> entry each, so the
 /// game interpolates them like the hero), housing in <see cref="Housing"/>, the arrival odds in <see cref="Arrivals"/>,
 /// arrivals and housing changes in <see cref="ResidentEvents"/>; the era never falls below <see cref="ReachedEra"/>.</para>
+/// <para>Work (ADR 0009): each resident's job, load and priorities in <see cref="Jobs"/> and <see cref="Resident.Priorities"/>,
+/// the held targets in <see cref="Reservations"/>; a field's waiting output in <see cref="WorkOutputs"/>; storage filters
+/// in <see cref="StorageFilters"/> (read-only rules in <see cref="Storages"/>). Food and tax: <see cref="DaysWithoutFood"/>,
+/// the daily outcome in <see cref="EconomyEvents"/>, the numbers in <see cref="FoodSupply"/>.</para>
 /// </remarks>
 public sealed class GameWorld
 {
@@ -70,9 +88,13 @@ public sealed class GameWorld
     /// <summary>How many of the latest <see cref="ResidentEvents"/> are kept.</summary>
     public const int ResidentEventCapacity = 64;
 
+    /// <summary>How many of the latest <see cref="EconomyEvents"/> are kept.</summary>
+    public const int EconomyEventCapacity = 64;
+
     private readonly List<RevealSource> _sources = [];
     private readonly List<BuildingEvent> _buildingEvents = [];
     private readonly List<ResidentEvent> _residentEvents = [];
+    private readonly List<EconomyEvent> _economyEvents = [];
     private Pathfinder? _pathfinder;
 
     internal GameWorld(WorldMap map, ulong mapHash, EntityWorld entities, DefId firstEra)
@@ -85,7 +107,11 @@ public sealed class GameWorld
         Movers = entities.AddStore<Mover>(Simulation.MoverStoreName);
         Buildings = entities.AddStore<Building>(Simulation.BuildingStoreName);
         Residents = entities.AddStore<Resident>(Simulation.ResidentStoreName);
+        Jobs = entities.AddStore<ResidentJob>(Simulation.JobStoreName);
+        WorkOutputs = entities.AddStore<WorkOutput>(Simulation.WorkOutputStoreName);
+        StorageFilters = entities.AddStore<StorageFilter>(Simulation.StorageFilterStoreName);
         ReachedEra = firstEra;
+        LastLeaveDay = NoLeaveDay;
         Fog = new FogOfWar(map.Size);
         Tiles = new TileChanges(map);
     }
@@ -119,6 +145,40 @@ public sealed class GameWorld
 
     /// <summary>Resident components (store <see cref="Simulation.ResidentStoreName"/>); see <see cref="Housing"/> and <see cref="Arrivals"/>.</summary>
     public ComponentStore<Resident> Residents { get; }
+
+    /// <summary>Resident job components (store <see cref="Simulation.JobStoreName"/>): one per resident.</summary>
+    public ComponentStore<ResidentJob> Jobs { get; }
+
+    /// <summary>Work output components (store <see cref="Simulation.WorkOutputStoreName"/>) of finished buildings where residents work.</summary>
+    public ComponentStore<WorkOutput> WorkOutputs { get; }
+
+    /// <summary>Storage filter components (store <see cref="Simulation.StorageFilterStoreName"/>); a storage without one takes everything.</summary>
+    public ComponentStore<StorageFilter> StorageFilters { get; }
+
+    /// <summary>Reservations and banned targets of the job board (subsystem <see cref="Simulation.JobsHashName"/>).</summary>
+    public ReservationManager Reservations { get; } = new();
+
+    /// <summary>
+    /// Days in a row the settlement could not eat its fill (FR-ECO-10, A5); 0 when the last meal was complete. While it
+    /// is above 0 residents work at <see cref="EconomyBalanceDef.ShortageSlowdownPermille"/>. Saved and hashed
+    /// (subsystem <see cref="Simulation.EconomyHashName"/>).
+    /// </summary>
+    public int DaysWithoutFood { get; internal set; }
+
+    /// <summary>Day the last hungry resident left during the current shortage; <see cref="NoLeaveDay"/> when none did.</summary>
+    public long LastLeaveDay { get; internal set; }
+
+    /// <summary>Value of <see cref="LastLeaveDay"/> before anyone left in a shortage.</summary>
+    public const long NoLeaveDay = -1;
+
+    /// <summary>
+    /// The latest economy events (food warnings and shortages, tax, the hero's deposits), oldest first (at most
+    /// <see cref="EconomyEventCapacity"/>). Presentation only: not part of the state, not saved, not hashed.
+    /// </summary>
+    public IReadOnlyList<EconomyEvent> EconomyEvents => _economyEvents;
+
+    /// <summary>Sequence of the latest economy event; 0 before the first.</summary>
+    public long LastEconomyEventSequence { get; private set; }
 
     /// <summary>
     /// The highest era (<see cref="EraDef"/>) the player's settlement has reached. The era grows with the population but
@@ -198,6 +258,26 @@ public sealed class GameWorld
 
         _residentEvents.Add(added);
         return added;
+    }
+
+    /// <summary>Appends an economy event (dropping the oldest beyond <see cref="EconomyEventCapacity"/>) and returns it.</summary>
+    internal EconomyEvent AddEconomyEvent(long tick, EconomyEventKind kind, string item, int amount, int lost, int daysLeft)
+    {
+        var added = new EconomyEvent(++LastEconomyEventSequence, tick, kind, item, amount, lost, daysLeft);
+        if (_economyEvents.Count == EconomyEventCapacity)
+        {
+            _economyEvents.RemoveAt(0);
+        }
+
+        _economyEvents.Add(added);
+        return added;
+    }
+
+    /// <summary>Writes the food state: days without food and the last leave day.</summary>
+    internal void WriteEconomyState(StateWriter writer)
+    {
+        writer.WriteInt32(DaysWithoutFood);
+        writer.WriteInt64(LastLeaveDay);
     }
 
     /// <summary>Writes the residents' settlement state: the reached era, then the resident components.</summary>

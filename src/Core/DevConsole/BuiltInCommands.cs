@@ -16,9 +16,10 @@ namespace Core.DevConsole;
 /// <summary>
 /// The built-in console commands: help, tick, speed, pause, resume, seed, hash, spawn, save, load, log (M0),
 /// world, worldhash, fog, reveal, goto (M1), hero, herogo, give, build, check, upgrade, movebuilding, demolish,
-/// cancelbuilding and buildings (M2), spawnresident and residents (M3).
+/// cancelbuilding and buildings (M2), spawnresident and residents (M3); jobs, setprofession, setpriority and food
+/// (M3a work and food, in <c>BuiltInCommands.Work.cs</c>).
 /// </summary>
-internal static class BuiltInCommands
+internal static partial class BuiltInCommands
 {
     private const string SaveExtension = ".sav";
     private const int MaxLogLines = 500;
@@ -53,6 +54,7 @@ internal static class BuiltInCommands
         console.Register("buildings", "buildings", "List the buildings, the territory and the last building order's result.", BuildingList);
         console.Register("spawnresident", "spawnresident [profession]", "Create a resident next to the center (runs next tick, recorded in replays; see 'residents').", SpawnResident);
         console.Register("residents", "residents", "List the residents, the house places and today's odds of a newcomer.", ResidentList);
+        RegisterWork(console);
     }
 
     private static ConsoleResult Usage(DevConsole console, string name) =>

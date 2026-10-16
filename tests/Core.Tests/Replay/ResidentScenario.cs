@@ -10,10 +10,11 @@ namespace Core.Tests.Replay;
 
 /// <summary>
 /// The M3a residents scenario (golden <c>scenario_m3a_residents</c>): on a new 64² game the hero receives wood and
-/// berries (console <c>give</c>), places a campfire, two houses and a storage, and then nobody gives orders: over the
-/// next game mornings newcomers arrive one by one (real data, chance from the formula) and walk to the campfire. The
-/// script decides from the running simulation each tick, at most one order per tick, and stops a few ticks after the
-/// <see cref="Newcomers"/>-th newcomer reached the settlement; the whole run must fit in <see cref="TickBudget"/>.
+/// berries (console <c>give</c>), places a campfire, two houses and a storage, walks to the storage and hands the
+/// berries in (the residents eat from the storage only), and then nobody gives orders: over the
+/// next game mornings newcomers arrive one by one (real data, chance from the formula), walk to the campfire and go to
+/// work. The script decides from the running simulation each tick, at most one order per tick, and stops a few ticks
+/// after the <see cref="Newcomers"/>-th newcomer reached the settlement; the whole run must fit in <see cref="TickBudget"/>.
 /// </summary>
 internal static class ResidentScenario
 {
@@ -29,7 +30,7 @@ internal static class ResidentScenario
     /// <summary>Wood for the campfire, two houses and the storage (5 + 2 × 20 + 30), with some to spare.</summary>
     public const int Wood = 100;
 
-    /// <summary>Berries: food for three days for everyone, so the food points count.</summary>
+    /// <summary>Berries: food for three days for everyone, so the food points count; handed in at the storage, they feed the newcomers.</summary>
     public const int Berries = 40;
 
     /// <summary>New-game parameters.</summary>
@@ -90,10 +91,28 @@ internal static class ResidentScenario
                 case 4 or 5 or 6:
                     Building center = World.Buildings.Get(Construction.FindCenter(sim));
                     return PlaceNear(_orders == 6 ? "storage" : "house", (center.X, center.Y));
+                case 7:
+                    Stage = "walk to the storage";
+                    if (World.Buildings.Values.ToArray().Any(b => b.State != BuildingState.Active))
+                    {
+                        _orders--; // wait until everything is built
+                        return null;
+                    }
+
+                    return M3aScenario.WalkNextTo(sim, M3aScenario.Find(sim, "storage"));
+                case 8:
+                    Stage = "hand the berries in";
+                    if (World.Movers.Get(World.HeroEntity).IsMoving)
+                    {
+                        _orders--;
+                        return null;
+                    }
+
+                    return new DepositHeroItemsCommand(M3aScenario.Find(sim, "storage"));
                 default:
                     Stage = "wait for newcomers";
                     int arrived = World.ResidentEvents.Count(e => e.Kind == ResidentEventKind.Arrived);
-                    Done = arrived >= Newcomers && World.Residents.Values.ToArray().All(r => r.State == ResidentState.Idle);
+                    Done = arrived >= Newcomers && World.Residents.Values.ToArray().All(r => r.State != ResidentState.Arriving);
                     return null;
             }
         }

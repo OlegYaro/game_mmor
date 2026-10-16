@@ -63,11 +63,17 @@ public static class Housing
         return total;
     }
 
-    /// <summary>Number of residents without a home.</summary>
+    /// <summary>Number of residents without a home, not counting those leaving the settlement (they want no place).</summary>
     public static int CountHomeless(GameWorld world)
     {
         ArgumentNullException.ThrowIfNull(world);
-        return CountOccupants(world, EntityId.None);
+        int count = 0;
+        foreach (Resident resident in world.Residents.Values)
+        {
+            count += resident.Home == EntityId.None && resident.State != ResidentState.Leaving ? 1 : 0;
+        }
+
+        return count;
     }
 
     /// <summary>

@@ -1,9 +1,11 @@
 using Core.Buildings;
 using Core.Content;
 using Core.Determinism;
+using Core.Economy;
 using Core.Entities;
 using Core.Fog;
 using Core.Heroes;
+using Core.Jobs;
 using Core.Save;
 using Core.Sim;
 using Core.Tests.Replay;
@@ -239,12 +241,16 @@ public sealed class SaveGoldenTests
         Assert.Contains("v3 to v4", withoutV4.Error.Message, StringComparison.Ordinal);
     }
 
-    // The first format with residents (name, profession, skills, home, state) and the reached era.
+    // The first format with residents (name, profession, skills, home, state, priorities), the reached era, jobs,
+    // reservations, field outputs, storage filters and the food state.
     [Fact]
     [Trait("Req", "FR-SAVE-02")]
     [Trait("Req", "FR-SAVE-04")]
     [Trait("Req", "FR-NPC-01")]
     [Trait("Req", "FR-NPC-02")]
+    [Trait("Req", "FR-NPC-06")]
+    [Trait("Req", "FR-NPC-07")]
+    [Trait("Req", "FR-ECO-01")]
     public void SaveV4SampleLoads()
     {
         CreateV4SampleIfMissing();
@@ -257,44 +263,81 @@ public sealed class SaveGoldenTests
         GameWorld world = sim.World!;
         Assert.Equal(V4Frozen.Tick, sim.Tick);
         Assert.Equal(V4Frozen.MapHash, ContentHash.Format(world.MapHash));
-        Assert.Equal("camp", SimTestData.Real.Get(world.ReachedEra).Id);
-        Assert.Equal(3, Construction.SettlementPopulation(sim));
+        Assert.Equal("village", SimTestData.Real.Get(world.ReachedEra).Id); // four residents
+        Assert.Equal(4, Construction.SettlementPopulation(sim));
 
         var house1 = new EntityId(2, 1);
         var house2 = new EntityId(3, 1);
+        var storage = new EntityId(4, 1);
+        var field = new EntityId(5, 1);
         (string Name, string Profession, int[] Skills, EntityId Home, Core.Residents.ResidentState State)[] expected =
         [
             ("Osric", "blacksmith", [3, 6, 0, 0, 4, 2, 4, 2, 3, 0, 3, 2], house1, Core.Residents.ResidentState.Idle),
-            ("Loris", "lumberjack", [1, 5, 5, 0, 6, 3, 4, 0, 4, 4, 0, 4], house1, Core.Residents.ResidentState.Idle),
-            ("Brina", "farmer", [6, 6, 5, 1, 4, 3, 1, 2, 0, 0, 0, 6], house2, Core.Residents.ResidentState.Arriving),
+            ("Loris", "lumberjack", [1, 5, 5, 0, 6, 3, 4, 0, 4, 4, 0, 4], house1, Core.Residents.ResidentState.Working),
+            ("Merrin", "farmer", [5, 2, 6, 6, 5, 1, 4, 3, 1, 2, 0, 0], house2, Core.Residents.ResidentState.Working),
+            ("Wilmer", "stonemason", [5, 5, 0, 2, 6, 6, 5, 2, 2, 0, 6, 6], house2, Core.Residents.ResidentState.Arriving),
         ];
-        Assert.Equal([new EntityId(4, 1), new EntityId(5, 1), new EntityId(6, 1)], world.Residents.Entities.ToArray());
+        EntityId[] residents = [new EntityId(6, 1), new EntityId(7, 1), new EntityId(8, 1), new EntityId(9, 1)];
+        Assert.Equal(residents, world.Residents.Entities.ToArray());
         Assert.Equal(expected, world.Residents.Values.ToArray().Select(r => (Core.Residents.ResidentRules.NameOf(sim.Content, r),
             sim.Content.Get(r.Profession).Id, r.Skills.ToArray(), r.Home, r.State)));
-        Assert.All(world.Residents.Values.ToArray(), r => Assert.Equal(Core.Residents.Resident.NoJob, r.Job));
-        Mover walk = world.Movers.Get(new EntityId(6, 1));
+        Assert.All(world.Residents.Values.ToArray(), r => Assert.Equal(WorkPriorities.ForProfession(sim.Content.Get<ProfessionDef>(r.Profession)), r.Priorities));
+
+        // Jobs: the lumberjack works its tree with a half load, the farmer works the field; their targets are reserved.
+        Assert.True(SimTestData.Real.TryGetId("wood", out DefId wood));
+        Assert.Equal(new ResidentJob(JobKind.None, JobPhase.None, EntityId.None, -1, EntityId.None, -1, 0, default, 0, V4Frozen.SmithThinks), world.Jobs.Get(residents[0]));
+        Assert.Equal(new ResidentJob(JobKind.Chop, JobPhase.Working, EntityId.None, V4Frozen.Tree, EntityId.None, V4Frozen.Tree, V4Frozen.ChopLeft, wood, 10,
+            V4Frozen.LumberjackThought), world.Jobs.Get(residents[1]));
+        Assert.Equal(new ResidentJob(JobKind.Farm, JobPhase.Working, field, -1, EntityId.None, V4Frozen.FieldTile, V4Frozen.FarmLeft, default, 0,
+            V4Frozen.FarmerThought), world.Jobs.Get(residents[2]));
+        Assert.Equal(
+            [
+                new Reservation(ReservationTarget.OfTile(V4Frozen.Tree), residents[1], default, 1),
+                new Reservation(ReservationTarget.OfBuilding(ReservationLayer.WorkSlot, field), residents[2], default, 1),
+            ],
+            world.Reservations.Reservations);
+        Assert.Empty(world.Reservations.Bans);
+        Assert.Equal(new WorkOutput(V4Frozen.FieldOutput), world.WorkOutputs.Get(field));
+        Assert.Equal([new ComponentEntry<StorageFilter>(storage, new StorageFilter(0b0111))], world.StorageFilters.GetEntries());
+        Assert.Equal(V4Frozen.StoredWood, world.Inventories.Get(storage).Count(wood));
+        Assert.Equal((0, GameWorld.NoLeaveDay), (world.DaysWithoutFood, world.LastLeaveDay));
+        Assert.Equal(new Revealer(RevealerKind.Villager), world.Revealers.Get(residents[3]));
+
+        Mover walk = world.Movers.Get(residents[3]);
         Assert.True(walk.IsMoving);
         Assert.Equal(V4Frozen.NewcomerGoal, walk.Goal);
         Assert.Equal([new PendingCommand(V4Frozen.Tick + 1, V4Frozen.PendingSequence, new SpawnResidentCommand("farmer"))], sim.PendingCommands);
 
-        // It keeps running: the pending spawn makes four residents (a village); the newcomer reaches the campfire.
+        // It keeps running: the pending spawn makes five residents; the newcomer reaches the campfire and goes to work;
+        // the lumberjack hands its load in.
         sim.Step();
-        Assert.Equal("village", Construction.CurrentEra(sim).Id);
-        Heroes.HeroTestWorld.StepUntil(sim, () => world.Residents.Get(new EntityId(6, 1)).State == Core.Residents.ResidentState.Idle);
-        Position at = sim.Positions.Get(new EntityId(6, 1));
-        Assert.Equal(V4Frozen.NewcomerGoal, (at.TileY * 64) + at.TileX);
+        Assert.Equal(5, Construction.SettlementPopulation(sim));
+        Heroes.HeroTestWorld.StepUntil(sim, () => world.Residents.Get(residents[3]).State != Core.Residents.ResidentState.Arriving);
+        Position at = sim.Positions.Get(residents[3]);
         Assert.Equal(1, AgentMovement.Distance(at.TileX, at.TileY, V4Frozen.CampfireX, V4Frozen.CampfireY));
+        Heroes.HeroTestWorld.StepUntil(sim, () => world.Inventories.Get(storage).Count(wood) > V4Frozen.StoredWood);
     }
 
-    // Frozen together with save_v4.sav (values read once from the generated file, never from today's code).
+    // Frozen together with save_v4.sav (values read once from the generated file, never from today's code). The sample
+    // was made again on 16.10.2026 when jobs, reservations, field outputs, storage filters and the food state joined
+    // format v4 before its release (ADR 0007).
     private static class V4Frozen
     {
-        public const long Tick = 11253;            // day 1, 06:00 + 3 ticks: the second morning brought the newcomer
+        public const long Tick = 2253;             // day 0, 06:00 + 3 ticks: the first morning brought the newcomer
         public const string MapHash = "0efbce35c5418c88";
-        public const long PendingSequence = 7;
+        public const long PendingSequence = 11;
         public const int CampfireX = 30;
         public const int CampfireY = 30;
-        public const int NewcomerGoal = 1886;     // tile (30, 29), next to the campfire
+        public const int NewcomerGoal = 1886;      // tile (30, 29), next to the campfire
+        public const int Tree = 1110;              // tile (22, 17)
+        public const int ChopLeft = 35375;
+        public const long LumberjackThought = 2129;
+        public const int FieldTile = 1891;         // tile (35, 29), the field's nearest tile
+        public const int FarmLeft = 14750;
+        public const long FarmerThought = 1917;
+        public const long SmithThinks = 2262;
+        public const int FieldOutput = 24;
+        public const int StoredWood = 141;
     }
 
     private static void CreateV4SampleIfMissing()

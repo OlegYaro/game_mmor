@@ -16,6 +16,15 @@ public enum ResidentEventKind : byte
 
     /// <summary>A homeless resident (or one whose house was demolished) moved into a house with a free place.</summary>
     Housed = 3,
+
+    /// <summary>
+    /// The settlement went hungry too long (A5): the resident gave up its home and job and walks away (state
+    /// <see cref="ResidentState.Leaving"/>).
+    /// </summary>
+    LeftHungry = 4,
+
+    /// <summary>A leaving resident reached the edge of the settlement's world and is gone.</summary>
+    Left = 5,
 }
 
 /// <summary>

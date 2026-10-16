@@ -1,9 +1,11 @@
 using Core.Buildings;
 using Core.Content;
 using Core.Determinism;
+using Core.Economy;
 using Core.Entities;
 using Core.Fog;
 using Core.Heroes;
+using Core.Jobs;
 using Core.Residents;
 using Core.Sim;
 using Core.Tiles;
@@ -93,25 +95,61 @@ internal static class SaveMapper
 
         BuildingEntryDto[] buildings = world is null ? [] : world.Buildings.Select(e => ToDto(e, content)).ToArray();
         ResidentEntryDto[] residents = world is null ? [] : world.Residents.Select(e => ToDto(e, content)).ToArray();
+        JobEntryDto[] jobs = world is null ? [] : world.Jobs.Select(e => ToDto(e, content)).ToArray();
+        WorkOutputEntryDto[] outputs = world is null ? [] : world.WorkOutputs
+            .Select(e => new WorkOutputEntryDto(e.Entity.Index, e.Entity.Generation, e.Value.Count)).ToArray();
+        StorageFilterEntryDto[] filters = world is null ? [] : world.StorageFilters
+            .Select(e => new StorageFilterEntryDto(e.Entity.Index, e.Entity.Generation, CategoryNames(e.Value.Categories))).ToArray();
+        ReservationsState reservations = world?.Reservations ?? ReservationsState.Empty;
 
         return new SaveBodyDto(
             state.Tick,
             rng,
             new EntitiesDto(state.Entities.Generations.ToArray(), state.Entities.Alive.ToArray()),
-            new ComponentsDto(positions, revealers, heroes, inventories, movers, buildings, residents),
+            new ComponentsDto(positions, revealers, heroes, inventories, movers, buildings, residents, jobs, outputs, filters),
             new CommandQueueDto(state.NextCommandSequence, pending),
             new GameDto(DifficultyNames.ToName(state.Difficulty), world?.MapSize ?? 0, world?.MapHash ?? 0),
             new FogDto(exploredRuns),
             ToDto(world?.Tiles ?? TileChangesState.Empty),
-            new SettlementDto(world is null ? string.Empty : content.Get(world.ReachedEra).Id));
+            new SettlementDto(world is null ? string.Empty : content.Get(world.ReachedEra).Id, world?.DaysWithoutFood ?? 0,
+                world?.LastLeaveDay ?? Sim.GameWorld.NoLeaveDay),
+            new JobsDto(
+                reservations.Reservations.Select(r => new ReservationDto(NameOf(ReservationManager.LayerNames, (int)r.Target.Layer, "reservation layer"),
+                    r.Target.Index, r.Target.Generation, r.Holder.Index, r.Holder.Generation, ItemName(content, r.Item), r.Amount)).ToArray(),
+                reservations.Bans.Select(b => new JobBanDto(b.Holder.Index, b.Holder.Generation,
+                    NameOf(ReservationManager.LayerNames, (int)b.Target.Layer, "reservation layer"), b.Target.Index, b.Target.Generation, b.UntilTick)).ToArray()));
     }
 
     private static ResidentEntryDto ToDto(ComponentEntry<Resident> entry, ContentCatalog content)
     {
         Resident r = entry.Value;
+        var priorities = new List<WorkPriorityDto>();
+        for (int k = 1; k <= JobKinds.Count; k++)
+        {
+            int priority = r.Priorities.Get((JobKind)k);
+            if (priority > 0)
+            {
+                priorities.Add(new WorkPriorityDto(JobKinds.NameOf((JobKind)k), priority));
+            }
+        }
+
         return new ResidentEntryDto(entry.Entity.Index, entry.Entity.Generation, ResidentRules.NameOf(content, r), content.Get(r.Profession).Id,
-            r.Skills.ToArray(), r.Home.Index, r.Home.Generation, NameOf(ResidentStateNames, (int)r.State, "resident state"), r.Job);
+            r.Skills.ToArray(), r.Home.Index, r.Home.Generation, NameOf(ResidentStateNames, (int)r.State, "resident state"), priorities);
     }
+
+    private static JobEntryDto ToDto(ComponentEntry<ResidentJob> entry, ContentCatalog content)
+    {
+        ResidentJob j = entry.Value;
+        return new JobEntryDto(entry.Entity.Index, entry.Entity.Generation, NameOf(JobKinds.Names, (int)j.Kind, "job kind"),
+            NameOf(JobKinds.PhaseNames, (int)j.Phase, "job phase"), j.Building.Index, j.Building.Generation, j.TargetTile, j.Storage.Index,
+            j.Storage.Generation, j.GoalTile, j.WorkLeft, ItemName(content, j.CarryItem), j.CarryCount, j.NextThinkTick);
+    }
+
+    // An item id, or the empty string for none.
+    private static string ItemName(ContentCatalog content, DefId item) => item == default ? string.Empty : content.Get(item).Id;
+
+    private static string[] CategoryNames(int categories) =>
+        ItemCategories.All.Where((_, i) => (categories & (1 << i)) != 0).ToArray();
 
     private static HeroEntryDto ToDto(ComponentEntry<Hero> entry)
     {
@@ -222,10 +260,13 @@ internal static class SaveMapper
         {
             if (body.Game.MapHash != 0 || body.Fog.ExploredRuns.Count != 0 || components.Revealer.Count != 0 || components.Hero.Count != 0
                 || components.Inventory.Count != 0 || components.Mover.Count != 0 || components.Building.Count != 0 || body.Tiles.Resources.Count != 0
-                || body.Tiles.Occupancy.Count != 0 || components.Resident.Count != 0 || body.Settlement.ReachedEra.Length != 0)
+                || body.Tiles.Occupancy.Count != 0 || components.Resident.Count != 0 || body.Settlement.ReachedEra.Length != 0
+                || components.Job.Count != 0 || components.WorkOutput.Count != 0 || components.StorageFilter.Count != 0
+                || body.Jobs.Reservations.Count != 0 || body.Jobs.Bans.Count != 0 || body.Settlement.DaysWithoutFood != 0
+                || body.Settlement.LastLeaveDay != Sim.GameWorld.NoLeaveDay)
             {
                 throw new InvalidDataException(
-                    "A save without a world (mapSize 0) must have mapHash 0, no fog runs, revealers, hero, building or resident components, tile changes or reached era.");
+                    "A save without a world (mapSize 0) must have mapHash 0, no fog runs, components of the world, tile changes, reached era, jobs or food state.");
             }
 
             return null;
@@ -258,7 +299,82 @@ internal static class SaveMapper
             components.Building.Select(b => ToBuilding(b, content)).ToArray(),
             ToTiles(body.Tiles),
             components.Resident.Select(r => ToResident(r, content)).ToArray(),
-            ToEra(body.Settlement.ReachedEra, content));
+            ToEra(body.Settlement.ReachedEra, content),
+            components.Job.Select(j => ToJob(j, content)).ToArray(),
+            components.WorkOutput.Select(ToWorkOutput).ToArray(),
+            components.StorageFilter.Select(ToStorageFilter).ToArray(),
+            ToReservations(body.Jobs, content),
+            body.Settlement.DaysWithoutFood,
+            body.Settlement.LastLeaveDay);
+    }
+
+    private static ComponentEntry<ResidentJob> ToJob(JobEntryDto? dto, ContentCatalog content)
+    {
+        NotNull(dto, "job entry");
+        return new ComponentEntry<ResidentJob>(new EntityId(dto.Index, dto.Generation), new ResidentJob(
+            (JobKind)ValueOf(JobKinds.Names, dto.Kind, "job kind"), (JobPhase)ValueOf(JobKinds.PhaseNames, dto.Phase, "job phase"),
+            new EntityId(dto.BuildingIndex, dto.BuildingGeneration), dto.TargetTile, new EntityId(dto.StorageIndex, dto.StorageGeneration),
+            dto.GoalTile, dto.WorkLeft, ToItem(dto.CarryItem, content), dto.CarryCount, dto.NextThinkTick));
+    }
+
+    private static ComponentEntry<WorkOutput> ToWorkOutput(WorkOutputEntryDto? dto)
+    {
+        NotNull(dto, "work output entry");
+        return new ComponentEntry<WorkOutput>(new EntityId(dto.Index, dto.Generation), new WorkOutput(dto.Count));
+    }
+
+    private static ComponentEntry<StorageFilter> ToStorageFilter(StorageFilterEntryDto? dto)
+    {
+        NotNull(dto, "storage filter entry");
+        int mask = 0;
+        int previous = -1;
+        foreach (string? name in dto.Categories)
+        {
+            int category = IndexOf(ItemCategories.All, name ?? string.Empty);
+            if (category <= previous)
+            {
+                throw new InvalidDataException($"Storage filter category '{name}' is unknown, repeated or out of order.");
+            }
+
+            previous = category;
+            mask |= 1 << category;
+        }
+
+        return new ComponentEntry<StorageFilter>(new EntityId(dto.Index, dto.Generation), new StorageFilter(mask));
+    }
+
+    private static ReservationsState ToReservations(JobsDto jobs, ContentCatalog content)
+    {
+        var reservations = new Reservation[jobs.Reservations.Count];
+        for (int i = 0; i < reservations.Length; i++)
+        {
+            ReservationDto? r = jobs.Reservations[i];
+            NotNull(r, "reservation");
+            var target = new ReservationTarget((ReservationLayer)ValueOf(ReservationManager.LayerNames, r.Layer, "reservation layer"), r.Index, r.Generation);
+            reservations[i] = new Reservation(target, new EntityId(r.HolderIndex, r.HolderGeneration), ToItem(r.Item, content), r.Amount);
+        }
+
+        var bans = new JobBan[jobs.Bans.Count];
+        for (int i = 0; i < bans.Length; i++)
+        {
+            JobBanDto? b = jobs.Bans[i];
+            NotNull(b, "job ban");
+            var target = new ReservationTarget((ReservationLayer)ValueOf(ReservationManager.LayerNames, b.Layer, "reservation layer"), b.Index, b.Generation);
+            bans[i] = new JobBan(new EntityId(b.HolderIndex, b.HolderGeneration), target, b.UntilTick);
+        }
+
+        return new ReservationsState(reservations, bans);
+    }
+
+    // An item id, or default for the empty string.
+    private static DefId ToItem(string item, ContentCatalog content)
+    {
+        if (item.Length == 0)
+        {
+            return default;
+        }
+
+        return content.TryGetId(item, out DefId id) && content.Get(id) is ItemDef ? id : throw new InvalidDataException($"Unknown item '{item}'.");
     }
 
     private static DefId ToEra(string id, ContentCatalog content) =>
@@ -288,8 +404,22 @@ internal static class SaveMapper
             throw new InvalidDataException($"Resident skills are invalid: {ex.Message}", ex);
         }
 
+        var priorities = default(WorkPriorities);
+        JobKind previous = JobKind.None;
+        foreach (WorkPriorityDto? entry in dto.Priorities)
+        {
+            NotNull(entry, "work priority");
+            if (!JobKinds.TryParse(entry.Job, out JobKind kind) || kind <= previous || entry.Priority is < 1 or > WorkPriorities.Max)
+            {
+                throw new InvalidDataException($"Work priority '{entry.Job}' {entry.Priority} is unknown, repeated, out of order or out of range.");
+            }
+
+            previous = kind;
+            priorities = priorities.With(kind, entry.Priority);
+        }
+
         return new ComponentEntry<Resident>(new EntityId(dto.Index, dto.Generation), new Resident(name, profession, skills,
-            new EntityId(dto.HomeIndex, dto.HomeGeneration), (ResidentState)ValueOf(ResidentStateNames, dto.State, "resident state"), dto.Job));
+            new EntityId(dto.HomeIndex, dto.HomeGeneration), (ResidentState)ValueOf(ResidentStateNames, dto.State, "resident state"), priorities));
     }
 
     private static ComponentEntry<Building> ToBuilding(BuildingEntryDto? dto, ContentCatalog content)

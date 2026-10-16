@@ -105,10 +105,12 @@ internal sealed class SaveMigrationV2ToV3 : ISaveMigration
 }
 
 /// <summary>
-/// v3 → v4 (M3a, FR-NPC-01, FR-NPC-02). Adds an empty <c>components.resident</c> store and
-/// <c>settlement = {reachedEra}</c>: v3 games had no residents, so a game with a world has reached the first era
-/// (<c>camp</c>), and a simulation without a world (<c>game.mapSize</c> 0) has none (empty string). The header is
-/// unchanged. Frozen: never edit after release.
+/// v3 → v4 (M3a, FR-NPC-01, FR-NPC-02, FR-NPC-06, FR-NPC-07, FR-ECO-01, FR-ECO-10). Adds empty
+/// <c>components.resident</c>, <c>components.job</c>, <c>components.workOutput</c> and <c>components.storageFilter</c>
+/// stores, empty <c>jobs = {reservations: [], bans: []}</c> and <c>settlement = {reachedEra, daysWithoutFood: 0,
+/// lastLeaveDay: -1}</c>: v3 games had no residents, no fields and no filters, so a game with a world has reached the
+/// first era (<c>camp</c>), and a simulation without a world (<c>game.mapSize</c> 0) has none (empty string). A field
+/// cannot be in a v3 save (it came with M3a). The header is unchanged. Frozen: never edit after release.
 /// </summary>
 internal sealed class SaveMigrationV3ToV4 : ISaveMigration
 {
@@ -124,16 +126,27 @@ internal sealed class SaveMigrationV3ToV4 : ISaveMigration
             throw new InvalidOperationException("v3 body has no 'components' or 'game' object.");
         }
 
-        if (body.ContainsKey("settlement") || components.ContainsKey("resident"))
+        if (body.ContainsKey("settlement") || body.ContainsKey("jobs") || components.ContainsKey("resident") || components.ContainsKey("job")
+            || components.ContainsKey("workOutput") || components.ContainsKey("storageFilter"))
         {
-            throw new InvalidOperationException("v3 body already has v4 members ('settlement' or 'components.resident').");
+            throw new InvalidOperationException("v3 body already has v4 members ('settlement', 'jobs' or 'components.resident', 'job', 'workOutput', 'storageFilter').");
         }
 
         bool hasWorld = game["mapSize"] is JsonValue size && size.TryGetValue(out int mapSize) && mapSize != 0;
         components["resident"] = new JsonArray();
+        components["job"] = new JsonArray();
+        components["workOutput"] = new JsonArray();
+        components["storageFilter"] = new JsonArray();
         body["settlement"] = new JsonObject
         {
             ["reachedEra"] = hasWorld ? "camp" : string.Empty,
+            ["daysWithoutFood"] = 0,
+            ["lastLeaveDay"] = -1,
+        };
+        body["jobs"] = new JsonObject
+        {
+            ["reservations"] = new JsonArray(),
+            ["bans"] = new JsonArray(),
         };
     }
 }

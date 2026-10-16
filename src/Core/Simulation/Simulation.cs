@@ -41,8 +41,9 @@ public sealed record SimulationState(
 /// <remarks>
 /// <para>Two kinds exist. A game (<see cref="CreateNewGame"/>) has a <see cref="World"/>: generated map, tile changes,
 /// fog of war, revealers, the hero, buildings, residents and a difficulty; it adds the <c>game</c>, <c>fog</c>,
-/// <c>tiles</c> and <c>residents</c> hash subsystems and the <c>revealer</c>, <c>hero</c>, <c>inventory</c>,
-/// <c>mover</c>, <c>building</c> and <c>resident</c> stores. A core simulation (the constructor; M0 tests and replays)
+/// <c>tiles</c>, <c>residents</c>, <c>jobs</c> and <c>economy</c> hash subsystems and the <c>revealer</c>, <c>hero</c>,
+/// <c>inventory</c>, <c>mover</c>, <c>building</c>, <c>resident</c>, <c>job</c>, <c>work_output</c> and
+/// <c>storage_filter</c> stores. A core simulation (the constructor; M0 tests and replays)
 /// has no world and keeps exactly the M0 state layout.</para>
 /// <para><see cref="Tick"/> is the number of the last executed tick; it is 0 before the first <see cref="Step"/>.
 /// <see cref="Step"/> first increments it, then runs the systems for the new value.</para>
@@ -81,6 +82,12 @@ public sealed class Simulation : IStateHashable
     /// <summary>Hash subsystem (games only): the reached era and the resident components.</summary>
     public const string ResidentsHashName = "residents";
 
+    /// <summary>Hash subsystem (games only): reservations and banned targets of the job board.</summary>
+    public const string JobsHashName = "jobs";
+
+    /// <summary>Hash subsystem (games only): the food state (days without food, last leave day).</summary>
+    public const string EconomyHashName = "economy";
+
     /// <summary>Name of the <see cref="Position"/> store.</summary>
     public const string PositionStoreName = "position";
 
@@ -102,6 +109,15 @@ public sealed class Simulation : IStateHashable
     /// <summary>Name of the <see cref="Resident"/> store (games only; registered after <see cref="BuildingStoreName"/>).</summary>
     public const string ResidentStoreName = "resident";
 
+    /// <summary>Name of the <see cref="Jobs.ResidentJob"/> store (games only; registered after <see cref="ResidentStoreName"/>).</summary>
+    public const string JobStoreName = "job";
+
+    /// <summary>Name of the <see cref="Economy.WorkOutput"/> store (games only; registered after <see cref="JobStoreName"/>).</summary>
+    public const string WorkOutputStoreName = "work_output";
+
+    /// <summary>Name of the <see cref="Economy.StorageFilter"/> store (games only; registered after <see cref="WorkOutputStoreName"/>).</summary>
+    public const string StorageFilterStoreName = "storage_filter";
+
     private const string EcbCategory = "ecb";
 
     private readonly ISimSystem[] _systems;
@@ -112,6 +128,7 @@ public sealed class Simulation : IStateHashable
     private readonly StateWriterAdapter _commandState;
     private readonly StateWriterAdapter _gameState;
     private readonly StateWriterAdapter _residentState;
+    private readonly StateWriterAdapter _economyState;
     private long _nextSequence;
     private bool _stepping;
 
@@ -156,6 +173,7 @@ public sealed class Simulation : IStateHashable
         _commandState = new StateWriterAdapter(WriteCommandState);
         _gameState = new StateWriterAdapter(WriteGameState);
         _residentState = new StateWriterAdapter(w => World?.WriteResidentState(w));
+        _economyState = new StateWriterAdapter(w => World?.WriteEconomyState(w));
     }
 
     /// <summary>World seed.</summary>
@@ -281,6 +299,8 @@ public sealed class Simulation : IStateHashable
             HeroRules.Restore(sim, state.World);
             BuildingRules.Restore(sim, state.World);
             ResidentRules.Restore(sim, state.World);
+            Economy.EconomyRules.Restore(sim, state.World);
+            Jobs.JobRules.Restore(sim, state.World);
         }
 
         long previousTick = state.Tick + 1;
@@ -381,7 +401,9 @@ public sealed class Simulation : IStateHashable
                 ? null
                 : new WorldState(World.Size, World.Map.Version, World.MapHash, World.Fog.CopyExplored(), World.Revealers.GetEntries(),
                     World.Heroes.GetEntries(), World.Inventories.GetEntries(), World.Movers.GetEntries(), World.Buildings.GetEntries(),
-                    World.Tiles.CaptureState(), World.Residents.GetEntries(), World.ReachedEra));
+                    World.Tiles.CaptureState(), World.Residents.GetEntries(), World.ReachedEra, World.Jobs.GetEntries(),
+                    World.WorkOutputs.GetEntries(), World.StorageFilters.GetEntries(), World.Reservations.CaptureState(), World.DaysWithoutFood,
+                    World.LastLeaveDay));
     }
 
     /// <summary>Queues a command for tick <c><see cref="Tick"/> + 1</c> (also when called from inside a step).</summary>
@@ -439,8 +461,8 @@ public sealed class Simulation : IStateHashable
 
     /// <summary>
     /// Hashes of each subsystem in fixed order: calendar, rng, entities, components, commands, and for a game also
-    /// game (difficulty, map identity), fog, tiles and residents (reached era and resident components). The log is
-    /// excluded (see <see cref="SimLog"/>).
+    /// game (difficulty, map identity), fog, tiles, residents (reached era and resident components), jobs
+    /// (reservations, bans) and economy (food state). The log is excluded (see <see cref="SimLog"/>).
     /// </summary>
     public SubsystemHashes ComputeHashes() => World is null
         ? _hasher.HashSubsystems(
@@ -458,7 +480,9 @@ public sealed class Simulation : IStateHashable
             (GameHashName, _gameState),
             (FogHashName, World.Fog),
             (TilesHashName, World.Tiles),
-            (ResidentsHashName, _residentState));
+            (ResidentsHashName, _residentState),
+            (JobsHashName, World.Reservations),
+            (EconomyHashName, _economyState));
 
     /// <summary>Writes the full canonical state: each subsystem of <see cref="ComputeHashes"/>, in the same order.</summary>
     public void WriteState(StateWriter writer)
@@ -475,6 +499,8 @@ public sealed class Simulation : IStateHashable
             World.Fog.WriteState(writer);
             World.Tiles.WriteState(writer);
             World.WriteResidentState(writer);
+            World.Reservations.WriteState(writer);
+            World.WriteEconomyState(writer);
         }
     }
 
@@ -515,8 +541,10 @@ public sealed class Simulation : IStateHashable
         new ClockSystem(),
         new CommandSystem(),
         new ConstructionSystem(),
+        new EconomySystem(),
         new ResidentSystem(),
         new MovementSystem(),
+        new JobSystem(),
         new GatherSystem(),
         new FogSystem(),
     ];

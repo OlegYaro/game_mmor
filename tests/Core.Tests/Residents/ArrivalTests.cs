@@ -98,7 +98,9 @@ public sealed class ArrivalTests
         Assert.Equal(ResidentRules.NameOf(sim.Content, resident), arrived.Name);
         Assert.Contains(arrived.Name, Assert.Single(sim.Content.Names).Names);
         Assert.All(resident.Skills.ToArray(), level => Assert.InRange(level, 0, sim.Content.Economy.InitialSkillMax));
-        Assert.Equal(Resident.NoJob, resident.Job);
+        Assert.Equal(Core.Jobs.WorkPriorities.ForProfession(sim.Content.Get<ProfessionDef>(resident.Profession)), resident.Priorities);
+        Assert.Equal(Core.Jobs.ResidentJob.Idle(sim.Tick), sim.World.Jobs.Get(newcomer));
+        Assert.Equal(new Core.Fog.Revealer(Core.Fog.RevealerKind.Villager), sim.World.Revealers.Get(newcomer));
         Mover mover = sim.World.Movers.Get(newcomer);
         Assert.True(mover.IsMoving);
         Assert.Contains(mover.Goal, Arrivals.MeetingTiles(sim));

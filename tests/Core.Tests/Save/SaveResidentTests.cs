@@ -82,12 +82,13 @@ public sealed class SaveResidentTests
         Assert.Equal("village", (string?)body["settlement"]!["reachedEra"]); // five residents
         Assert.Equal(5, residents.Count);
         Assert.Equal(
-            ["index", "generation", "name", "profession", "skills", "homeIndex", "homeGeneration", "state", "job"],
+            ["index", "generation", "name", "profession", "skills", "homeIndex", "homeGeneration", "state", "priorities"],
             residents[0]!.AsObject().Select(p => p.Key));
         Assert.Equal(["carrier", "blacksmith", "farmer", "stonemason", "carrier"], residents.Select(r => (string?)r!["profession"]));
-        Assert.Equal(["idle", "idle", "idle", "arriving", "idle"], residents.Select(r => (string?)r!["state"]));
+        Assert.Equal("arriving", (string?)residents[3]!["state"]);
+        Assert.Equal(sim.World!.Residents.Values.ToArray().Select(r => SaveMapper.ResidentStateNames[(int)r.State]), residents.Select(r => (string?)r!["state"]));
         Assert.Equal((0, 0), ((int)residents[4]!["homeIndex"]!, (int)residents[4]!["homeGeneration"]!));
-        ReadOnlySpan<EntityId> owners = sim.World!.Residents.Entities;
+        ReadOnlySpan<EntityId> owners = sim.World.Residents.Entities;
         for (int i = 0; i < owners.Length; i++)
         {
             Resident resident = sim.World.Residents.Values[i];
@@ -95,7 +96,9 @@ public sealed class SaveResidentTests
             Assert.Equal(ResidentRules.NameOf(sim.Content, resident), (string?)saved["name"]);
             Assert.Equal(resident.Skills.ToArray(), saved["skills"]!.AsArray().Select(s => (int)s!));
             Assert.Equal((resident.Home.Index, resident.Home.Generation), ((int)saved["homeIndex"]!, (int)saved["homeGeneration"]!));
-            Assert.Equal(0, (int)saved["job"]!);
+            ProfessionDef profession = sim.Content.Get<ProfessionDef>(resident.Profession);
+            Assert.Equal(profession.JobTypes.Order(StringComparer.Ordinal), saved["priorities"]!.AsArray().Select(p => (string)p!["job"]!).Order(StringComparer.Ordinal));
+            Assert.All(saved["priorities"]!.AsArray(), p => Assert.Equal(1, (int)p!["priority"]!));
         }
     }
 
@@ -109,7 +112,7 @@ public sealed class SaveResidentTests
     [InlineData("unknown state")]
     [InlineData("home is not a house")]
     [InlineData("home is gone")]
-    [InlineData("a job without a job board")]
+    [InlineData("leaving but housed")]
     [InlineData("too many in one house")]
     [InlineData("no mover")]
     [InlineData("dead owner")]
@@ -133,7 +136,7 @@ public sealed class SaveResidentTests
                 case "unknown state": first["state"] = "dancing"; break;
                 case "home is not a house": first["homeIndex"] = campfire["index"]!.DeepClone(); first["homeGeneration"] = campfire["generation"]!.DeepClone(); break;
                 case "home is gone": first["homeIndex"] = 50; first["homeGeneration"] = 1; break;
-                case "a job without a job board": first["job"] = 3; break;
+                case "leaving but housed": first["state"] = "leaving"; break;
                 case "too many in one house": neighbour["homeIndex"] = first["homeIndex"]!.DeepClone(); neighbour["homeGeneration"] = first["homeGeneration"]!.DeepClone(); break;
                 case "no mover":
                     JsonArray movers = body["components"]!["mover"]!.AsArray();

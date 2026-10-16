@@ -46,7 +46,7 @@ public sealed class DevConsoleResidentTests
             $"{first} {ResidentRules.NameOf(sim.Content, resident)} blacksmith idle at {x},{y} | home {house} | skills {string.Join(" ", resident.Skills.ToArray())}",
             list.Lines[2]);
         Assert.StartsWith($"{sim.World.Residents.Entities[1]} ", list.Lines[3], StringComparison.Ordinal); // the automatic one: population 1 picks the second pattern entry
-        Assert.Contains(" lumberjack idle ", list.Lines[3], StringComparison.Ordinal);
+        Assert.Contains(" lumberjack ", list.Lines[3], StringComparison.Ordinal); // already on its way to a tree
     }
 
     [Fact]

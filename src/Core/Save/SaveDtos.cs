@@ -15,8 +15,8 @@ public sealed record SaveHeader(int FormatVersion, string GameVersion, int World
 
 /// <summary>
 /// Save body, format v4 (v1 plus <c>game</c>, <c>fog</c> and the <c>revealer</c> store in v2; plus <c>tiles</c> and the
-/// <c>hero</c>, <c>inventory</c>, <c>mover</c> and <c>building</c> stores in v3; plus <c>settlement</c> and the
-/// <c>resident</c> store in v4).
+/// <c>hero</c>, <c>inventory</c>, <c>mover</c> and <c>building</c> stores in v3; plus <c>settlement</c>, <c>jobs</c> and
+/// the <c>resident</c>, <c>job</c>, <c>workOutput</c> and <c>storageFilter</c> stores in v4).
 /// </summary>
 /// <param name="Tick">Last executed tick.</param>
 /// <param name="Rng">One entry per RNG stream, in stream id order.</param>
@@ -27,6 +27,7 @@ public sealed record SaveHeader(int FormatVersion, string GameVersion, int World
 /// <param name="Fog">Explored fog layer.</param>
 /// <param name="Tiles">Tile changes against the generated map.</param>
 /// <param name="Settlement">State of the player's settlement.</param>
+/// <param name="Jobs">Reservations and banned targets of the job board.</param>
 public sealed record SaveBodyDto(
     long Tick,
     IReadOnlyList<RngStreamDto> Rng,
@@ -36,13 +37,40 @@ public sealed record SaveBodyDto(
     GameDto Game,
     FogDto Fog,
     TilesDto Tiles,
-    SettlementDto Settlement);
+    SettlementDto Settlement,
+    JobsDto Jobs);
 
-/// <summary>State of the player's settlement that is not in a component (FR-BUILD-13).</summary>
+/// <summary>State of the player's settlement that is not in a component (FR-BUILD-13, FR-ECO-10).</summary>
 /// <param name="ReachedEra">
 /// Id of the highest era reached (the era never falls back when residents leave); empty without a world.
 /// </param>
-public sealed record SettlementDto(string ReachedEra);
+/// <param name="DaysWithoutFood">Days in a row the settlement could not eat its fill; 0 without a shortage.</param>
+/// <param name="LastLeaveDay">Day the last hungry resident left in the current shortage; -1 when none did.</param>
+public sealed record SettlementDto(string ReachedEra, int DaysWithoutFood, long LastLeaveDay);
+
+/// <summary>The job board's reservations and bans (FR-NPC-07, ADR 0009), both in key order.</summary>
+/// <param name="Reservations">Reservations by (layer, target index, target generation, holder index, holder generation).</param>
+/// <param name="Bans">Bans by (holder index, holder generation, layer, target index, target generation).</param>
+public sealed record JobsDto(IReadOnlyList<ReservationDto> Reservations, IReadOnlyList<JobBanDto> Bans);
+
+/// <summary>A reservation: a resident holds an amount of a target.</summary>
+/// <param name="Layer">Layer name: <c>tile</c>, <c>work_slot</c>, <c>output</c> or <c>storage</c>.</param>
+/// <param name="Index">Tile index (<c>tile</c>) or the building's slot index.</param>
+/// <param name="Generation">The building's generation; 0 for a tile.</param>
+/// <param name="HolderIndex">The resident's slot index.</param>
+/// <param name="HolderGeneration">The resident's generation.</param>
+/// <param name="Item">Item id of an output or storage reservation; empty otherwise.</param>
+/// <param name="Amount">Items, or 1 for a tile or a work slot.</param>
+public sealed record ReservationDto(string Layer, int Index, int Generation, int HolderIndex, int HolderGeneration, string Item, int Amount);
+
+/// <summary>A target a resident failed to reach and leaves alone until a tick.</summary>
+/// <param name="HolderIndex">The resident's slot index.</param>
+/// <param name="HolderGeneration">The resident's generation.</param>
+/// <param name="Layer">Layer name of the target (see <see cref="ReservationDto.Layer"/>).</param>
+/// <param name="Index">Tile index or the building's slot index.</param>
+/// <param name="Generation">The building's generation; 0 for a tile.</param>
+/// <param name="UntilTick">First tick at which the target is allowed again.</param>
+public sealed record JobBanDto(int HolderIndex, int HolderGeneration, string Layer, int Index, int Generation, long UntilTick);
 
 /// <summary>
 /// New-game parameters and the identity of the map (FR-SAVE-05). The map itself is not saved: it is regenerated from
@@ -104,6 +132,9 @@ public sealed record EntitiesDto(IReadOnlyList<int> Generations, IReadOnlyList<b
 /// <param name="Mover">Mover components in ascending entity index order (empty without a world).</param>
 /// <param name="Building">Building components in ascending entity index order (empty without a world).</param>
 /// <param name="Resident">Resident components in ascending entity index order (empty without a world).</param>
+/// <param name="Job">Resident job components in ascending entity index order (empty without a world).</param>
+/// <param name="WorkOutput">Work output components of buildings in ascending entity index order (empty without a world).</param>
+/// <param name="StorageFilter">Storage filter components in ascending entity index order (empty without a world).</param>
 public sealed record ComponentsDto(
     IReadOnlyList<PositionEntryDto> Position,
     IReadOnlyList<RevealerEntryDto> Revealer,
@@ -111,7 +142,10 @@ public sealed record ComponentsDto(
     IReadOnlyList<InventoryEntryDto> Inventory,
     IReadOnlyList<MoverEntryDto> Mover,
     IReadOnlyList<BuildingEntryDto> Building,
-    IReadOnlyList<ResidentEntryDto> Resident);
+    IReadOnlyList<ResidentEntryDto> Resident,
+    IReadOnlyList<JobEntryDto> Job,
+    IReadOnlyList<WorkOutputEntryDto> WorkOutput,
+    IReadOnlyList<StorageFilterEntryDto> StorageFilter);
 
 /// <summary>One position component with its owner.</summary>
 /// <param name="Index">Owner slot index.</param>
@@ -224,7 +258,7 @@ public sealed record BuildingEntryDto(
 /// <param name="HomeIndex">Home building slot index; 0 with generation 0 when homeless.</param>
 /// <param name="HomeGeneration">Home building generation; 0 when homeless.</param>
 /// <param name="State">State name: <c>arriving</c>, <c>idle</c>, <c>walking</c>, <c>working</c> or <c>leaving</c>.</param>
-/// <param name="Job">Job on the job board; 0 for none.</param>
+/// <param name="Priorities">The job types with a priority above 0, in job type order (haul, chop, plant, quarry, forage, farm).</param>
 public sealed record ResidentEntryDto(
     int Index,
     int Generation,
@@ -234,7 +268,55 @@ public sealed record ResidentEntryDto(
     int HomeIndex,
     int HomeGeneration,
     string State,
-    int Job);
+    IReadOnlyList<WorkPriorityDto> Priorities);
+
+/// <summary>A resident's priority for one job type.</summary>
+/// <param name="Job">Job type name.</param>
+/// <param name="Priority">1 (highest) to 4.</param>
+public sealed record WorkPriorityDto(string Job, int Priority);
+
+/// <summary>One resident's job and load (FR-NPC-06, ADR 0009). Its reservations are in <see cref="JobsDto"/>.</summary>
+/// <param name="Index">Owner slot index.</param>
+/// <param name="Generation">Owner generation.</param>
+/// <param name="Kind">Job type name, or <c>none</c>.</param>
+/// <param name="Phase">Phase name: <c>none</c>, <c>to_target</c>, <c>working</c> or <c>to_storage</c>.</param>
+/// <param name="BuildingIndex">Slot index of the field or the hauled building; 0 with generation 0 for none.</param>
+/// <param name="BuildingGeneration">Generation of that building; 0 for none.</param>
+/// <param name="TargetTile">Node tile index of a gathering job; -1 otherwise.</param>
+/// <param name="StorageIndex">Slot index of the storage the load goes to; 0 with generation 0 for none.</param>
+/// <param name="StorageGeneration">Generation of that storage; 0 for none.</param>
+/// <param name="GoalTile">Tile the resident walks to or works next to; -1 without one.</param>
+/// <param name="WorkLeft">Work left in the current action or cycle, in thousandths of a tick at base speed.</param>
+/// <param name="CarryItem">Item id of the load; empty when carrying nothing.</param>
+/// <param name="CarryCount">Items carried.</param>
+/// <param name="NextThinkTick">First tick at which an idle resident looks for work again.</param>
+public sealed record JobEntryDto(
+    int Index,
+    int Generation,
+    string Kind,
+    string Phase,
+    int BuildingIndex,
+    int BuildingGeneration,
+    int TargetTile,
+    int StorageIndex,
+    int StorageGeneration,
+    int GoalTile,
+    int WorkLeft,
+    string CarryItem,
+    int CarryCount,
+    long NextThinkTick);
+
+/// <summary>Items waiting in the output of a building where residents work (a field).</summary>
+/// <param name="Index">Owner slot index.</param>
+/// <param name="Generation">Owner generation.</param>
+/// <param name="Count">Items of the level's work item waiting.</param>
+public sealed record WorkOutputEntryDto(int Index, int Generation, int Count);
+
+/// <summary>The item categories a storage takes in (FR-ECO-01); a storage without an entry takes every category.</summary>
+/// <param name="Index">Owner slot index.</param>
+/// <param name="Generation">Owner generation.</param>
+/// <param name="Categories">Allowed category names in category order (resource, food, material, currency); may be empty.</param>
+public sealed record StorageFilterEntryDto(int Index, int Generation, IReadOnlyList<string> Categories);
 
 /// <summary>The command queue.</summary>
 /// <param name="NextSequence">Sequence number of the next enqueued command.</param>
