@@ -272,10 +272,6 @@ internal static class JobRules
                 {
                     End(sim, world, entity, ref job, "the output was empty");
                 }
-                else if (!Storages.Accepts(sim, job.Storage, job.CarryItem))
-                {
-                    End(sim, world, entity, ref job, "the storage is gone; the load is hauled elsewhere");
-                }
                 else if (!TryPlanTo(sim, world, entity, job.Storage, out int goal))
                 {
                     Fail(sim, world, entity, ref job, ReservationTarget.OfBuilding(ReservationLayer.Storage, job.Storage));
@@ -809,9 +805,16 @@ internal static class JobRules
             return world.Tiles.CanPlant(grid.XOf(job.TargetTile), grid.YOf(job.TargetTile));
         }
 
-        return job.Kind == JobKind.Farm
-            ? TryGetWorkplace(sim, world, job.Building, JobKind.Farm, out _, out _)
-            : world.Buildings.TryGet(job.Building, out Building source) && source.State == BuildingState.Active && world.WorkOutputs.Has(job.Building);
+        if (job.Kind == JobKind.Farm)
+        {
+            return TryGetWorkplace(sim, world, job.Building, JobKind.Farm, out _, out _);
+        }
+
+        // A haul on its way to the source also needs the storage it reserved room in (review R1 of M3a): a storage that
+        // is gone or no longer takes the item ends the job here, in the tick it changed, so a saved haul always has its
+        // storage (IsValid) and the carrier looks for the haul again with another storage.
+        return world.Buildings.TryGet(job.Building, out Building source) && source.State == BuildingState.Active && world.WorkOutputs.Has(job.Building)
+            && Construction.LevelOf(sim.Content, source).Work is { } work && Storages.Accepts(sim, job.Storage, ItemId(sim.Content, work.Item));
     }
 
     // An active building of the player's settlement where residents do `kind`, with its output store.
@@ -882,9 +885,11 @@ internal static class JobRules
             ? job.CarryItem == default
             : job.CarryCount > 0 && job.CarryCount <= sim.Content.Economy.HaulCapacity && job.CarryItem.Value >= 1
                 && job.CarryItem.Value <= sim.Content.Count && sim.Content.Get(job.CarryItem) is ItemDef;
-        bool storageOk = job.Phase == JobPhase.ToStorage
-            ? job.CarryCount > 0 && world.Buildings.TryGet(job.Storage, out Building storage) && Construction.IsStorage(Construction.DefOf(sim.Content, storage))
-            : job.Kind == JobKind.Haul && job.Phase == JobPhase.ToTarget ? world.Buildings.Has(job.Storage) : job.Storage == EntityId.None;
+        // Live play ends a job whose storage is gone in the tick it went (IsTargetValid), so a saved job heading for a
+        // storage, or a haul on its way to the source with room reserved, always names a storage building.
+        bool storageOk = job.Phase == JobPhase.ToStorage ? job.CarryCount > 0 && IsStorageBuilding(sim, world, job.Storage)
+            : job.Kind == JobKind.Haul && job.Phase == JobPhase.ToTarget ? IsStorageBuilding(sim, world, job.Storage)
+            : job.Storage == EntityId.None;
         bool workOk = job.Phase == JobPhase.Working ? job.WorkLeft > 0 : job.WorkLeft == 0;
         bool goalOk = job.Kind == JobKind.None ? job.GoalTile == -1 : job.GoalTile >= 0 && job.GoalTile < tiles;
         bool shapeOk = job.Kind switch
@@ -905,6 +910,9 @@ internal static class JobRules
         return Enum.IsDefined(job.Kind) && Enum.IsDefined(job.Phase) && carryOk && storageOk && workOk && goalOk && shapeOk && leavingOk
             && looksOk && job.NextThinkTick >= 0;
     }
+
+    private static bool IsStorageBuilding(Simulation sim, GameWorld world, EntityId entity) =>
+        world.Buildings.TryGet(entity, out Building building) && Construction.IsStorage(Construction.DefOf(sim.Content, building));
 
     private static int HeldAmount(GameWorld world, EntityId holder, ReservationTarget target)
     {

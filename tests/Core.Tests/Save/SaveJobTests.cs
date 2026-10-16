@@ -72,6 +72,46 @@ public sealed class SaveJobTests
         Assert.Contains(sim.World!.Jobs.Values.ToArray(), j => j.Kind == JobKind.Farm);
     }
 
+    /// <summary>
+    /// Review R1 of M3a: a carrier walks to a field (haul, to the target) with room reserved in storage B; B is demolished.
+    /// The job ends in that tick (its reservations with it) and the carrier takes the haul again with the other storage,
+    /// so a save made right after loads and continues like the uninterrupted game.
+    /// </summary>
+    [Fact]
+    [Trait("Req", "FR-SAVE-04")]
+    [Trait("Req", "FR-NPC-07")]
+    public void ACarrierWhoseStorageIsDemolishedOnTheWayToTheFieldTakesTheHaulAgainAndTheGameSaves()
+    {
+        (Simulation sim, EntityId first) = NewSettlement();
+        EntityId second = Build(sim, "storage");
+        EntityId field = Build(sim, "field");
+        sim.World!.WorkOutputs.Get(field) = new WorkOutput(10);
+        EntityId carrier = Spawn(sim, "carrier");
+        StepUntil(sim, () => JobOf(sim, carrier) is { Kind: JobKind.Haul, Phase: JobPhase.ToTarget });
+        EntityId reserved = JobOf(sim, carrier).Storage;
+        EntityId other = reserved == first ? second : first;
+
+        sim.Enqueue(new DemolishBuildingCommand(reserved));
+        sim.Step();
+
+        Assert.False(sim.World.Buildings.Has(reserved));
+        Assert.DoesNotContain(sim.World.Reservations.Reservations, r => r.Target == ReservationTarget.OfBuilding(ReservationLayer.Storage, reserved));
+        Assert.Equal((JobKind.Haul, JobPhase.ToTarget, field, other), (JobOf(sim, carrier).Kind, JobOf(sim, carrier).Phase, JobOf(sim, carrier).Building, JobOf(sim, carrier).Storage));
+
+        byte[] bytes = SaveGame.ToBytes(sim);
+        SaveLoadResult loaded = SaveGame.Read(bytes, Quiet);
+        Assert.True(loaded.Succeeded, loaded.Error?.Message);
+        Simulation copy = loaded.Simulation!;
+        for (int tick = 0; tick < 300; tick++)
+        {
+            sim.Step();
+            copy.Step();
+            Assert.Null(copy.ComputeHashes().FindFirstMismatch(sim.ComputeHashes()));
+        }
+
+        Assert.Equal(10, Stored(sim, other, "vegetable"));
+    }
+
     [Fact]
     [Trait("Req", "FR-SAVE-04")]
     [Trait("Req", "FR-NPC-07")]

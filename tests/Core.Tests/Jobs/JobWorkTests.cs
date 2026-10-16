@@ -172,7 +172,7 @@ public sealed class JobWorkTests
     [Fact]
     [Trait("Req", "FR-NPC-07")]
     [Trait("Req", "FR-ECO-01")]
-    public void AStorageThatStopsTakingItemsOnTheWayEndsTheHaulAndTheLoadWaitsForIt()
+    public void AStorageThatStopsTakingItemsOnTheWayEndsTheHaulAndTheOutputWaitsForIt()
     {
         (Simulation sim, EntityId storage) = NewSettlement();
         EntityId field = Build(sim, "field");
@@ -180,17 +180,21 @@ public sealed class JobWorkTests
         EntityId carrier = Spawn(sim, "carrier");
         Assert.Equal((JobKind.Haul, JobPhase.ToTarget, storage), (JobOf(sim, carrier).Kind, JobOf(sim, carrier).Phase, JobOf(sim, carrier).Storage));
 
-        // The storage starts to move while the carrier walks to the field: it takes the output, ends the job, waits.
+        // The storage starts to move while the carrier walks to the field: the haul ends in that tick, before anything is
+        // taken (review R1 of M3a: a haul on its way to the source needs the storage it reserved room in), and with no
+        // other storage the output waits at the field.
         Building building = BuildingOf(sim, storage);
         (int x, int y) = FindSpot(sim, "storage", minDistance: 4, near: (building.X, building.Y), moving: storage);
         sim.Enqueue(new MoveBuildingCommand(storage, x, y, 0));
-        StepUntil(sim, () => JobOf(sim, carrier).IsCarrying);
-        Assert.Equal(JobKind.None, JobOf(sim, carrier).Kind);
-        Assert.Equal(12, JobOf(sim, carrier).CarryCount);
-        Assert.Equal(0, sim.World.WorkOutputs.Get(field).Count);
+        sim.Step();
+        Assert.Equal(BuildingState.Moving, BuildingOf(sim, storage).State);
+        Assert.Equal((JobKind.None, 0), (JobOf(sim, carrier).Kind, JobOf(sim, carrier).CarryCount));
+        Assert.Empty(sim.World.Reservations.HeldBy(carrier));
+        Assert.Equal(12, sim.World.WorkOutputs.Get(field).Count);
 
         StepUntil(sim, () => Stored(sim, storage, "vegetable") > 0);
         Assert.Equal(12, Stored(sim, storage, "vegetable"));
+        Assert.Equal(0, sim.World.WorkOutputs.Get(field).Count);
     }
 
     [Fact]
