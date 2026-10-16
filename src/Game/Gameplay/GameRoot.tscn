@@ -8,6 +8,9 @@
 [ext_resource type="Script" path="res://Ui/BuildMenu.cs" id="6_buildmenu"]
 [ext_resource type="Script" path="res://Ui/InspectorPanel.cs" id="7_inspector"]
 [ext_resource type="Script" path="res://Ui/BuildingMessages.cs" id="8_buildmsg"]
+[ext_resource type="Script" path="res://Ui/WindowButtons.cs" id="9_winbtn"]
+[ext_resource type="Script" path="res://Ui/ResidentsWindow.cs" id="10_reswin"]
+[ext_resource type="Script" path="res://Ui/StorageWindow.cs" id="11_storewin"]
 
 [node name="GameRoot" type="Node"]
 script = ExtResource("1_root")
@@ -77,6 +80,15 @@ script = ExtResource("7_inspector")
 
 [node name="BuildingMessages" type="Node" parent="Ui"]
 script = ExtResource("8_buildmsg")
+
+[node name="WindowButtons" type="HBoxContainer" parent="Ui"]
+script = ExtResource("9_winbtn")
+
+[node name="ResidentsWindow" type="PanelContainer" parent="Ui"]
+script = ExtResource("10_reswin")
+
+[node name="StorageWindow" type="PanelContainer" parent="Ui"]
+script = ExtResource("11_storewin")
 
 [node name="PauseMenu" type="Control" parent="Ui"]
 layout_mode = 3

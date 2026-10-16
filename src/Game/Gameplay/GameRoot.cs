@@ -102,6 +102,7 @@ public partial class GameRoot : Node
         GetNode<InspectorPanel>("Ui/InspectorPanel").Bind(host);
         GetNode<BuildingMessages>("Ui/BuildingMessages").Bind(host);
         WireBuildingUi();
+        WireWindows(host);
         DevConsolePanel console = GetNode<DevConsolePanel>("Ui/DevConsolePanel");
         console.Bind(host);
         console.CameraRequested += (x, y) => CenterCamera(x, y);
@@ -135,6 +136,20 @@ public partial class GameRoot : Node
                 inspector.Show(entity);
             }
         };
+    }
+
+    // The window buttons and the two information windows (residents, storage): one window open at a time.
+    private void WireWindows(SimulationHost host)
+    {
+        var residents = GetNode<ResidentsWindow>("Ui/ResidentsWindow");
+        var storage = GetNode<StorageWindow>("Ui/StorageWindow");
+        var buttons = GetNode<WindowButtons>("Ui/WindowButtons");
+        residents.Bind(host);
+        storage.Bind(host);
+        buttons.ResidentsRequested += residents.Toggle;
+        buttons.StorageRequested += storage.Toggle;
+        residents.Opened += storage.Close;
+        storage.Opened += residents.Close;
     }
 
     private void OnSimulationChanged()

@@ -139,7 +139,8 @@ public partial class SmokeTest : Node
         }
 
         return CheckWorld(content, seed, saveDir) ?? CheckConsole(content, seed, saveDir) ?? CheckSeedText() ?? CheckSlots(content, seed) ?? CheckLargeMap(seed)
-            ?? WorldRenderSmoke.Check(this, content, seed) ?? BuildingUiSmoke.Check(this, seed);
+            ?? WorldRenderSmoke.Check(this, content, seed) ?? BuildingUiSmoke.Check(this, seed)
+            ?? WindowsUiSmoke.Check(this, seed);
     }
 
     // A small new game (world + fog) survives a save and load through user:// with the same hashes.

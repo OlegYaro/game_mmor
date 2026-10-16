@@ -183,14 +183,14 @@ public static class BuildingUiSmoke
     }
 
     // Sends GiveItemCommand and runs one tick.
-    private static void Give(SimulationHost host, string item, int count)
+    internal static void Give(SimulationHost host, string item, int count)
     {
         host.Send(new GiveItemCommand(item, count));
         host.Simulation.Step();
     }
 
     // Places the building at the valid spot nearest to the start point and returns it, or none when there is no spot.
-    private static EntityId Place(SimulationHost host, string id)
+    internal static EntityId Place(SimulationHost host, string id)
     {
         CoreSimulation sim = host.Simulation;
         var start = sim.World!.Map.Start;
