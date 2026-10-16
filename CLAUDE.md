@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Игра на Godot 4.7.2 (.NET) + чистый C# Core. Решения: `docs/adr/`, требования: `docs/GDD.md`, `docs/requirements-index.md`. Журнал: `docs/PROGRESS.md`.
+Игра на Godot 4.7.2 (.NET) + чистый C# Core. Решения: `docs/adr/`, требования: `docs/GDD.md`, `docs/requirements-index.md`. Журнал: `docs/PROGRESS.md`. План качества и критерии релиза: `docs/quality-plan.md`.
 
 **Источники истины с 15.10.2026: `docs/MVP.md` и `docs/ROADMAP-v1-v2.md`.** При расхождении с GDD, gdd-issues, gdd-change-proposals, requirements-index (и ADR) прав новый файл. Пометки: [решено] и [GDD] обязательны; [предложение] можно закладывать, но записывать в `gdd-change-proposals.md` как открытое; [открыто] не решать самому, собирать в `docs/open-questions.md`. `docs/design-overview.md` — архив.
 
