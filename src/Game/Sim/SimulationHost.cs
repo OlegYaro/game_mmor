@@ -55,6 +55,16 @@ public partial class SimulationHost : Node
     /// <summary>When true the speed keys are ignored (a menu is open).</summary>
     public bool InputBlocked { get; set; }
 
+    /// <summary>Queues a player command on the current simulation (ISimCommand runs on the next tick, ADR 0005).</summary>
+    public void Send(ISimCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        if (IsRunning)
+        {
+            Simulation.Enqueue(command);
+        }
+    }
+
     /// <summary>Raised after the simulation instance was replaced (new game, load, console <c>load</c>). Views rebind here.</summary>
     public event Action? SimulationChanged;
 
