@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "seed": 11642349,
-  "contentHash": "efd63e131db7a866",
+  "contentHash": "fe118147f6cea9cd",
   "endTick": 300,
   "commands": [
     {"tick":6,"command":{"kind":"spawn_marker","x":-974,"y":3007}},

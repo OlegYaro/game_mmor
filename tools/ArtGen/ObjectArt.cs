@@ -11,7 +11,9 @@ public static class ObjectArt
 
     /// <summary>Object ids in atlas order.</summary>
     public static readonly IReadOnlyList<string> Ids =
-        ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker", "coal", "ore_vein", "coal_vein", "hero"];
+        ["tree", "rock", "ore", "berry_bush", "poi_chest", "poi_ruins", "poi_lair", "settlement_site", "start_marker", "coal", "ore_vein", "coal_vein", "hero",
+         "resident_carrier", "resident_lumberjack", "resident_stonemason", "resident_farmer", "resident_miner", "resident_guard", "resident_specialist", "resident_unemployed",
+         "sapling", "stump"];
 
     private static readonly Rgba Black = new(20, 20, 24);
     private static readonly Rgba White = new(250, 250, 250);
@@ -35,6 +37,16 @@ public static class ObjectArt
             case "ore_vein": Vein(c, Rgba.Hex(0x5A5E6B), Rgba.Hex(0xE8892B), Rgba.Hex(0x4DA6FF)); break;
             case "coal_vein": Vein(c, Rgba.Hex(0x1C1C22), Rgba.Hex(0xF2C230), Rgba.Hex(0xE8E8F0)); break;
             case "hero": Hero(c); break;
+            case "resident_carrier": Carrier(c); break;
+            case "resident_lumberjack": Lumberjack(c); break;
+            case "resident_stonemason": Stonemason(c); break;
+            case "resident_farmer": Farmer(c); break;
+            case "resident_miner": Miner(c); break;
+            case "resident_guard": Guard(c); break;
+            case "resident_specialist": Specialist(c); break;
+            case "resident_unemployed": Unemployed(c); break;
+            case "sapling": Sapling(c); break;
+            case "stump": Stump(c); break;
             default: throw new ArgumentException("Unknown object id " + id, nameof(id));
         }
 
@@ -67,6 +79,192 @@ public static class ObjectArt
         c.FillPolygon([new Pt(13, 4), new Pt(14, 3), new Pt(18, 3), new Pt(19, 4), new Pt(19, 6), new Pt(13, 6)], hair);
         c.Set(14, 7, Black);
         c.Set(17, 7, Black);
+    }
+
+    // ---- Residents: the hero's pose without the sword, so a resident never reads as the hero. Each one differs by
+    // clothes colour and one big attribute that stays readable at zoom 0.5 (the figure is 16 px wide there).
+
+    private static readonly Rgba Skin = Rgba.Hex(0xF1C27D);
+    private static readonly Rgba Boots = Rgba.Hex(0x4A3320);
+    private static readonly Rgba Steel = Rgba.Hex(0xC9CED6);
+    private static readonly Rgba Haft = Rgba.Hex(0x8A5A2B);
+
+    // Feet on (16, 24); a null `hair` leaves the head to the caller's hat.
+    private static void Person(Canvas c, Rgba cloth, Rgba pants, Rgba? hair)
+    {
+        c.FillAndOutline([new Pt(13, 19), new Pt(16, 19), new Pt(16, 25), new Pt(13, 25)], Boots, Boots.Scale(45));
+        c.FillAndOutline([new Pt(16, 19), new Pt(19, 19), new Pt(19, 25), new Pt(16, 25)], Boots, Boots.Scale(45));
+        c.FillAndOutline([new Pt(13, 17), new Pt(16, 17), new Pt(16, 22), new Pt(13, 22)], pants, pants.Scale(45));
+        c.FillAndOutline([new Pt(16, 17), new Pt(19, 17), new Pt(19, 22), new Pt(16, 22)], pants, pants.Scale(45));
+        c.FillAndOutline([new Pt(9, 10), new Pt(12, 10), new Pt(12, 18), new Pt(9, 18)], cloth.Scale(88), cloth.Scale(45));
+        c.FillAndOutline([new Pt(20, 10), new Pt(23, 10), new Pt(23, 18), new Pt(20, 18)], cloth.Scale(88), cloth.Scale(45));
+        c.FillRect(9, 16, 3, 3, Skin);
+        c.FillRect(20, 16, 3, 3, Skin);
+        c.FillAndOutline([new Pt(11, 10), new Pt(21, 10), new Pt(21, 18), new Pt(11, 18)], cloth, cloth.Scale(45));
+        c.FillAndOutline([new Pt(14, 2), new Pt(18, 2), new Pt(20, 4), new Pt(20, 8), new Pt(18, 10), new Pt(14, 10), new Pt(12, 8), new Pt(12, 4)], Skin, Skin.Scale(45));
+        if (hair is Rgba h)
+        {
+            c.FillPolygon([new Pt(13, 4), new Pt(14, 3), new Pt(18, 3), new Pt(19, 4), new Pt(19, 6), new Pt(13, 6)], h);
+        }
+
+        c.Set(14, 7, Black);
+        c.Set(17, 7, Black);
+    }
+
+    // A tool shaft 2 px wide from y0 (top) to y1 (bottom).
+    private static void Shaft(Canvas c, int x, int y0, int y1)
+    {
+        c.FillRect(x, y0, 2, y1 - y0 + 1, Haft);
+        c.FillRect(x + 1, y0, 1, y1 - y0 + 1, Haft.Scale(70));
+    }
+
+    // Carrier: brown tunic and a huge wicker basket on the back, red headband.
+    private static void Carrier(Canvas c)
+    {
+        Rgba basket = Rgba.Hex(0xD9A441);
+        c.FillAndOutline([new Pt(20, 6), new Pt(30, 6), new Pt(30, 19), new Pt(20, 19)], basket, basket.Scale(45));
+        for (int y = 9; y < 19; y += 3)
+        {
+            c.FillRect(21, y, 8, 1, basket.Scale(70));
+        }
+
+        c.FillRect(22, 3, 6, 3, Rgba.Hex(0x7FB069));
+        Person(c, Rgba.Hex(0x8B5E34), Rgba.Hex(0x5A4630), Rgba.Hex(0x3B2A1A));
+        c.FillRect(12, 4, 8, 2, Rgba.Hex(0xD7263D));
+        c.FillRect(20, 12, 2, 5, basket.Scale(70));
+    }
+
+    // Lumberjack: red tunic, beard, big axe with a steel blade.
+    private static void Lumberjack(Canvas c)
+    {
+        Person(c, Rgba.Hex(0xC0392B), Rgba.Hex(0x3C4A5C), Rgba.Hex(0x6B3A1E));
+        c.FillRect(14, 8, 4, 2, Rgba.Hex(0x6B3A1E));
+        c.FillRect(11, 14, 10, 1, Rgba.Hex(0x1E1E22));
+        Shaft(c, 25, 5, 19);
+        c.FillAndOutline([new Pt(23, 3), new Pt(30, 3), new Pt(30, 11), new Pt(23, 9)], Steel, Steel.Scale(45));
+        c.FillRect(24, 4, 6, 1, Steel.Shift(30));
+    }
+
+    // Stonemason: light grey tunic with a leather apron, hammer with a square head, a stone block beside the feet.
+    private static void Stonemason(Canvas c)
+    {
+        Person(c, Rgba.Hex(0xB9B6AE), Rgba.Hex(0x5C5F6A), Rgba.Hex(0x7A7A7A));
+        c.FillAndOutline([new Pt(13, 13), new Pt(19, 13), new Pt(19, 21), new Pt(13, 21)], Rgba.Hex(0x7C521F), Rgba.Hex(0x4A3014));
+        Shaft(c, 25, 8, 19);
+        Rgba iron = Rgba.Hex(0x4A4D55);
+        c.FillAndOutline([new Pt(22, 3), new Pt(30, 3), new Pt(30, 9), new Pt(22, 9)], iron, Black);
+        c.FillRect(23, 4, 6, 1, iron.Shift(40));
+        Rgba block = Rgba.Hex(0x9A9DA3);
+        c.FillAndOutline([new Pt(2, 21), new Pt(9, 21), new Pt(9, 26), new Pt(2, 26)], block, block.Scale(45));
+        c.FillRect(2, 21, 7, 1, block.Shift(30));
+    }
+
+    // Farmer: green tunic, wide straw hat, hoe (shaft with a blade bent at the top).
+    private static void Farmer(Canvas c)
+    {
+        Person(c, Rgba.Hex(0x5BA24A), Rgba.Hex(0x7A6240), Rgba.Hex(0x5B3A1E));
+        Rgba straw = Rgba.Hex(0xE8C95A);
+        c.FillAndOutline([new Pt(8, 5), new Pt(12, 2), new Pt(20, 2), new Pt(24, 5), new Pt(24, 6), new Pt(8, 6)], straw, straw.Scale(55));
+        c.FillRect(12, 0, 8, 3, straw.Shift(-16));
+        Shaft(c, 25, 6, 19);
+        c.FillAndOutline([new Pt(25, 5), new Pt(30, 6), new Pt(30, 10), new Pt(27, 10), new Pt(27, 7), new Pt(25, 7)], Steel.Scale(80), Steel.Scale(40));
+    }
+
+    // Miner: dark tunic, yellow helmet with a lamp, pickaxe with a curved steel head.
+    private static void Miner(Canvas c)
+    {
+        Person(c, Rgba.Hex(0x4B4F63), Rgba.Hex(0x2C2F3B), null);
+        Rgba helmet = Rgba.Hex(0xF2C230);
+        c.FillAndOutline([new Pt(12, 6), new Pt(12, 3), new Pt(14, 1), new Pt(18, 1), new Pt(20, 3), new Pt(20, 6)], helmet, helmet.Scale(50));
+        c.FillRect(11, 5, 10, 2, helmet.Scale(85));
+        c.FillRect(15, 2, 2, 2, White);
+        Shaft(c, 25, 7, 19);
+        c.FillAndOutline([new Pt(20, 6), new Pt(25, 3), new Pt(30, 6), new Pt(30, 8), new Pt(25, 6), new Pt(20, 8)], Steel, Steel.Scale(45));
+        c.FillRect(11, 14, 10, 1, Rgba.Hex(0xE8892B));
+    }
+
+    // Guard: steel helmet with a red plume, dark red tabard, round-ish shield on the left, spear on the right.
+    private static void Guard(Canvas c)
+    {
+        Person(c, Rgba.Hex(0x7E2A2F), Rgba.Hex(0x30343F), null);
+        c.FillRect(15, 10, 2, 8, Rgba.Hex(0xE8C95A));
+        c.FillAndOutline([new Pt(12, 6), new Pt(12, 3), new Pt(14, 1), new Pt(18, 1), new Pt(20, 3), new Pt(20, 6)], Steel, Steel.Scale(45));
+        c.FillRect(15, 6, 2, 2, Steel.Scale(70));
+        c.FillRect(15, 0, 2, 2, Rgba.Hex(0xD7263D));
+        Shaft(c, 26, 3, 24);
+        c.FillAndOutline([new Pt(26, 0), new Pt(28, 5), new Pt(26, 5)], Steel, Steel.Scale(45));
+        Rgba shield = Rgba.Hex(0x2F5DA8);
+        c.FillAndOutline([new Pt(1, 11), new Pt(11, 11), new Pt(11, 19), new Pt(6, 24), new Pt(1, 19)], shield, Steel.Scale(60));
+        c.FillRect(5, 12, 2, 10, Rgba.Hex(0xF2C230));
+        c.FillRect(2, 15, 8, 2, Rgba.Hex(0xF2C230));
+    }
+
+    // Specialist: long purple robe with a white collar, pointed hat with a star, an open book.
+    private static void Specialist(Canvas c)
+    {
+        Rgba robe = Rgba.Hex(0x7B4FB0);
+        c.FillAndOutline([new Pt(10, 10), new Pt(22, 10), new Pt(24, 25), new Pt(8, 25)], robe, robe.Scale(45));
+        c.FillAndOutline([new Pt(8, 11), new Pt(11, 11), new Pt(11, 18), new Pt(8, 18)], robe.Scale(85), robe.Scale(45));
+        c.FillAndOutline([new Pt(21, 11), new Pt(24, 11), new Pt(24, 18), new Pt(21, 18)], robe.Scale(85), robe.Scale(45));
+        c.FillRect(8, 17, 3, 2, Skin);
+        c.FillRect(21, 17, 3, 2, Skin);
+        c.FillRect(13, 10, 6, 2, White);
+        c.FillRect(15, 12, 2, 12, Rgba.Hex(0xF2C230));
+        c.FillAndOutline([new Pt(14, 2), new Pt(18, 2), new Pt(20, 4), new Pt(20, 8), new Pt(18, 10), new Pt(14, 10), new Pt(12, 8), new Pt(12, 4)], Skin, Skin.Scale(45));
+        Rgba hat = Rgba.Hex(0x4B2E83);
+        c.FillAndOutline([new Pt(16, 0), new Pt(21, 5), new Pt(11, 5)], hat, hat.Scale(50));
+        c.FillRect(10, 4, 12, 2, hat);
+        c.FillRect(15, 2, 2, 2, Rgba.Hex(0xF2C230));
+        c.Set(14, 7, Black);
+        c.Set(17, 7, Black);
+        Rgba book = Rgba.Hex(0xE9E2CF);
+        c.FillAndOutline([new Pt(3, 16), new Pt(10, 16), new Pt(10, 22), new Pt(3, 22)], book, Rgba.Hex(0x7C521F));
+        c.FillRect(6, 16, 1, 6, Rgba.Hex(0x7C521F));
+    }
+
+    // Unemployed: faded grey-beige rags with patches and a ragged hem, empty hands, a small bundle on a stick.
+    private static void Unemployed(Canvas c)
+    {
+        Person(c, Rgba.Hex(0x9C9684), Rgba.Hex(0x6E6A5C), Rgba.Hex(0x8A8A8A));
+        c.FillRect(12, 12, 3, 3, Rgba.Hex(0x7F9B7A));
+        c.FillRect(17, 15, 3, 2, Rgba.Hex(0xB07A5A));
+        for (int x = 11; x < 21; x += 2)
+        {
+            c.Set(x, 18, new Rgba(0, 0, 0, 0));
+        }
+
+        Shaft(c, 4, 8, 22);
+        Rgba cloth = Rgba.Hex(0xC9B98A);
+        c.FillAndOutline([new Pt(1, 3), new Pt(8, 3), new Pt(8, 9), new Pt(1, 9)], cloth, cloth.Scale(50));
+    }
+
+    // Sapling: a thin stem with leaf pairs in a small soil mound.
+    private static void Sapling(Canvas c)
+    {
+        Rgba soil = Rgba.Hex(0x6B4A2B);
+        c.FillAndOutline([new Pt(10, 24), new Pt(13, 22), new Pt(19, 22), new Pt(22, 24), new Pt(19, 26), new Pt(13, 26)], soil, soil.Scale(55));
+        Rgba stem = Rgba.Hex(0x7A5A33);
+        c.FillRect(15, 12, 2, 11, stem);
+        Rgba g1 = Rgba.Hex(0x4C9A4F);
+        Rgba g2 = Rgba.Hex(0x6BBF6A);
+        c.FillAndOutline([new Pt(16, 18), new Pt(23, 14), new Pt(24, 17), new Pt(17, 21)], g1, g1.Scale(50));
+        c.FillAndOutline([new Pt(16, 18), new Pt(9, 14), new Pt(8, 17), new Pt(15, 21)], g1, g1.Scale(50));
+        c.FillAndOutline([new Pt(16, 12), new Pt(21, 6), new Pt(22, 10), new Pt(17, 15)], g2, g2.Scale(50));
+        c.FillAndOutline([new Pt(16, 12), new Pt(11, 6), new Pt(10, 10), new Pt(15, 15)], g2, g2.Scale(50));
+        c.FillAndOutline([new Pt(14, 9), new Pt(16, 4), new Pt(18, 9), new Pt(16, 12)], g2.Shift(14), g2.Scale(50));
+    }
+
+    // Stump: a cut trunk with a light top with rings, short roots.
+    private static void Stump(Canvas c)
+    {
+        Rgba bark = Rgba.Hex(0x6B4A2B);
+        Rgba top = Rgba.Hex(0xC8A06A);
+        c.FillAndOutline([new Pt(8, 25), new Pt(11, 22), new Pt(11, 17), new Pt(21, 17), new Pt(21, 22), new Pt(24, 25), new Pt(20, 26), new Pt(16, 24), new Pt(12, 26)], bark, bark.Scale(50));
+        c.FillRect(13, 19, 1, 4, bark.Scale(75));
+        c.FillRect(18, 19, 1, 5, bark.Scale(75));
+        c.FillAndOutline([new Pt(10, 17), new Pt(13, 14), new Pt(19, 14), new Pt(22, 17), new Pt(19, 20), new Pt(13, 20)], top, bark.Scale(55));
+        c.Outline([new Pt(13, 17), new Pt(15, 15), new Pt(18, 15), new Pt(20, 17), new Pt(18, 19), new Pt(15, 19)], top.Scale(75));
+        c.FillRect(15, 16, 2, 2, top.Scale(60));
     }
 
     private static void Tree(Canvas c)

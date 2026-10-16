@@ -34,7 +34,7 @@
         "properties": {
           "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
           "atlas": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-          "kind": { "enum": ["tile", "object", "building"] },
+          "kind": { "enum": ["tile", "object", "building", "overlay"] },
           "x": { "type": "integer", "minimum": 0 },
           "y": { "type": "integer", "minimum": 0 },
           "w": { "type": "integer", "minimum": 1 },

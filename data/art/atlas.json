@@ -4,8 +4,8 @@
   "tileHeight": 16,
   "heightStep": 8,
   "atlases": [
-    { "id": "tiles", "file": "art/atlas_tiles.png", "width": 512, "height": 112 },
-    { "id": "objects", "file": "art/atlas_objects.png", "width": 96, "height": 160 },
+    { "id": "tiles", "file": "art/atlas_tiles.png", "width": 512, "height": 128 },
+    { "id": "objects", "file": "art/atlas_objects.png", "width": 96, "height": 256 },
     { "id": "buildings", "file": "art/atlas_buildings.png", "width": 512, "height": 240 }
   ],
   "cells": [
@@ -72,6 +72,14 @@
     { "id": "river_h3_v0", "atlas": "tiles", "kind": "tile", "x": 384, "y": 72, "w": 32, "h": 40, "originX": 16, "originY": 32, "height": 3, "variant": 0 },
     { "id": "river_h3_v1", "atlas": "tiles", "kind": "tile", "x": 416, "y": 72, "w": 32, "h": 40, "originX": 16, "originY": 32, "height": 3, "variant": 1 },
     { "id": "river_h3_v2", "atlas": "tiles", "kind": "tile", "x": 448, "y": 72, "w": 32, "h": 40, "originX": 16, "originY": 32, "height": 3, "variant": 2 },
+    { "id": "trail_v0", "atlas": "tiles", "kind": "overlay", "x": 0, "y": 112, "w": 32, "h": 16, "originX": 16, "originY": 8, "height": 0, "variant": 0 },
+    { "id": "trail_v1", "atlas": "tiles", "kind": "overlay", "x": 32, "y": 112, "w": 32, "h": 16, "originX": 16, "originY": 8, "height": 0, "variant": 1 },
+    { "id": "trail_v2", "atlas": "tiles", "kind": "overlay", "x": 64, "y": 112, "w": 32, "h": 16, "originX": 16, "originY": 8, "height": 0, "variant": 2 },
+    { "id": "trail_v3", "atlas": "tiles", "kind": "overlay", "x": 96, "y": 112, "w": 32, "h": 16, "originX": 16, "originY": 8, "height": 0, "variant": 3 },
+    { "id": "road_v0", "atlas": "tiles", "kind": "overlay", "x": 128, "y": 112, "w": 32, "h": 16, "originX": 16, "originY": 8, "height": 0, "variant": 0 },
+    { "id": "road_v1", "atlas": "tiles", "kind": "overlay", "x": 160, "y": 112, "w": 32, "h": 16, "originX": 16, "originY": 8, "height": 0, "variant": 1 },
+    { "id": "road_v2", "atlas": "tiles", "kind": "overlay", "x": 192, "y": 112, "w": 32, "h": 16, "originX": 16, "originY": 8, "height": 0, "variant": 2 },
+    { "id": "road_v3", "atlas": "tiles", "kind": "overlay", "x": 224, "y": 112, "w": 32, "h": 16, "originX": 16, "originY": 8, "height": 0, "variant": 3 },
     { "id": "tree", "atlas": "objects", "kind": "object", "x": 0, "y": 0, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
     { "id": "rock", "atlas": "objects", "kind": "object", "x": 32, "y": 0, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
     { "id": "ore", "atlas": "objects", "kind": "object", "x": 64, "y": 0, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
@@ -85,6 +93,16 @@
     { "id": "ore_vein", "atlas": "objects", "kind": "object", "x": 32, "y": 96, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
     { "id": "coal_vein", "atlas": "objects", "kind": "object", "x": 64, "y": 96, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
     { "id": "hero", "atlas": "objects", "kind": "object", "x": 0, "y": 128, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "resident_carrier", "atlas": "objects", "kind": "object", "x": 32, "y": 128, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "resident_lumberjack", "atlas": "objects", "kind": "object", "x": 64, "y": 128, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "resident_stonemason", "atlas": "objects", "kind": "object", "x": 0, "y": 160, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "resident_farmer", "atlas": "objects", "kind": "object", "x": 32, "y": 160, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "resident_miner", "atlas": "objects", "kind": "object", "x": 64, "y": 160, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "resident_guard", "atlas": "objects", "kind": "object", "x": 0, "y": 192, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "resident_specialist", "atlas": "objects", "kind": "object", "x": 32, "y": 192, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "resident_unemployed", "atlas": "objects", "kind": "object", "x": 64, "y": 192, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "sapling", "atlas": "objects", "kind": "object", "x": 0, "y": 224, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
+    { "id": "stump", "atlas": "objects", "kind": "object", "x": 32, "y": 224, "w": 32, "h": 32, "originX": 16, "originY": 24, "height": 0, "variant": 0 },
     { "id": "campfire_l1_s0", "atlas": "buildings", "kind": "building", "x": 0, "y": 0, "w": 32, "h": 30, "originX": 16, "originY": 29, "height": 0, "variant": 0 },
     { "id": "campfire_l1_s1", "atlas": "buildings", "kind": "building", "x": 32, "y": 0, "w": 32, "h": 30, "originX": 16, "originY": 29, "height": 0, "variant": 1 },
     { "id": "campfire_l1_s2", "atlas": "buildings", "kind": "building", "x": 64, "y": 0, "w": 32, "h": 30, "originX": 16, "originY": 29, "height": 0, "variant": 2 },
@@ -108,6 +126,10 @@
     { "id": "storage_l2_s0", "atlas": "buildings", "kind": "building", "x": 240, "y": 120, "w": 80, "h": 60, "originX": 40, "originY": 59, "height": 0, "variant": 0 },
     { "id": "storage_l2_s1", "atlas": "buildings", "kind": "building", "x": 320, "y": 120, "w": 80, "h": 60, "originX": 40, "originY": 59, "height": 0, "variant": 1 },
     { "id": "storage_l2_s2", "atlas": "buildings", "kind": "building", "x": 400, "y": 120, "w": 80, "h": 60, "originX": 40, "originY": 59, "height": 0, "variant": 2 },
-    { "id": "storage_l2_s3", "atlas": "buildings", "kind": "building", "x": 0, "y": 180, "w": 80, "h": 60, "originX": 40, "originY": 59, "height": 0, "variant": 3 }
+    { "id": "storage_l2_s3", "atlas": "buildings", "kind": "building", "x": 0, "y": 180, "w": 80, "h": 60, "originX": 40, "originY": 59, "height": 0, "variant": 3 },
+    { "id": "field_l1_s0", "atlas": "buildings", "kind": "building", "x": 80, "y": 180, "w": 96, "h": 56, "originX": 48, "originY": 55, "height": 0, "variant": 0 },
+    { "id": "field_l1_s1", "atlas": "buildings", "kind": "building", "x": 176, "y": 180, "w": 96, "h": 56, "originX": 48, "originY": 55, "height": 0, "variant": 1 },
+    { "id": "field_l1_s2", "atlas": "buildings", "kind": "building", "x": 272, "y": 180, "w": 96, "h": 56, "originX": 48, "originY": 55, "height": 0, "variant": 2 },
+    { "id": "field_l1_s3", "atlas": "buildings", "kind": "building", "x": 368, "y": 180, "w": 96, "h": 56, "originX": 48, "originY": 55, "height": 0, "variant": 3 }
   ]
 }

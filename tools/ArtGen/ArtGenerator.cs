@@ -93,7 +93,9 @@ public static class ArtGenerator
             shelfHeight = Math.Max(shelfHeight, ch);
         }
 
-        Canvas tileAtlas = new(TilesAtlasWidth, cy + shelfHeight);
+        // Road overlays (32x16) get their own shelf below the tiles; its y is a multiple of 8, so the atlas grid stays 32x8.
+        int overlayY = cy + shelfHeight;
+        Canvas tileAtlas = new(TilesAtlasWidth, overlayY + OverlayArt.Height);
         for (int i = 0; i < tiles.Count; i++)
         {
             (string id, int kind, int height, int variant) = tiles[i];
@@ -101,6 +103,17 @@ public static class ArtGenerator
             tileAtlas.Blit(cell, 0, 0, cell.Width, cell.Height, positions[i].X, positions[i].Y);
             Pt origin = TileArt.Origin(height);
             cells.Add(new AtlasCell(id, "tiles", "tile", positions[i].X, positions[i].Y, cell.Width, cell.Height, origin.X, origin.Y, height, variant));
+        }
+
+        int overlayX = 0;
+        foreach (string kind in OverlayArt.Kinds)
+        {
+            for (int v = 0; v < OverlayArt.Variants; v++)
+            {
+                tileAtlas.Blit(OverlayArt.Draw(kind, v), 0, 0, OverlayArt.Width, OverlayArt.Height, overlayX, overlayY);
+                cells.Add(new AtlasCell(OverlayArt.CellId(kind, v), "tiles", "overlay", overlayX, overlayY, OverlayArt.Width, OverlayArt.Height, OverlayArt.Origin.X, OverlayArt.Origin.Y, 0, v));
+                overlayX += OverlayArt.Width;
+            }
         }
 
         int rows = (ObjectArt.Ids.Count + ObjectColumns - 1) / ObjectColumns;
@@ -221,7 +234,7 @@ public static class ArtGenerator
                 "properties": {
                   "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
                   "atlas": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-                  "kind": { "enum": ["tile", "object", "building"] },
+                  "kind": { "enum": ["tile", "object", "building", "overlay"] },
                   "x": { "type": "integer", "minimum": 0 },
                   "y": { "type": "integer", "minimum": 0 },
                   "w": { "type": "integer", "minimum": 1 },
