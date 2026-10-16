@@ -80,10 +80,10 @@ jobs:
         run: dotnet test tests/Core.Tests/Core.Tests.csproj -c Release --no-build --nologo --filter "Category=Benchmark"
 
   simulation:
-    name: bot simulation (${{ matrix.os }}, informational)
+    name: bot simulation (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    # The 100-day bot runs compare against golden CSVs; a balance drift must not turn the whole CI red.
-    continue-on-error: true
+    # The bot runs are deterministic and take seconds: a CSV that drifts from its golden is a real change (a balance or
+    # rule change rewrites the goldens with UPDATE_GOLDEN=1 in the same commit), so the job is required.
     strategy:
       fail-fast: false
       matrix:

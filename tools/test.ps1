@@ -6,7 +6,7 @@ Set-Location $Root
 $cfg = if ($env:CONFIGURATION) { $env:CONFIGURATION } else { 'Debug' }
 $dtArgs = @('tests/Core.Tests/Core.Tests.csproj', '-c', $cfg, '--nologo')
 if ($env:COVERAGE -eq '1') {
-    $dtArgs += @('--collect:XPlat Code Coverage', '--results-directory', (Join-Path $Root 'TestResults'))
+    $dtArgs += @('--collect:XPlat Code Coverage', '--settings', (Join-Path $Root 'tests/Core.Tests/coverage.runsettings'), '--results-directory', (Join-Path $Root 'TestResults'))
     # Without a filter of the caller, coverage skips the timed benchmarks and the bot simulation (run them on their own).
     if (-not ($args | Where-Object { $_ -eq '--filter' -or $_ -like '--filter=*' })) {
         $dtArgs += @('--filter', 'Category!=Benchmark&Category!=Simulation')
