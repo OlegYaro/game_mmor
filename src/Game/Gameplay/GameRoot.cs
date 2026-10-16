@@ -24,12 +24,24 @@ public partial class GameRoot : Node
     private Control _errorPanel = null!;
     private EntityLayer? _entities;
     private PlayerInput? _playerInput;
+    private ResidentLayer? _residents;
+    private ResidentPicker? _residentPicker;
+    private ResidentMessages? _residentMessages;
 
     /// <summary>Flags shared by the world input handlers (hero control, build mode, inspector).</summary>
     public GameInputState InputState { get; } = new();
 
     /// <summary>The building selected on the map.</summary>
     public BuildingSelection Selection { get; } = new();
+
+    /// <summary>The resident selected on the map.</summary>
+    public ResidentSelection ResidentSelection { get; } = new();
+
+    /// <summary>The residents drawn on the map, or null when the world view is missing.</summary>
+    public ResidentLayer? ResidentLayer => _residents;
+
+    /// <summary>The click handler that selects residents, or null when the world view is missing.</summary>
+    public ResidentPicker? ResidentPicker => _residentPicker;
 
     /// <summary>Build mode: <see cref="BuildMode.Begin"/> / <see cref="BuildMode.BeginMove"/>, <see cref="BuildMode.ToggleRequested"/>.</summary>
     public BuildMode BuildMode { get; } = new() { Name = "BuildMode" };
@@ -52,6 +64,11 @@ public partial class GameRoot : Node
             _worldView.ObjectsRoot.AddChild(_entities);
             _playerInput = new PlayerInput { Name = "PlayerInput" };
             AddChild(_playerInput);
+            _residents = new ResidentLayer { Name = "Residents" };
+            _worldView.ObjectsRoot.AddChild(_residents);
+            // Added after the hero input: unhandled input reaches the later node first, so a resident is picked before the hero walks.
+            _residentPicker = new ResidentPicker { Name = "ResidentPicker" };
+            AddChild(_residentPicker);
             var buildings = new BuildingLayer { Name = "BuildingLayer" };
             var overlay = new FootprintOverlay();
             AddChild(buildings);
@@ -62,6 +79,8 @@ public partial class GameRoot : Node
             BuildMode.Attach(_worldView, InputState, Selection, overlay, command => _host?.Send(command));
         }
 
+        _residentMessages = new ResidentMessages { Name = "ResidentMessages" };
+        GetNode<Node>("Ui").AddChild(_residentMessages);
         _errorPanel = GetNode<Control>("Ui/ErrorPanel");
         _errorPanel.Visible = _worldView is null || _minimapView is null;
         GetNode<PauseMenu>("Ui/PauseMenu").ExitToMenuRequested += () => ExitToMenuRequested?.Invoke();
@@ -93,6 +112,12 @@ public partial class GameRoot : Node
             {
                 _entities.TickSeconds = () => 1.0 / (host.Scheduler.TicksPerSecond * (int)host.Scheduler.Speed);
             }
+
+            if (_residents is not null && _residentPicker is not null)
+            {
+                _residents.TickSeconds = () => 1.0 / (host.Scheduler.TicksPerSecond * (int)host.Scheduler.Speed);
+                _residentPicker.Bind(host, _worldView, _residents, ResidentSelection, InputState);
+            }
         }
 
         GetNode<Hud>("Ui/Hud").Bind(host);
@@ -101,6 +126,7 @@ public partial class GameRoot : Node
         GetNode<BuildMenu>("Ui/BuildMenu").Bind(host);
         GetNode<InspectorPanel>("Ui/InspectorPanel").Bind(host);
         GetNode<BuildingMessages>("Ui/BuildingMessages").Bind(host);
+        _residentMessages?.Bind(host);
         WireBuildingUi();
         DevConsolePanel console = GetNode<DevConsolePanel>("Ui/DevConsolePanel");
         console.Bind(host);
@@ -124,8 +150,21 @@ public partial class GameRoot : Node
                 Selection.Clear();
             }
         };
+        // A building and a resident are never selected together.
+        ResidentSelection.ResidentSelected += resident =>
+        {
+            if (resident != Core.Entities.EntityId.None)
+            {
+                Selection.Clear();
+            }
+        };
         Selection.BuildingSelected += entity =>
         {
+            if (entity != Core.Entities.EntityId.None)
+            {
+                ResidentSelection.Clear();
+            }
+
             if (entity == Core.Entities.EntityId.None)
             {
                 inspector.Hide();
@@ -157,6 +196,7 @@ public partial class GameRoot : Node
         }
 
         BindHero();
+        BindResidents();
         Core.WorldGen.StartPoint? start = _host.Simulation.World?.Map.Start;
         if (start is { } point)
         {
@@ -186,6 +226,22 @@ public partial class GameRoot : Node
         if (WorldArt.TryGetShared(out WorldArt art, out _))
         {
             _entities.Bind(_host.Simulation, art);
+        }
+    }
+
+    // Shows the residents of the bound simulation (the layer is emptied first, so nothing of the old game stays).
+    private void BindResidents()
+    {
+        if (_residents is null || _host is null)
+        {
+            return;
+        }
+
+        _residents.Unbind();
+        ResidentSelection.Clear();
+        if (WorldArt.TryGetShared(out WorldArt art, out _))
+        {
+            _residents.Bind(_host.Simulation, art);
         }
     }
 
