@@ -12,7 +12,8 @@ namespace Core.Tests.Residents;
 /// <summary>
 /// The newcomer formula (FR-NPC-01, gdd-issues E2 recalculated): every term with the real numbers (25 per free place, at
 /// most 2; 25 for 3 days of food for everyone including the newcomer; 20 without raids; fame / 5; era 0/10/20/30;
-/// chance = points × 10 ‰, at most 800 ‰), and the cases where the chance is 0.
+/// chance = points × 10 ‰, at most 800 ‰; food counts only in the storages, not in the hero's backpack), and the cases
+/// where the chance is 0.
 /// </summary>
 [Collection(Core.Tests.Buildings.BuildingTestWorld.Collection)]
 public sealed class ArrivalOddsTests
@@ -61,15 +62,20 @@ public sealed class ArrivalOddsTests
     {
         Simulation sim = NewResidentGame();
         Settle(sim, houses: 1);
+        EntityId storage = Build(sim, "storage");
 
         ArrivalOdds odds = Arrivals.ComputeOdds(sim);
         Assert.Equal(new ArrivalOdds(true, 0, 2, 50, 0, 3, 0, 20, 0, 0, 700), odds);
         Assert.Equal(70, odds.Points);
 
-        // Food for 3 days for one newcomer: 3 berries (food value 1, 1 a day). One short gives no food points.
-        GiveFood(sim, 2);
+        // Food in the hero's backpack is the hero's own: residents eat from the storages only.
+        Give(sim, "berries", 50);
+        Assert.Equal((0L, 0), (Arrivals.ComputeOdds(sim).Food, Arrivals.ComputeOdds(sim).FoodPoints));
+
+        // Food for 3 days for one newcomer: 3 berries (food value 1, 1 a day) in the storage. One short gives no food points.
+        StoreFood(sim, storage, 2);
         Assert.Equal(0, Arrivals.ComputeOdds(sim).FoodPoints);
-        GiveFood(sim, 1);
+        StoreFood(sim, storage, 1);
         ArrivalOdds fed = Arrivals.ComputeOdds(sim);
         Assert.Equal((3L, 3L, 25), (fed.Food, fed.FoodNeeded, fed.FoodPoints));
         Assert.Equal(95, fed.Points);
@@ -164,7 +170,7 @@ public sealed class ArrivalOddsTests
     [Fact]
     [Trait("Req", "FR-NPC-01")]
     [Trait("Req", "FR-ECO-01")]
-    public void FoodInBuiltStoragesCountsButNotInOnesUnderConstruction()
+    public void FoodInBuiltStoragesCountsButNotInOnesUnderConstructionOrTheBackpack()
     {
         Simulation sim = NewResidentGame();
         Settle(sim, houses: 1);
@@ -173,16 +179,17 @@ public sealed class ArrivalOddsTests
         Assert.True(sim.Content.TryGetId("vegetable", out DefId vegetable));
         ref Inventory stock = ref sim.World!.Inventories.Get(storage);
         stock = stock.Add(vegetable, 7, 100, out _);
-        GiveFood(sim, 2);
+        StoreFood(sim, storage, 2);
+        Give(sim, "berries", 30); // the backpack does not count
 
-        Assert.Equal(9, Arrivals.CountFood(sim));
+        Assert.Equal(9, Arrivals.ComputeOdds(sim).Food);
         Assert.Equal(25, Arrivals.ComputeOdds(sim).FoodPoints);
 
         GiveCost(sim, "storage", 1);
         (int x, int y) = FindSpot(sim, "storage");
         EntityId second = Place(sim, "storage", x, y, give: false);
         Assert.False(sim.World.Inventories.Has(second));
-        Assert.Equal(9, Arrivals.CountFood(sim));
-        Assert.Equal(0, Arrivals.CountFood(new Simulation(1, SimTestData.Real)));
+        Assert.Equal(9, Arrivals.ComputeOdds(sim).Food);
+        Assert.Equal(0, Arrivals.ComputeOdds(new Simulation(1, SimTestData.Real)).Food);
     }
 }

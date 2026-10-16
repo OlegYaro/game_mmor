@@ -93,8 +93,8 @@ internal static class ResidentTestWorld
         }
     }
 
-    /// <summary>Gives the hero <paramref name="count"/> berries (food value 1 each).</summary>
-    public static void GiveFood(Simulation sim, int count) => Give(sim, "berries", count);
+    /// <summary>Puts <paramref name="count"/> berries (food value 1 each) straight into <paramref name="storage"/>.</summary>
+    public static void StoreFood(Simulation sim, EntityId storage, int count) => Jobs.JobTestWorld.Fill(sim, storage, "berries", count);
 
     /// <summary>The settlement center's tile.</summary>
     public static (int X, int Y) CenterTile(Simulation sim)

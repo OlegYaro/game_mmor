@@ -1,7 +1,7 @@
 using Core.Buildings;
 using Core.Content;
+using Core.Economy;
 using Core.Entities;
-using Core.Heroes;
 using Core.Pathfinding;
 using Core.Sim;
 using Core.WorldGen;
@@ -16,7 +16,7 @@ namespace Core.Residents;
 /// <param name="Population">Residents now.</param>
 /// <param name="FreePlaces">Free places in active houses minus homeless residents (never below 0).</param>
 /// <param name="SlotPoints">Points for free places: <see cref="EconomyBalanceDef.ArrivalFreeSlotPoints"/> each, at most <see cref="EconomyBalanceDef.ArrivalMaxSlots"/> places.</param>
-/// <param name="Food">Food units available (Σ food value × count over the hero's backpack and the available storages).</param>
+/// <param name="Food">Food units in the available storages (<see cref="FoodSupply.Stored"/>); the hero's backpack is the hero's own and does not count.</param>
 /// <param name="FoodNeeded">Food units for <see cref="EconomyBalanceDef.ArrivalFoodDays"/> days for everyone including the newcomer.</param>
 /// <param name="FoodPoints"><see cref="EconomyBalanceDef.ArrivalFoodPoints"/> when <paramref name="Food"/> reaches <paramref name="FoodNeeded"/>, else 0.</param>
 /// <param name="NoRaidPoints"><see cref="EconomyBalanceDef.ArrivalNoRaidPoints"/> when there was no raid for <see cref="EconomyBalanceDef.ArrivalNoRaidDays"/> days.</param>
@@ -83,7 +83,7 @@ public static class Arrivals
         int population = Construction.SettlementPopulation(sim);
         int freePlaces = world is null ? 0 : Math.Max(0, Housing.TotalFreePlaces(sim) - Housing.CountHomeless(world));
         int slotPoints = economy.ArrivalFreeSlotPoints * Math.Min(freePlaces, economy.ArrivalMaxSlots);
-        long food = CountFood(sim);
+        long food = FoodSupply.Stored(sim);
         long foodNeeded = (long)economy.FoodPerResidentPerDay * (population + 1) * economy.ArrivalFoodDays;
         int foodPoints = food >= foodNeeded ? economy.ArrivalFoodPoints : 0;
 
@@ -96,38 +96,6 @@ public static class Arrivals
         bool possible = hasCenter && freePlaces > 0 && population < economy.MaxResidents;
         int chance = possible ? Math.Min(points * PermillePerPoint, economy.ArrivalChanceCapPermille) : 0;
         return new ArrivalOdds(hasCenter, population, freePlaces, slotPoints, food, foodNeeded, foodPoints, noRaidPoints, famePoints, eraPoints, chance);
-    }
-
-    /// <summary>
-    /// Food units the settlement can eat: Σ <see cref="ItemDef.FoodValue"/> × count over the hero's backpack and the
-    /// available storages (the same places <see cref="Construction.CountAvailable"/> counts).
-    /// </summary>
-    public static long CountFood(Simulation sim)
-    {
-        ArgumentNullException.ThrowIfNull(sim);
-        if (sim.World is not { } world)
-        {
-            return 0;
-        }
-
-        long food = 0;
-        EntityId hero = world.HeroEntity;
-        if (hero != EntityId.None && world.Inventories.TryGet(hero, out Inventory backpack))
-        {
-            food += FoodIn(sim.Content, backpack);
-        }
-
-        ReadOnlySpan<EntityId> owners = world.Buildings.Entities;
-        Span<Building> buildings = world.Buildings.Values;
-        for (int i = 0; i < owners.Length; i++)
-        {
-            if (Construction.IsAvailableStorage(world, owners[i], buildings[i]))
-            {
-                food += FoodIn(sim.Content, world.Inventories.Get(owners[i]));
-            }
-        }
-
-        return food;
     }
 
     /// <summary>
@@ -289,19 +257,5 @@ public static class Arrivals
         }
 
         return false;
-    }
-
-    private static long FoodIn(ContentCatalog content, Inventory inventory)
-    {
-        long food = 0;
-        foreach (ItemSlot slot in inventory.Backpack)
-        {
-            if (!slot.IsEmpty)
-            {
-                food += (long)content.Get<ItemDef>(slot.Item).FoodValue * slot.Count;
-            }
-        }
-
-        return food;
     }
 }
