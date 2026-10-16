@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Coverlet settings for COVERAGE=1 runs (tools/test.sh, CI). Core is the measured assembly (NFR-06); instrumenting the
+     test, SchemaGen and ArtGen assemblies only slows the run down. SingleHit stops counting after the first hit of a line. -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[Core]*</Include>
+          <SingleHit>true</SingleHit>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

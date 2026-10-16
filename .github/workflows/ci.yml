@@ -32,7 +32,7 @@ jobs:
       # takes ~9 s instead of ~6 s against an 8 s limit) and shared runners are slower still. They run in the
       # `benchmarks` job below, without coverage.
       - name: Test with coverage
-        run: dotnet test tests/Core.Tests/Core.Tests.csproj -c Release --no-build --nologo --filter "Category!=Benchmark" --collect:"XPlat Code Coverage" --results-directory TestResults
+        run: dotnet test tests/Core.Tests/Core.Tests.csproj -c Release --no-build --nologo --filter "Category!=Benchmark" --collect:"XPlat Code Coverage" --settings tests/Core.Tests/coverage.runsettings --results-directory TestResults
 
       - name: Schemas up to date
         shell: bash

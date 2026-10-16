@@ -6,6 +6,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 cd "$ROOT"
 args=(tests/Core.Tests/Core.Tests.csproj -c "${CONFIGURATION:-Debug}" --nologo)
 if [ "${COVERAGE:-0}" = "1" ]; then
-    args+=(--collect:"XPlat Code Coverage" --results-directory "$ROOT/TestResults")
+    args+=(--collect:"XPlat Code Coverage" --settings "$ROOT/tests/Core.Tests/coverage.runsettings" --results-directory "$ROOT/TestResults")
 fi
 dotnet test "${args[@]}" "$@"
