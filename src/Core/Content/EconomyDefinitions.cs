@@ -17,6 +17,7 @@ namespace Core.Content;
 /// <param name="WarnDaysBeforeEmpty">Days of food left at which the player is warned.</param>
 /// <param name="TaxPerResidentPerDay">Gold per resident per day; multiplied by the settlement center level in code.</param>
 /// <param name="MaxResidents">Upper limit of residents (NFR-01).</param>
+/// <param name="ResidentStepTicks">Ticks a resident needs to cross one tile walking.</param>
 /// <param name="ArrivalHour">Hour of the day (0..23) when a newcomer may arrive.</param>
 /// <param name="ArrivalFreeSlotPoints">Chance points (percent) per free house place.</param>
 /// <param name="ArrivalMaxSlots">Free places counted at most.</param>
@@ -42,6 +43,7 @@ public sealed record EconomyBalanceDef(
     [property: Range(0, 100)] [property: Description("Days of food left at which the player is warned (provisional).")] int WarnDaysBeforeEmpty,
     [property: Range(0, 1000)] [property: Description("Gold per resident per day; multiplied by the settlement center level in code (provisional).")] int TaxPerResidentPerDay,
     [property: Range(1, 1000)] [property: Description("Upper limit of residents (NFR-01).")] int MaxResidents,
+    [property: Range(1, 100)] [property: Description("Ticks a resident needs to cross one tile walking (provisional).")] int ResidentStepTicks,
     [property: Range(0, 23)] [property: Description("Hour of the day when a newcomer may arrive (provisional).")] int ArrivalHour,
     [property: Range(0, 100)] [property: Description("Arrival chance points per free house place (provisional).")] int ArrivalFreeSlotPoints,
     [property: Range(1, 100)] [property: Description("Free places counted at most (provisional).")] int ArrivalMaxSlots,

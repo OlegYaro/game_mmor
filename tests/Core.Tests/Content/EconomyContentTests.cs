@@ -148,6 +148,7 @@ public sealed class EconomyContentTests
         Assert.Equal(2, economy.WarnDaysBeforeEmpty);
         Assert.Equal(2, economy.TaxPerResidentPerDay);
         Assert.Equal(100, economy.MaxResidents);
+        Assert.Equal(4, economy.ResidentStepTicks);
         Assert.Equal(6, economy.ArrivalHour);
         Assert.Equal(25, economy.ArrivalFreeSlotPoints);
         Assert.Equal(2, economy.ArrivalMaxSlots);

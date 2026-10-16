@@ -60,6 +60,12 @@
             "maximum": 1000,
             "description": "Upper limit of residents (NFR-01)."
           },
+          "residentStepTicks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Ticks a resident needs to cross one tile walking (provisional)."
+          },
           "arrivalHour": {
             "type": "integer",
             "minimum": 0,
@@ -171,6 +177,7 @@
           "warnDaysBeforeEmpty",
           "taxPerResidentPerDay",
           "maxResidents",
+          "residentStepTicks",
           "arrivalHour",
           "arrivalFreeSlotPoints",
           "arrivalMaxSlots",

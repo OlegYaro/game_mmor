@@ -11,6 +11,10 @@ public static class SkillNames
     /// <summary>Pattern of a skill name.</summary>
     public const string Pattern =
         "^(construction|mining|farming|hunting|cooking|crafting|smithing|medicine|trading|knowledge|melee|shooting)$";
+
+    /// <summary>The twelve skills in <see cref="Pattern"/> order; a resident's skill index is the position here.</summary>
+    public static IReadOnlyList<string> All { get; } =
+        ["construction", "mining", "farming", "hunting", "cooking", "crafting", "smithing", "medicine", "trading", "knowledge", "melee", "shooting"];
 }
 
 /// <summary>

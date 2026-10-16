@@ -10,6 +10,7 @@
       "warnDaysBeforeEmpty": 2,
       "taxPerResidentPerDay": 2,
       "maxResidents": 100,
+      "residentStepTicks": 4,
       "arrivalHour": 6,
       "arrivalFreeSlotPoints": 25,
       "arrivalMaxSlots": 2,
