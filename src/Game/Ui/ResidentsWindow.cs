@@ -31,6 +31,9 @@ public partial class ResidentsWindow : ToggleWindow
     private const string OrdinaryKind = "ordinary";
     private const string NameListId = "human_names";
 
+    // An optimistic value (a command sent, Core has not stepped yet, e.g. on pause) is shown for at most this long.
+    private const ulong PendingMsec = 3000;
+
     private readonly List<Row> _rows = [];
     private readonly StringBuilder _text = new();
     private readonly List<string> _ordinary = [];
@@ -242,10 +245,16 @@ public partial class ResidentsWindow : ToggleWindow
         private readonly Label _state;
         private readonly Label _home;
         private int _nameIndex = Unset;
-        private int _professionValue = Unset;
         private int _stateKey = Unset;
         private int _homeKey = Unset;
         private bool _focused;
+        // Priorities sent and not yet seen in Core (Unset when none), with the time (msec) after which they are dropped.
+        private readonly int[] _pending;
+        private readonly ulong[] _pendingUntil;
+        private string? _professionShown;
+        private string? _pendingProfession;
+        private ulong _pendingProfessionUntil;
+        private EntityId _popupEntity = EntityId.None;
 
         internal Row(ResidentsWindow window)
         {
@@ -260,6 +269,7 @@ public partial class ResidentsWindow : ToggleWindow
                 Flat = false,
                 TooltipText = "ui.residents.profession.tooltip",
             };
+            Profession.AboutToPopup += () => _popupEntity = Entity;
             Profession.GetPopup().IdPressed += OnProfessionChosen;
             _state = Text(StateWidth);
             _home = Text(HomeWidth);
@@ -279,6 +289,9 @@ public partial class ResidentsWindow : ToggleWindow
 
             Shown = new int[JobKinds.Count];
             Array.Fill(Shown, Unset);
+            _pending = new int[JobKinds.Count];
+            _pendingUntil = new ulong[JobKinds.Count];
+            Array.Fill(_pending, Unset);
         }
 
         /// <summary>The row container.</summary>
@@ -302,6 +315,7 @@ public partial class ResidentsWindow : ToggleWindow
         /// <summary>The home text.</summary>
         public string HomeText => _home.Text;
 
+        // Displayed priorities: Core's value, or the value just sent while Core has not confirmed it.
         private int[] Shown { get; }
 
         internal void Show(ResidentsWindow window, ContentCatalog content, IReadOnlyList<string> names, EntityId entity, Resident resident, ResidentJob job, bool focused, bool languageDirty)
@@ -310,15 +324,17 @@ public partial class ResidentsWindow : ToggleWindow
             {
                 Entity = entity;
                 _nameIndex = Unset;
-                _professionValue = Unset;
                 _stateKey = Unset;
                 _homeKey = Unset;
+                _professionShown = null;
+                _pendingProfession = null;
                 Array.Fill(Shown, Unset);
+                Array.Fill(_pending, Unset);
             }
 
             if (languageDirty)
             {
-                _professionValue = Unset;
+                _professionShown = null;
                 _stateKey = Unset;
                 _homeKey = Unset;
             }
@@ -329,11 +345,7 @@ public partial class ResidentsWindow : ToggleWindow
                 _name.Text = names[resident.Name];
             }
 
-            if (resident.Profession.Value != _professionValue)
-            {
-                _professionValue = resident.Profession.Value;
-                ShowProfession(window, content, resident);
-            }
+            ShowProfession(window, content, resident);
 
             // One integer stands for the state, the job type and its phase: the text is rebuilt only when it changes.
             int stateKey = ((int)resident.State << 16) | ((int)job.Kind << 8) | (int)job.Phase;
@@ -353,6 +365,19 @@ public partial class ResidentsWindow : ToggleWindow
             for (int i = 0; i < Priorities.Length; i++)
             {
                 int priority = resident.Priorities.Get((JobKind)(i + 1));
+                if (_pending[i] != Unset)
+                {
+                    // Drop the sent value once Core shows it, or when Core did not take it in time.
+                    if (priority == _pending[i] || Time.GetTicksMsec() >= _pendingUntil[i])
+                    {
+                        _pending[i] = Unset;
+                    }
+                    else
+                    {
+                        priority = _pending[i];
+                    }
+                }
+
                 if (priority != Shown[i])
                 {
                     Shown[i] = priority;
@@ -379,13 +404,28 @@ public partial class ResidentsWindow : ToggleWindow
             return window.Tr("ui.residents.state." + state.ToString().ToLowerInvariant());
         }
 
+        // Shows the profession (the one just chosen while Core has not confirmed it) and rebuilds the drop-down on change.
         private void ShowProfession(ResidentsWindow window, ContentCatalog content, Resident resident)
         {
             var def = content.Get<ProfessionDef>(resident.Profession);
-            Profession.Text = window.Tr("profession." + def.Id + ".name");
+            if (_pendingProfession is not null
+                && (string.Equals(def.Id, _pendingProfession, StringComparison.Ordinal) || Time.GetTicksMsec() >= _pendingProfessionUntil))
+            {
+                _pendingProfession = null;
+            }
+
+            string shownId = _pendingProfession ?? def.Id;
+            PopupMenu popup = Profession.GetPopup();
+            if (string.Equals(shownId, _professionShown, StringComparison.Ordinal) || popup.Visible)
+            {
+                // Unchanged, or the list is open: clearing it now would drop the item under the cursor (retried next refresh).
+                return;
+            }
+
+            _professionShown = shownId;
+            Profession.Text = window.Tr("profession." + shownId + ".name");
             bool ordinary = string.Equals(def.Kind, OrdinaryKind, StringComparison.Ordinal);
             Profession.Disabled = !ordinary;
-            PopupMenu popup = Profession.GetPopup();
             popup.Clear();
             if (!ordinary)
             {
@@ -395,7 +435,7 @@ public partial class ResidentsWindow : ToggleWindow
             for (int i = 0; i < window._ordinary.Count; i++)
             {
                 popup.AddRadioCheckItem(window.Tr("profession." + window._ordinary[i] + ".name"), i);
-                popup.SetItemChecked(i, string.Equals(window._ordinary[i], def.Id, StringComparison.Ordinal));
+                popup.SetItemChecked(i, string.Equals(window._ordinary[i], shownId, StringComparison.Ordinal));
             }
         }
 
@@ -407,9 +447,18 @@ public partial class ResidentsWindow : ToggleWindow
 
         private void OnProfessionChosen(long index)
         {
-            if (index >= 0 && index < _window._ordinary.Count && _window.Host is { } host)
+            // The resident remembered when the list opened: rows are pooled and may show someone else by now.
+            if (index >= 0 && index < _window._ordinary.Count && _popupEntity != EntityId.None && _window.Host is { } host)
             {
-                host.Send(new SetProfessionCommand(Entity, _window._ordinary[(int)index]));
+                string id = _window._ordinary[(int)index];
+                host.Send(new SetProfessionCommand(_popupEntity, id));
+                if (_popupEntity == Entity)
+                {
+                    _pendingProfession = id;
+                    _pendingProfessionUntil = Time.GetTicksMsec() + PendingMsec;
+                    _professionShown = null;
+                    _window.Refresh();
+                }
             }
         }
 
@@ -420,8 +469,14 @@ public partial class ResidentsWindow : ToggleWindow
                 return;
             }
 
-            int next = (Shown[(int)kind - 1] + 1) % (WorkPriorities.Max + 1);
+            // Step from the displayed value, so two quick clicks give 0 to 1 to 2 even before Core has ticked.
+            int slot = (int)kind - 1;
+            int next = (Math.Max(Shown[slot], 0) + 1) % (WorkPriorities.Max + 1);
             host.Send(new SetWorkPriorityCommand(Entity, JobKinds.Names[(int)kind], next));
+            _pending[slot] = next;
+            _pendingUntil[slot] = Time.GetTicksMsec() + PendingMsec;
+            Shown[slot] = next;
+            Priorities[slot].Text = next == 0 ? "-" : next.ToString(CultureInfo.InvariantCulture);
         }
     }
 }

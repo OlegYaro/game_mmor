@@ -154,6 +154,7 @@ public static class WindowsUiSmoke
         List<ProfessionDef> ordinary = sim.Content.Professions.Where(p => p.Kind == "ordinary").ToList();
         DefId current = sim.World.Residents.Get(first).Profession;
         int pick = ordinary.FindIndex(p => sim.Content.TryGetId(p.Id, out DefId id) && id != current);
+        row.Profession.EmitSignal(MenuButton.SignalName.AboutToPopup);
         row.Profession.GetPopup().EmitSignal(PopupMenu.SignalName.IdPressed, (long)pick);
         sim.Step(2);
         residents.Refresh();

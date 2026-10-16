@@ -1,6 +1,7 @@
 using Core.Buildings;
 using Core.Content;
 using Core.Entities;
+using Core.Geometry;
 using Core.Sim;
 using Game.World;
 using Godot;
@@ -69,6 +70,9 @@ public partial class BuildMode : Node
 
     /// <summary>True when a tile under the cursor was checked since the mode started (or the last rotation).</summary>
     public bool HasPreview => _hasAnchor;
+
+    /// <summary>Asks whether a resident is drawn in front of the building at the viewport position (set by the owner; may be null).</summary>
+    public Func<Vector2, float, bool>? ResidentInFront { get; set; }
 
     /// <summary>Connects the mode to the world, the shared flags, the selection, the overlay and the command sink (<c>SimulationHost.Send</c>).</summary>
     public void Attach(WorldView view, GameInputState input, BuildingSelection selection, FootprintOverlay overlay, Action<ISimCommand> send)
@@ -378,6 +382,12 @@ public partial class BuildMode : Node
             EntityId occupant = world.Tiles.GetOccupant(x, y);
             if (occupant != EntityId.None && world.Buildings.Has(occupant))
             {
+                // A resident drawn in front of the building (y-sort) takes the click: it is not consumed, the resident picker gets it.
+                if (ResidentInFront?.Invoke(screen, IsoProjection.TileCenter(x, y).Py) == true)
+                {
+                    return;
+                }
+
                 _selection.Select(occupant);
                 _swallowRelease.Add(MouseButton.Left);
                 Consume();

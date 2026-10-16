@@ -213,10 +213,22 @@ public static class ResidentSmoke
             return "residents: ResidentSelected was not raised once with the resident";
         }
 
+        // The selection opens the residents window on the row of the resident; clearing it leaves the window open.
+        var window = root.GetNode<Game.Ui.ResidentsWindow>("Ui/ResidentsWindow");
+        if (!window.IsOpen || window.RowOf(target) is not { } row || row.Root.Modulate == Colors.White)
+        {
+            return "residents: selecting a resident on the map did not open the window on its row";
+        }
+
         if (picker.SelectAtWorld(onSprite + new Vector2(5000, 5000)) || root.ResidentSelection.Selected != EntityId.None
             || layer.RingOf(target)?.Visible != false || raised.Count != 2 || raised[1] != EntityId.None)
         {
             return "residents: a click on empty ground must clear the selection and stay free for the hero";
+        }
+
+        if (!window.IsOpen)
+        {
+            return "residents: clearing the selection must not close the window";
         }
 
         return null;

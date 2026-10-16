@@ -77,6 +77,17 @@ public partial class ResidentPicker : Node
         return SelectAtWorld(_view.Camera.ScreenToWorld(screen));
     }
 
+    /// <summary>
+    /// True when a resident is drawn in front of a building whose feet are at <paramref name="buildingFootY"/> (the y-sort
+    /// rule: the larger y is in front) and covers the viewport position <paramref name="screen"/>. Build mode asks this
+    /// before it selects a building, so the click goes on to <see cref="ClickAt"/>.
+    /// </summary>
+    public bool IsResidentInFront(Vector2 screen, float buildingFootY)
+    {
+        return _layer is not null && _view is { IsBound: true }
+            && _layer.TryPick(_view.Camera.ScreenToWorld(screen), out _, out float footY) && footY >= buildingFootY;
+    }
+
     /// <summary>Same as <see cref="ClickAt"/> for a point in world coordinates (the coordinates of the objects layer).</summary>
     public bool SelectAtWorld(Vector2 world)
     {
