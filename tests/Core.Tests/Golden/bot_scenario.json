@@ -10,5 +10,13 @@
     { "item": "stone", "count": 40 },
     { "item": "berries", "count": 120 }
   ],
-  "residents": [ 5, 12, 40 ]
+  "residents": [ 5, 12, 40 ],
+  "build": {
+    "description": "Building demand variant (golden bot_build_<residents>.csv): every everyTicks ticks the bot upgrades its finished buildings up to upgradeTo, places one new near the center while fewer than keep would stand, and demolishes those at upgradeTo; a demolition refunds only part of the cost, so wood and stone keep being spent.",
+    "building": "house",
+    "everyTicks": 750,
+    "upgradeTo": 3,
+    "keep": 3,
+    "residents": [ 12 ]
+  }
 }

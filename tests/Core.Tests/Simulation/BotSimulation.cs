@@ -23,8 +23,9 @@ namespace Core.Tests.Sim;
 /// <param name="Fields">Fields built at the start.</param>
 /// <param name="Give">Items given to the hero at the start (building materials, a first food stock).</param>
 /// <param name="Residents">Settlement sizes: residents spawned at the start, one run each.</param>
+/// <param name="Build">The building demand variant (runs <c>bot_build_&lt;residents&gt;</c>), or null.</param>
 internal sealed record BotScenario(ulong Seed, int MapSize, int Days, int Houses, int Fields,
-    IReadOnlyList<(string Item, int Count)> Give, IReadOnlyList<int> Residents)
+    IReadOnlyList<(string Item, int Count)> Give, IReadOnlyList<int> Residents, BotBuildDemand? Build = null)
 {
     public const string FileName = "bot_scenario.json";
 
@@ -39,12 +40,38 @@ internal sealed record BotScenario(ulong Seed, int MapSize, int Days, int Houses
             root.GetProperty("houses").GetInt32(),
             root.GetProperty("fields").GetInt32(),
             [.. root.GetProperty("give").EnumerateArray().Select(g => (g.GetProperty("item").GetString()!, g.GetProperty("count").GetInt32()))],
-            [.. root.GetProperty("residents").EnumerateArray().Select(r => r.GetInt32())]);
+            [.. root.GetProperty("residents").EnumerateArray().Select(r => r.GetInt32())],
+            root.TryGetProperty("build", out JsonElement build)
+                ? new BotBuildDemand(
+                    build.GetProperty("building").GetString()!,
+                    build.GetProperty("everyTicks").GetInt32(),
+                    build.GetProperty("upgradeTo").GetInt32(),
+                    build.GetProperty("keep").GetInt32(),
+                    [.. build.GetProperty("residents").EnumerateArray().Select(r => r.GetInt32())])
+                : null);
     }
 
-    /// <summary>File name of the golden CSV of the run with <paramref name="residents"/> residents.</summary>
-    public static string CsvName(int residents) => string.Create(CultureInfo.InvariantCulture, $"bot_{residents}.csv");
+    /// <summary>File name of the golden CSV of the run with <paramref name="residents"/> residents (with the building demand when <paramref name="build"/>).</summary>
+    public static string CsvName(int residents, bool build = false) =>
+        string.Create(CultureInfo.InvariantCulture, $"bot_{(build ? "build_" : string.Empty)}{residents}.csv");
 }
+
+/// <summary>
+/// The building demand of the scenario (section <c>build</c>): M3a has no consumers of wood and stone yet, so without it
+/// the stocks fill up in a few days and the residents stand idle. Every <paramref name="EveryTicks"/> ticks the bot gives
+/// orders from the state alone (deterministic): every finished building of its own below <paramref name="UpgradeTo"/> is
+/// upgraded, one new <paramref name="Building"/> is placed near the center while fewer than <paramref name="Keep"/> of its
+/// own would stand, and every finished one at <paramref name="UpgradeTo"/> is demolished (spending first, so the refund
+/// finds room in the storages). A demolition refunds only part of the cost, so every building passing through costs wood
+/// and stone; orders spread over the day let the residents refill the stock in between. An order that cannot be paid or
+/// placed is simply refused.
+/// </summary>
+/// <param name="Building">Building the bot places, upgrades and demolishes.</param>
+/// <param name="EveryTicks">Ticks between two rounds of orders.</param>
+/// <param name="UpgradeTo">Level a building is upgraded to before it is demolished.</param>
+/// <param name="Keep">Buildings of the bot standing at once at most.</param>
+/// <param name="Residents">Settlement sizes of this variant, one run each.</param>
+internal sealed record BotBuildDemand(string Building, int EveryTicks, int UpgradeTo, int Keep, IReadOnlyList<int> Residents);
 
 /// <summary>The metrics of one game day of a bot run (one CSV row): the state at the first tick of the next day, after the meal.</summary>
 internal sealed record BotDay(
@@ -70,21 +97,27 @@ internal sealed record BotDay(
     long Harvested,
     long Eaten,
     long Lost,
+    long SpentWood,
+    long SpentStone,
     int Trails,
     int Roads,
     int Stumps,
     int Saplings,
-    int GrownTrees)
+    int GrownTrees,
+    int RegrownStumps)
 {
+    // grown_trees counts the trees standing on tiles without a generated tree (flora); a stump on a map tree's tile grows
+    // back into the map's tree and leaves the flora, so regrown_stumps counts the stumps that became trees that day.
     public const string Header =
         "day,population,arrivals,departures,wood,stone,berries,vegetables,gold,food,food_net,idle_permille,zero_food_days,busy,free_field_slots,"
-        + "output_waiting,gathered_wood,gathered_stone,gathered_berries,harvested,eaten,lost,trails,roads,stumps,saplings,grown_trees";
+        + "output_waiting,gathered_wood,gathered_stone,gathered_berries,harvested,eaten,lost,spent_wood,spent_stone,trails,roads,stumps,saplings,"
+        + "grown_trees,regrown_stumps";
 
     public string ToCsv() => string.Join(',', new object[]
     {
         Day, Population, Arrivals, Departures, Wood, Stone, Berries, Vegetables, Gold, Food, FoodNet, IdlePermille, ZeroFoodDays, Busy,
-        FreeFieldSlots, OutputWaiting, GatheredWood, GatheredStone, GatheredBerries, Harvested, Eaten, Lost, Trails, Roads, Stumps, Saplings,
-        GrownTrees,
+        FreeFieldSlots, OutputWaiting, GatheredWood, GatheredStone, GatheredBerries, Harvested, Eaten, Lost, SpentWood, SpentStone, Trails, Roads,
+        Stumps, Saplings, GrownTrees, RegrownStumps,
     }.Select(v => Convert.ToString(v, CultureInfo.InvariantCulture)));
 }
 
@@ -94,14 +127,18 @@ internal sealed record BotRun(IReadOnlyList<BotDay> Days, string Csv, long Setup
 /// <summary>
 /// The bot simulation of docs/research/economy-six-chains.md: a new game, a settlement set up by orders at the start
 /// (materials and food given, campfire, houses, storage, fields, the leftovers handed in at the storage, residents
-/// spawned), then no order at all for the given days. Every day the metrics go into a CSV row and the invariants are
-/// checked: no negative or overfull stock, every item accounted for (held = gathered + harvested + taxed + given +
-/// refunded − eaten − spent − lost, <see cref="EconomyLedger"/>), the population never 0.
+/// spawned), then no order at all for the given days, or only the building orders of <see cref="BotBuildDemand"/>.
+/// Every day the metrics go into a CSV row and the invariants are checked: no negative or overfull stock, every item
+/// accounted for (held = gathered + harvested + taxed + given + refunded − eaten − spent − lost,
+/// <see cref="EconomyLedger"/>), the population never 0.
 /// </summary>
 internal static class BotSimulation
 {
-    /// <summary>Plays the scenario with <paramref name="residents"/> residents for <paramref name="days"/> days.</summary>
-    public static BotRun Run(BotScenario scenario, int residents, int days)
+    /// <summary>
+    /// Plays the scenario with <paramref name="residents"/> residents for <paramref name="days"/> days, with the building
+    /// orders of <paramref name="build"/> when given.
+    /// </summary>
+    public static BotRun Run(BotScenario scenario, int residents, int days, BotBuildDemand? build = null)
     {
         long started = System.Diagnostics.Stopwatch.GetTimestamp();
         Simulation sim = Simulation.CreateNewGame(SimTestData.Real, new NewGameOptions(scenario.Seed, scenario.MapSize, Difficulty.Normal));
@@ -117,10 +154,27 @@ internal static class BotSimulation
         int departures = 0;
         long residentTicks = 0;
         long idleTicks = 0;
+        var stumps = new List<int>();
+        int regrownStumps = 0;
+        var built = new List<EntityId>();
         Assert.True(sim.Tick < ticksPerDay, $"The setup took {sim.Tick} ticks, more than the first day.");
         while (sim.Tick < (long)days * ticksPerDay)
         {
+            // Flora grows only in the first tick of a day (TileSystem), before any resident or the hero works: the stumps
+            // standing before that tick that are trees after it grew back.
+            bool dayStarts = (sim.Tick + 1) % ticksPerDay == 0;
+            if (dayStarts)
+            {
+                stumps.Clear();
+                world.Tiles.CollectFlora(FloraState.Stump, stumps);
+            }
+
             sim.Step();
+            if (dayStarts)
+            {
+                regrownStumps += stumps.Count(t => world.Tiles.GetEffectiveResource(t % world.Size, t / world.Size) == Core.WorldGen.ResourceKind.Tree);
+            }
+
             foreach (ResidentEvent e in world.ResidentEvents)
             {
                 if (e.Tick == sim.Tick)
@@ -138,6 +192,11 @@ internal static class BotSimulation
                     residentTicks++;
                     idleTicks += world.Jobs.Get(owners[i]).Kind == JobKind.None ? 1 : 0;
                 }
+            }
+
+            if (build is not null)
+            {
+                OrderBuildings(sim, build, built);
             }
 
             if (sim.Now.TickOfDay != 0)
@@ -172,12 +231,15 @@ internal static class BotSimulation
                 now[3] - ledger[3],
                 now[4] - ledger[4],
                 now[5] - ledger[5],
+                now[6] - ledger[6],
+                now[7] - ledger[7],
                 world.Tiles.TrailTiles,
                 world.Tiles.RoadTiles,
                 CountFlora(world, FloraState.Stump),
                 CountFlora(world, FloraState.Sapling),
-                CountFlora(world, FloraState.Tree)));
-            (ledger, food, arrivals, departures, residentTicks, idleTicks) = (now, stored, 0, 0, 0, 0);
+                CountFlora(world, FloraState.Tree),
+                regrownStumps));
+            (ledger, food, arrivals, departures, residentTicks, idleTicks, regrownStumps) = (now, stored, 0, 0, 0, 0, 0);
             Assert.True(world.Residents.Count > 0, $"Day {sim.Now.Day}: the settlement is empty.");
         }
 
@@ -278,7 +340,7 @@ internal static class BotSimulation
     private static readonly (LedgerFlow Flow, string Item)[] _ledgerColumns =
     [
         (LedgerFlow.Gathered, "wood"), (LedgerFlow.Gathered, "stone"), (LedgerFlow.Gathered, "berries"), (LedgerFlow.Harvested, "vegetable"),
-        (LedgerFlow.Eaten, string.Empty), (LedgerFlow.Lost, string.Empty),
+        (LedgerFlow.Eaten, string.Empty), (LedgerFlow.Lost, string.Empty), (LedgerFlow.Spent, "wood"), (LedgerFlow.Spent, "stone"),
     ];
 
     // Cumulative ledger values of the CSV columns (an empty item sums the flow over every item).
@@ -325,6 +387,63 @@ internal static class BotSimulation
         }
 
         return count;
+    }
+
+    // The bot's building orders after a tick (see BotBuildDemand); `built` holds its own buildings, oldest first. The
+    // orders execute in the next tick, in the order given.
+    private static void OrderBuildings(Simulation sim, BotBuildDemand build, List<EntityId> built)
+    {
+        GameWorld world = sim.World!;
+        for (int i = world.BuildingEvents.Count - 1; i >= 0 && world.BuildingEvents[i].Tick == sim.Tick; i--)
+        {
+            BuildingEvent e = world.BuildingEvents[i];
+            if (e.Command == PlaceBuildingCommand.KindName && e.Result == BuildResult.Ok)
+            {
+                built.Add(e.Building);
+            }
+        }
+
+        built.RemoveAll(b => !world.Buildings.Has(b));
+        if (sim.Tick % build.EveryTicks != 0)
+        {
+            return;
+        }
+
+        List<EntityId> demolish = [];
+        foreach (EntityId b in built.Where(b => world.Buildings.Get(b).State == BuildingState.Active))
+        {
+            if (world.Buildings.Get(b).Level < build.UpgradeTo)
+            {
+                sim.Enqueue(new UpgradeBuildingCommand(b));
+            }
+            else
+            {
+                demolish.Add(b);
+            }
+        }
+
+        if (built.Count - demolish.Count < build.Keep && TryFindSpot(sim, build.Building, Construction.FindCenter(sim)) is { } spot)
+        {
+            sim.Enqueue(new PlaceBuildingCommand(build.Building, spot.X, spot.Y));
+        }
+
+        foreach (EntityId b in demolish)
+        {
+            sim.Enqueue(new DemolishBuildingCommand(b));
+        }
+    }
+
+    private static (int X, int Y)? TryFindSpot(Simulation sim, string id, EntityId center)
+    {
+        Building building = sim.World!.Buildings.Get(center);
+        try
+        {
+            return FindSpot(sim, id, minDistance: 2, near: (building.X, building.Y));
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     /// <summary>The orders of the start: give, build, hand in, spawn; each waits for the previous to take effect.</summary>
