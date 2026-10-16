@@ -415,7 +415,15 @@ public sealed class ContentCatalog
 
             for (int i = 0; i < levelDef.Cost.Count; i++)
             {
-                CheckTarget<ItemDef>(file, $"$.items[{index}].levels[{level}].cost[{i}].item", building.Id, levelDef.Cost[i].Item, "item", byId, errors);
+                string path = $"$.items[{index}].levels[{level}].cost[{i}].item";
+                CheckTarget<ItemDef>(file, path, building.Id, levelDef.Cost[i].Item, "item", byId, errors);
+                int first = FirstEntryOf(levelDef.Cost, levelDef.Cost[i].Item);
+                if (first < i)
+                {
+                    // Paying checks and takes each entry on its own, so a repeated item would pass the check and fail the payment.
+                    errors.Add(new ContentError(ContentErrorKind.Validation, file, path,
+                        $"Building '{building.Id}' level {level + 1} lists item '{levelDef.Cost[i].Item}' twice in its cost (entries {first} and {i}); put the total in one entry."));
+                }
             }
 
             for (int i = 0; i < levelDef.Requirements.Count; i++)
@@ -450,5 +458,19 @@ public sealed class ContentCatalog
         {
             errors.Add(new ContentError(ContentErrorKind.Reference, file, path, $"'{owner}' references '{target}', which is not a {what}."));
         }
+    }
+
+    // Index of the first entry of `cost` for `item` (ordinal comparison, like ids everywhere).
+    private static int FirstEntryOf(IReadOnlyList<ItemAmountDef> cost, string item)
+    {
+        for (int i = 0; i < cost.Count; i++)
+        {
+            if (string.Equals(cost[i].Item, item, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 }

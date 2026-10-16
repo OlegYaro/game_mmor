@@ -229,20 +229,50 @@ public static class Construction
         return (int)Math.Min(int.MaxValue, total);
     }
 
-    /// <summary>True when the player can pay every entry of <paramref name="cost"/> (<see cref="CountAvailable"/>).</summary>
+    /// <summary>
+    /// True when the player can pay <paramref name="cost"/> (<see cref="CountAvailable"/>). Entries of the same item
+    /// are added up: data never repeats an item in one cost (the content check rejects it), but a cost built in code
+    /// may, and paying takes the entries one after another.
+    /// </summary>
     public static bool CanPay(Simulation sim, IReadOnlyList<ItemAmountDef> cost)
     {
         ArgumentNullException.ThrowIfNull(sim);
         ArgumentNullException.ThrowIfNull(cost);
-        foreach (ItemAmountDef entry in cost)
+        for (int i = 0; i < cost.Count; i++)
         {
-            if (!sim.Content.TryGetId(entry.Item, out DefId item) || CountAvailable(sim, item) < entry.Count)
+            string id = cost[i].Item;
+            if (IndexOfItem(cost, id, 0, i) >= 0)
+            {
+                continue; // the first entry of this item checked the sum
+            }
+
+            long needed = cost[i].Count;
+            for (int j = IndexOfItem(cost, id, i + 1, cost.Count); j >= 0; j = IndexOfItem(cost, id, j + 1, cost.Count))
+            {
+                needed += cost[j].Count;
+            }
+
+            if (!sim.Content.TryGetId(id, out DefId item) || CountAvailable(sim, item) < needed)
             {
                 return false;
             }
         }
 
         return true;
+    }
+
+    // Index of the first entry of `item` in cost[from..to), or -1.
+    private static int IndexOfItem(IReadOnlyList<ItemAmountDef> cost, string item, int from, int to)
+    {
+        for (int i = from; i < to; i++)
+        {
+            if (string.Equals(cost[i].Item, item, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     /// <summary>

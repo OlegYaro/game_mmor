@@ -200,6 +200,28 @@ public sealed class CivilizationContentTests
     }
 
     [Fact]
+    [Trait("Req", "FR-BUILD-02")]
+    [Trait("Req", "FR-BUILD-09")]
+    public void AnItemRepeatedInOneCostIsRejected()
+    {
+        // Paying checks and spends each entry separately: [wood 3, wood 3] passed the check with 3 wood and the tick threw.
+        ContentLoadResult repeated = LoadWith("buildings/buildings.json", items =>
+            Item(items, "house")["levels"]![1]!["cost"] = JsonNode.Parse("""
+                [ { "item": "wood", "count": 3 }, { "item": "stone", "count": 1 }, { "item": "wood", "count": 3 } ]
+                """));
+        AssertSingleError(repeated, ContentErrorKind.Validation, "buildings/buildings.json", "$.items[1].levels[1].cost[2].item");
+        Assert.Contains("'wood'", repeated.Errors[0].Message, StringComparison.Ordinal);
+
+        // The same item in different levels is fine.
+        ContentLoadResult levels = LoadWith("buildings/buildings.json", items =>
+        {
+            Item(items, "house")["levels"]![0]!["cost"] = JsonNode.Parse("""[ { "item": "wood", "count": 3 } ]""");
+            Item(items, "house")["levels"]![1]!["cost"] = JsonNode.Parse("""[ { "item": "wood", "count": 3 } ]""");
+        });
+        Assert.NotNull(levels.Catalog);
+    }
+
+    [Fact]
     [Trait("Req", "FR-BUILD-09")]
     public void UpgradesNeverShrinkStorageOrCapacity()
     {

@@ -174,6 +174,24 @@ public sealed class ConstructionTests
 
     [Fact]
     [Trait("Req", "FR-BUILD-02")]
+    public void CanPayAddsUpEntriesOfTheSameItem()
+    {
+        // A cost built in code may repeat an item (data with a repeated item is rejected at load): it needs the sum.
+        Simulation sim = NewGame();
+        Give(sim, "wood", 3);
+        Give(sim, "stone", 1);
+        Assert.True(Construction.CanPay(sim, [new("wood", 3), new("stone", 1)]));
+        Assert.False(Construction.CanPay(sim, [new("wood", 3), new("stone", 1), new("wood", 3)]));
+        Assert.False(Construction.CanPay(sim, [new("wood", 2), new("wood", 2)]));
+        Assert.True(Construction.CanPay(sim, [new("wood", 2), new("stone", 1), new("wood", 1)]));
+        Assert.False(Construction.CanPay(sim, [new("wood", int.MaxValue), new("wood", int.MaxValue)]));
+
+        Give(sim, "wood", 3);
+        Assert.True(Construction.CanPay(sim, [new("wood", 3), new("stone", 1), new("wood", 3)]));
+    }
+
+    [Fact]
+    [Trait("Req", "FR-BUILD-02")]
     public void MaterialsComeFromTheBackpackFirstThenTheStorages()
     {
         Simulation sim = NewGame();
