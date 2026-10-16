@@ -91,6 +91,10 @@ public partial class GameRoot : Node
 
         GetNode<Hud>("Ui/Hud").Bind(host);
         GetNode<PauseMenu>("Ui/PauseMenu").Bind(host);
+        GetNode<ResourceBar>("Ui/ResourceBar").Bind(host);
+        GetNode<BuildMenu>("Ui/BuildMenu").Bind(host);
+        GetNode<InspectorPanel>("Ui/InspectorPanel").Bind(host);
+        GetNode<BuildingMessages>("Ui/BuildingMessages").Bind(host);
         DevConsolePanel console = GetNode<DevConsolePanel>("Ui/DevConsolePanel");
         console.Bind(host);
         console.CameraRequested += (x, y) => CenterCamera(x, y);

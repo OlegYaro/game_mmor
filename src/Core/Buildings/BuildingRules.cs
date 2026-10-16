@@ -65,24 +65,8 @@ internal static class BuildingRules
             return;
         }
 
-        BuildResult result = BuildResult.Ok;
+        BuildResult result = Construction.CheckUpgrade(sim, entity);
         BuildingLevelDef? next = building.Level < def.Levels.Count ? def.Levels[building.Level] : null;
-        if (building.State != BuildingState.Active)
-        {
-            result = BuildResult.Busy;
-        }
-        else if (next is null)
-        {
-            result = BuildResult.MaxLevel;
-        }
-        else if (!Construction.MeetsRequirements(sim, next))
-        {
-            result = BuildResult.RequirementNotMet;
-        }
-        else if (!Construction.CanPay(sim, next.Cost))
-        {
-            result = BuildResult.NotEnoughMaterials;
-        }
 
         if (result == BuildResult.Ok)
         {
@@ -127,19 +111,7 @@ internal static class BuildingRules
             return;
         }
 
-        BuildResult result = BuildResult.Ok;
-        if (building.State != BuildingState.Active)
-        {
-            result = BuildResult.Busy;
-        }
-        else if (Construction.IsCenter(def))
-        {
-            result = BuildResult.CenterNotRemovable;
-        }
-        else if (Construction.IsStorage(def) && !HasOtherBuiltStorage(sim, world, entity))
-        {
-            result = BuildResult.LastStorage;
-        }
+        BuildResult result = Construction.CheckDemolish(sim, entity);
 
         if (result != BuildResult.Ok)
         {
@@ -500,7 +472,7 @@ internal static class BuildingRules
         }
     }
 
-    private static bool HasOtherBuiltStorage(Simulation sim, GameWorld world, EntityId entity)
+    internal static bool HasOtherBuiltStorage(Simulation sim, GameWorld world, EntityId entity)
     {
         ReadOnlySpan<EntityId> owners = world.Buildings.Entities;
         Span<Building> buildings = world.Buildings.Values;
