@@ -1,6 +1,5 @@
 using Core.Entities;
 using Core.Fog;
-using Core.Geometry;
 using Core.Heroes;
 using Core.Pathfinding;
 using Core.Sim;
@@ -88,50 +87,25 @@ public partial class PlayerInput : Node
             return;
         }
 
-        if (!WorldPicker.TryPickTile(view, click.Position, out int x, out int y))
-        {
-            return;
-        }
-
-        // A tree, rock or bush sprite rises above its tile, so a click on its crown lands on a tile further back:
-        // prefer a resource in front whose sprite covers the clicked point.
-        (x, y) = ResourceUnderPoint(view, sim, click.Position, x, y);
-        ResourceKind resource = sim.World!.Tiles.GetEffectiveResource(x, y);
+        // A resource sprite rises above its tile, so its crown can lie over the map edge or over a ground tile further back:
+        // ask for the resource under the point first, then for the ground tile.
         bool sprint = Input.IsPhysicalKeyPressed(Key.Shift);
-        if (resource is ResourceKind.Tree or ResourceKind.Stone or ResourceKind.BerryBush)
+        if (WorldPicker.TryPickResource(view, click.Position, out int rx, out int ry))
         {
-            _host!.Send(new GatherCommand(x, y));
+            _host!.Send(new GatherCommand(rx, ry));
+        }
+        else if (WorldPicker.TryPickTile(view, click.Position, out int x, out int y))
+        {
+            _host!.Send(new MoveHeroCommand(x, y, sprint));
         }
         else
         {
-            _host!.Send(new MoveHeroCommand(x, y, sprint));
+            return;
         }
 
         _steering = false;
         _clickTick = sim.Tick;
         GetViewport().SetInputAsHandled();
-    }
-
-    // A tree, rock or bush sprite rises above its tile, so a click on its crown lands on a tile further back: prefer a
-    // visible resource in front whose sprite covers the clicked point (IsoProjection.PickObject, tested in Core).
-    private static (int X, int Y) ResourceUnderPoint(WorldView view, CoreSimulation sim, Vector2 screen, int pickedX, int pickedY)
-    {
-        WorldArt? art = view.Chunks.Art;
-        if (art is null || sim.World is not { } world)
-        {
-            return (pickedX, pickedY);
-        }
-
-        Vector2 point = view.Camera.ScreenToWorld(screen);
-        TerrainMap terrain = world.Map.Terrain;
-        bool found = IsoProjection.PickObject(
-            (int)Mathf.Floor(point.X),
-            (int)Mathf.Floor(point.Y),
-            world.Size,
-            (x, y) => art.VisualHeight(terrain.GetBiome(x, y), terrain.GetFeatures(x, y), terrain.GetHeight(x, y)),
-            (x, y) => world.Fog.GetState(x, y) != FogState.Unknown && world.Tiles.GetEffectiveResource(x, y) != ResourceKind.None,
-            out (int X, int Y) tile);
-        return found ? tile : (pickedX, pickedY);
     }
 
     public override void _Process(double delta)

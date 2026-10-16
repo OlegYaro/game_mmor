@@ -196,7 +196,7 @@ public static class WorldRenderSmoke
     {
         GameWorld world = sim.World!;
         WorldArt art = view.Chunks.Art!;
-        string? picked = CheckPicking(view, world, art, start);
+        string? picked = CheckPicking(view, world, art, start) ?? CheckResourcePicking(view, sim, world, art, start);
         if (picked is not null)
         {
             return picked;
@@ -270,6 +270,56 @@ public static class WorldRenderSmoke
         }
 
         GD.Print($"Smoke world render: picker matches {samples} flat tiles ({engineSamples} against LocalToMap)");
+        return null;
+    }
+
+    // A click on the crown of a tree (about 20 px above the centre of its raised tile) must pick the tree, not the ground tile
+    // behind it, through the same picker the hero input uses (FR-HERO-02); a tree in the fog must not catch a click.
+    private static string? CheckResourcePicking(WorldView view, CoreSimulation sim, GameWorld world, WorldArt art, StartPoint start)
+    {
+        sim.Enqueue(new RevealAllCommand());
+        sim.Step();
+        TerrainMap terrain = world.Map.Terrain;
+        int checkedTrees = 0;
+        for (int y = start.Y - 20; y <= start.Y + 20 && checkedTrees < 12; y++)
+        {
+            for (int x = start.X - 20; x <= start.X + 20 && checkedTrees < 12; x++)
+            {
+                if (!terrain.Contains(x, y) || world.Tiles.GetEffectiveResource(x, y) != ResourceKind.Tree)
+                {
+                    continue;
+                }
+
+                int h = art.VisualHeight(terrain.GetBiome(x, y), terrain.GetFeatures(x, y), terrain.GetHeight(x, y));
+                (int px, int py) = IsoProjection.TileCenter(x, y, h);
+                WorldCamera camera = view.Camera;
+                camera.CenterOnWorld(new Vector2(px, py));
+                Vector2 half = camera.GetViewportRect().Size / 2;
+                foreach (int up in new[] { 20, 10, 0 })
+                {
+                    Vector2 screen = ((new Vector2(px, py - up) - camera.Position) * camera.Zoom.X) + half;
+                    // A neighbouring tree in front may cover the same pixel and win; any tree whose sprite covers it is a valid pick.
+                    if (!WorldPicker.TryPickResource(view, screen, out int rx, out int ry))
+                    {
+                        return $"picking: a click {up} px above the tree {x},{y} (height {h}) picked no resource";
+                    }
+
+                    if (world.Tiles.GetEffectiveResource(rx, ry) != ResourceKind.Tree || rx + ry < x + y)
+                    {
+                        return $"picking: a click {up} px above the tree {x},{y} picked {rx},{ry} (not a tree in front of it)";
+                    }
+                }
+
+                checkedTrees++;
+            }
+        }
+
+        if (checkedTrees == 0)
+        {
+            return "picking: no tree near the start to test the crown click";
+        }
+
+        GD.Print($"Smoke world render: crown clicks pick {checkedTrees} trees");
         return null;
     }
 

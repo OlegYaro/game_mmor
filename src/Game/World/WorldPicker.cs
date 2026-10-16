@@ -1,5 +1,7 @@
+using Core.Fog;
 using Core.Geometry;
 using Core.Sim;
+using Core.WorldGen;
 using Godot;
 
 namespace Game.World;
@@ -29,6 +31,40 @@ public static class WorldPicker
             (int)Mathf.Floor(point.Y),
             world.Size,
             (tx, ty) => art.VisualHeight(terrain.GetBiome(tx, ty), terrain.GetFeatures(tx, ty), terrain.GetHeight(tx, ty)),
+            out (int X, int Y) tile);
+        if (found)
+        {
+            x = tile.X;
+            y = tile.Y;
+        }
+
+        return found;
+    }
+
+    /// <summary>
+    /// The visible tree, rock or berry bush whose sprite covers a viewport position (a tree rises above its tile, so a click on
+    /// the crown lands on a ground tile further back; see <see cref="IsoProjection.PickObject"/>). Unexplored tiles never match.
+    /// </summary>
+    public static bool TryPickResource(WorldView view, Vector2 screen, out int x, out int y)
+    {
+        x = 0;
+        y = 0;
+        GameWorld? world = view.Simulation?.World;
+        WorldArt? art = view.Chunks.Art;
+        if (world is null || art is null)
+        {
+            return false;
+        }
+
+        Vector2 point = view.Camera.ScreenToWorld(screen);
+        TerrainMap terrain = world.Map.Terrain;
+        bool found = IsoProjection.PickObject(
+            (int)Mathf.Floor(point.X),
+            (int)Mathf.Floor(point.Y),
+            world.Size,
+            (tx, ty) => art.VisualHeight(terrain.GetBiome(tx, ty), terrain.GetFeatures(tx, ty), terrain.GetHeight(tx, ty)),
+            (tx, ty) => world.Fog.GetState(tx, ty) != FogState.Unknown
+                && world.Tiles.GetEffectiveResource(tx, ty) is ResourceKind.Tree or ResourceKind.Stone or ResourceKind.BerryBush,
             out (int X, int Y) tile);
         if (found)
         {
