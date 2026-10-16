@@ -15,7 +15,8 @@ namespace Core.Sim;
 /// <remarks>
 /// <para>Paths are planned synchronously with a node limit (<see cref="NodeLimit"/>), so no search queue has to be
 /// saved: the planned path is part of the <see cref="Mover"/>. A search that runs out of nodes gives a partial path;
-/// at its end the walker plans again from where it stands.</para>
+/// at its end the walker plans again from where it stands. A search that stalls (the partial path is the start alone)
+/// runs once more over the whole map (<see cref="FindPath"/>).</para>
 /// <para>Orders are checked when they execute, in a fixed order, and a rejected order only sets
 /// <see cref="Hero.LastOrder"/> (and logs): outside the map, unknown in the fog, impassable, unreachable, no node.</para>
 /// </remarks>
@@ -485,12 +486,47 @@ internal static class HeroRules
     private static bool TryReplan(GameWorld world, int from, Mover mover, out IReadOnlyList<int> path)
     {
         var tiles = new List<int>();
-        PathResult result = mover.GoalRange == 0
-            ? world.Pathfinder.FindPath(from, mover.Goal, tiles, NodeLimit)
-            : world.Pathfinder.FindPathToAdjacent(from, mover.Goal, tiles, NodeLimit);
+        PathResult result = FindPath(world.Pathfinder, from, mover.Goal, mover.GoalRange, tiles);
         path = [.. tiles];
         return result.Length > 1;
     }
+
+    /// <summary>
+    /// The hero's path search: to the goal tile itself (<paramref name="range"/> 0) or next to it, first with
+    /// <see cref="NodeLimit"/>. When that search stalls, a partial path that is only the start, it runs once more
+    /// with <see cref="StallNodeLimit"/>.
+    /// </summary>
+    /// <remarks>
+    /// A partial result comes only after the connectivity check passed (the goal, or for an approach a tile next to
+    /// it, is in the start's component), so the goal is known to be reachable. A limited search ends on the explored
+    /// tile closest to the goal by the heuristic, often a cliff edge or a shore next to the goal; walking there and
+    /// searching again from it explores the same pocket and returns that tile alone. Without the wider search the order
+    /// was rejected as unreachable or the walker stopped with <see cref="HeroStopReason.PathBlocked"/>. The heuristic
+    /// value of a partial path's end strictly decreases from one partial search to the next, so a walker following
+    /// partial paths never cycles: it arrives or stalls, and a stall is where the wider search runs. A* clears every
+    /// node record it touches, so the result does not depend on earlier searches (NFR-04).
+    /// </remarks>
+    internal static PathResult FindPath(Pathfinder pathfinder, int start, int goal, int range, List<int> path)
+    {
+        PathResult result = Search(pathfinder, start, goal, range, path, NodeLimit);
+        if (result.Status == PathStatus.Partial && result.Length <= 1)
+        {
+            result = Search(pathfinder, start, goal, range, path, StallNodeLimit(pathfinder.Grid));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Node limit of the search after a stall: the whole map, capped at <see cref="PathfinderConfig.MaxNodeLimit"/>
+    /// (which keeps path costs within <see cref="int"/>). A* stops at the goal, so the search costs only the nodes the
+    /// detour needs: on generated 1024² and 2048² maps a median of 35 000–55 000 nodes (3–5 ms in Release) and at most
+    /// about 300 000 (under 40 ms), up to a million for a detour across a 2048² map (50–90 ms, ADR 0003).
+    /// </summary>
+    internal static int StallNodeLimit(PassabilityGrid grid) => Math.Min(grid.TileCount, PathfinderConfig.MaxNodeLimit);
+
+    private static PathResult Search(Pathfinder pathfinder, int start, int goal, int range, List<int> path, int nodeLimit) =>
+        range == 0 ? pathfinder.FindPath(start, goal, path, nodeLimit) : pathfinder.FindPathToAdjacent(start, goal, path, nodeLimit);
 
     // Plans a fresh path for an order. Mid-step, the walker first finishes its step: the new path starts at the step's
     // end and the current step is kept in front of it.
@@ -523,9 +559,7 @@ internal static class HeroRules
         }
 
         var path = new List<int>();
-        PathResult result = range == 0
-            ? pathfinder.FindPath(start, goal, path, NodeLimit)
-            : pathfinder.FindPathToAdjacent(start, goal, path, NodeLimit);
+        PathResult result = FindPath(pathfinder, start, goal, range, path);
         if (!result.HasPath || (result.Status == PathStatus.Partial && result.Length <= 1))
         {
             planned = Mover.Idle;
