@@ -1,4 +1,4 @@
-using System.Numerics;
+using Core.Content;
 using Core.Determinism;
 using Core.Entities;
 using Core.Pathfinding;
@@ -26,18 +26,21 @@ public sealed record ResourceChunkState(int ChunkX, int ChunkY, IReadOnlyList<ul
 /// <param name="Owners">Owner entity of each occupied tile, in mask order.</param>
 public sealed record OccupancyChunkState(int ChunkX, int ChunkY, IReadOnlyList<ulong> Mask, IReadOnlyList<EntityId> Owners);
 
-/// <summary>Saved form of <see cref="TileChanges"/>: the non-empty chunks of both layers in ascending chunk index order.</summary>
+/// <summary>Saved form of <see cref="TileChanges"/>: the non-empty chunks of every layer in ascending chunk index order.</summary>
 /// <param name="Resources">Changed chunks of the resource layer.</param>
 /// <param name="Occupancy">Chunks of the occupancy layer with at least one occupied tile.</param>
-public sealed record TileChangesState(IReadOnlyList<ResourceChunkState> Resources, IReadOnlyList<OccupancyChunkState> Occupancy)
+/// <param name="Flora">Chunks of the flora layer (stumps, saplings, grown trees).</param>
+/// <param name="Walks">Chunks of the walk layer with a tile whose counter is above 0 at the saved tick.</param>
+public sealed record TileChangesState(IReadOnlyList<ResourceChunkState> Resources, IReadOnlyList<OccupancyChunkState> Occupancy,
+    IReadOnlyList<FloraChunkState> Flora, IReadOnlyList<WalkChunkState> Walks)
 {
     /// <summary>No changes.</summary>
-    public static TileChangesState Empty { get; } = new([], []);
+    public static TileChangesState Empty { get; } = new([], [], [], []);
 }
 
 /// <summary>
 /// The difference between the live world and the immutable generated <see cref="WorldMap"/> (FR-WORLD-05, ADR 0007):
-/// sparse per 32×32 chunk, two independent layers. The map and its hash never change.
+/// sparse per 32×32 chunk, four layers (resources, occupancy, flora, walks). The map and its hash never change.
 /// </summary>
 /// <remarks>
 /// <para><b>Resources.</b> A changed tile stores the remaining stock of its node; the kind still comes from the map,
@@ -52,33 +55,49 @@ public sealed record TileChangesState(IReadOnlyList<ResourceChunkState> Resource
 /// is reported to the attached <see cref="Pathfinder"/> in the same call.</para>
 /// <para><b>Memory.</b> A changed chunk holds a dense array (2 KiB of stocks, 8 KiB of owners) plus the 128-byte mask;
 /// untouched chunks cost one null reference. Saves and the hash hold only the mask and the changed values.</para>
+/// <para><b>Flora</b> (FR-WORLD-04, B4; <c>TileChanges.Flora.cs</c>): stumps of felled trees, planted saplings and trees
+/// grown where the map has none. Flora decides the tile's node: a stump or a sapling is no node, a grown tree is a tree
+/// with its own stock. Building on a tile clears its flora.</para>
+/// <para><b>Walks</b> (FR-WORLD-15; <c>TileChanges.Walks.cs</c>, <see cref="WalkLayer"/>): walk counters with lazy fading,
+/// the trail and road classes, and the path costs (this class is also the <see cref="ITileCost"/> of the game's grid).</para>
+/// <para><b>Clock.</b> Fading and the tick stamps of flora read <see cref="Tick"/>, the simulation's last executed tick,
+/// which the simulation advances at the start of every tick (<see cref="AdvanceTo"/>).</para>
 /// <para>Renderer notes (not part of the state): <see cref="Version"/> grows on every change and
-/// <see cref="GetChunkVersion"/> gives the version of a chunk's last change, like the fog.</para>
+/// <see cref="GetChunkVersion"/> gives the version of a chunk's last change, like the fog. A chunk's version also grows
+/// when a tile of it changes its flora or its road class, also when a road fades into a trail on its own.</para>
 /// </remarks>
-public sealed class TileChanges : ITileBlocker, IStateHashable
+public sealed partial class TileChanges : ITileBlocker, ITileCost, IStateHashable
 {
     /// <summary>Words of a chunk mask (1024 bits).</summary>
-    public const int MaskWords = TilesPerChunk / 64;
+    public const int MaskWords = ChunkMask.Words;
 
-    private const int TilesPerChunk = ChunkCoord.Size * ChunkCoord.Size;
+    private const int TilesPerChunk = ChunkMask.TilesPerChunk;
 
     private readonly WorldMap _map;
     private readonly ResourceChunk?[] _resources;
     private readonly OccupancyChunk?[] _occupancy;
+    private readonly FloraLayer _flora;
+    private readonly WalkLayer _walks;
     private readonly long[] _chunkVersions;
     private Pathfinder? _pathfinder;
 
-    /// <summary>Creates an empty layer (no changes) over <paramref name="map"/>.</summary>
-    public TileChanges(WorldMap map)
+    /// <summary>Creates an empty layer (no changes) over <paramref name="map"/>, with the trail and road numbers of <paramref name="roads"/>.</summary>
+    public TileChanges(WorldMap map, RoadsBalanceDef roads)
     {
         ArgumentNullException.ThrowIfNull(map);
+        ArgumentNullException.ThrowIfNull(roads);
         _map = map;
         ChunksPerSide = ChunkCoord.CountPerSide(map.Size);
         int chunks = ChunksPerSide * ChunksPerSide;
         _resources = new ResourceChunk?[chunks];
         _occupancy = new OccupancyChunk?[chunks];
+        _flora = new FloraLayer(chunks);
         _chunkVersions = new long[chunks];
+        _walks = new WalkLayer(roads, map.Size, Touch);
     }
+
+    /// <summary>The tick lazy values are read at and changes are stamped with: the simulation's last executed tick.</summary>
+    public long Tick => _walks.Tick;
 
     /// <summary>Side of the map in tiles.</summary>
     public int Size => _map.Size;
@@ -109,20 +128,32 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
 
     /// <summary>Resource kind of tile (<paramref name="x"/>, <paramref name="y"/>) now: the map's, or none once its stock is used up.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The tile is outside the map.</exception>
+    /// <remarks>Flora decides first: a stump or a sapling is no node, a grown tree is a tree (<see cref="GetFlora"/>).</remarks>
     public ResourceKind GetEffectiveResource(int x, int y)
     {
+        FloraState flora = _flora.StateAt(ChunkIndex(x, y), LocalIndex(x, y));
+        if (flora != FloraState.None)
+        {
+            return flora == FloraState.Tree ? ResourceKind.Tree : ResourceKind.None;
+        }
+
         ResourceKind kind = _map.GetResource(x, y);
-        return kind == ResourceKind.None || GetEffectiveAmount(x, y) > 0 ? kind : ResourceKind.None;
+        return kind == ResourceKind.None || MapNodeAmount(x, y) > 0 ? kind : ResourceKind.None;
     }
 
-    /// <summary>Stock of tile (<paramref name="x"/>, <paramref name="y"/>) now: the changed value, or the map's.</summary>
+    /// <summary>Stock of tile (<paramref name="x"/>, <paramref name="y"/>) now: a grown tree's, 0 under a stump or a sapling, else the changed value or the map's.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The tile is outside the map.</exception>
     public int GetEffectiveAmount(int x, int y)
     {
-        int original = _map.GetResourceAmount(x, y);
-        ResourceChunk? chunk = _resources[ChunkIndex(x, y)];
+        int chunkIndex = ChunkIndex(x, y);
         int local = LocalIndex(x, y);
-        return chunk is not null && IsSet(chunk.Mask, local) ? chunk.Amounts[local] : original;
+        FloraState flora = _flora.StateAt(chunkIndex, local);
+        if (flora == FloraState.None)
+        {
+            return MapNodeAmount(x, y);
+        }
+
+        return flora == FloraState.Tree ? _flora[chunkIndex]!.Stocks[local] : 0;
     }
 
     /// <summary>True when the stock of tile (<paramref name="x"/>, <paramref name="y"/>) differs from the map.</summary>
@@ -136,22 +167,30 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
 
     /// <summary>
     /// Takes up to <paramref name="amount"/> from the node on tile (<paramref name="x"/>, <paramref name="y"/>) and
-    /// returns how much was taken (less when the stock is smaller, 0 without a node). At stock 0 the node is gone.
+    /// returns how much was taken (less when the stock is smaller, 0 without a node). At stock 0 the node is gone; a
+    /// tree leaves a stump (stamped with <see cref="Tick"/>) that grows back (FR-WORLD-04).
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The tile is outside the map or the amount is negative.</exception>
     public int TakeResource(int x, int y, int amount)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(amount);
-        int stock = GetEffectiveAmount(x, y);
+        int chunkIndex = ChunkIndex(x, y);
+        int local = LocalIndex(x, y);
+        FloraState flora = _flora.StateAt(chunkIndex, local);
+        if (flora != FloraState.None)
+        {
+            return flora == FloraState.Tree ? TakeFromGrownTree(chunkIndex, local, amount) : 0;
+        }
+
+        int stock = MapNodeAmount(x, y);
         int taken = Math.Min(stock, amount);
-        if (taken == 0 || _map.GetResource(x, y) == ResourceKind.None)
+        ResourceKind kind = _map.GetResource(x, y);
+        if (taken == 0 || kind == ResourceKind.None)
         {
             return 0;
         }
 
-        int chunkIndex = ChunkIndex(x, y);
         ResourceChunk chunk = _resources[chunkIndex] ??= new ResourceChunk();
-        int local = LocalIndex(x, y);
         if (!IsSet(chunk.Mask, local))
         {
             Set(chunk.Mask, local);
@@ -159,6 +198,11 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
         }
 
         chunk.Amounts[local] = (ushort)(stock - taken);
+        if (stock == taken && kind == ResourceKind.Tree)
+        {
+            _flora.Set(chunkIndex, local, FloraState.Stump, Tick, 0);
+        }
+
         Touch(chunkIndex);
         return taken;
     }
@@ -183,7 +227,8 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
 
     /// <summary>
     /// Marks tile (<paramref name="x"/>, <paramref name="y"/>) occupied by <paramref name="owner"/>; false (and no
-    /// change) when it is already occupied. The tile becomes impassable and the pathfinder is told.
+    /// change) when it is already occupied. The tile becomes impassable and the pathfinder is told. A stump or a sapling
+    /// on the tile is cleared (a building stands on it now).
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The tile is outside the map.</exception>
     /// <exception cref="ArgumentException">The owner is not a valid id.</exception>
@@ -204,6 +249,7 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
         chunk.Owners[LocalIndex(x, y)] = owner;
         chunk.Count++;
         OccupiedTiles++;
+        _flora.Remove(chunkIndex, LocalIndex(x, y));
         Touch(chunkIndex);
         _pathfinder?.NotifyTileChanged(x, y);
         return true;
@@ -249,7 +295,8 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
 
     /// <summary>
     /// Writes a tag, then per layer the number of non-empty chunks and, for each in ascending chunk index, the index,
-    /// the 16 mask words and the changed values in mask order (stocks as Int32, owners as entity ids).
+    /// the 16 mask words and the changed values in mask order (stocks as Int32, owners as entity ids, flora as state,
+    /// tick and stock, walks as counter, tick and class of the tiles still walked).
     /// </summary>
     public void WriteState(StateWriter writer)
     {
@@ -277,6 +324,9 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
                 ForEachSet(mask, local => chunk.Owners[local].WriteState(writer));
             }
         }
+
+        WriteFlora(writer);
+        _walks.Write(writer);
     }
 
     /// <summary>Snapshot of both layers for saving.</summary>
@@ -305,13 +355,15 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
             }
         }
 
-        return new TileChangesState(resources, occupancy);
+        return new TileChangesState(resources, occupancy, CaptureFlora(), _walks.Capture());
     }
 
     /// <summary>
-    /// Replaces the (empty) layer with <paramref name="state"/>. Chunks must be inside the map, in strictly ascending
-    /// chunk index, with a non-empty mask and one value per set bit; a changed stock must belong to a node of the map
-    /// and differ from its generated stock; owners must be alive in <paramref name="registry"/>.
+    /// Replaces the (empty) layer with <paramref name="state"/>, read at <see cref="Tick"/>. Chunks must be inside the
+    /// map, in strictly ascending chunk index, with a non-empty mask and one value per set bit; a changed stock must
+    /// belong to a node of the map and differ from its generated stock; owners must be alive in
+    /// <paramref name="registry"/>; flora and walks must be valid at <see cref="Tick"/> (see <see cref="LoadFlora"/> and
+    /// <see cref="WalkLayer.Load"/>).
     /// </summary>
     /// <exception cref="ArgumentException">The state is inconsistent; the layer is left empty.</exception>
     /// <exception cref="InvalidOperationException">The layer already has changes.</exception>
@@ -319,7 +371,7 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(registry);
-        if (ChangedResourceTiles != 0 || OccupiedTiles != 0)
+        if (ChangedResourceTiles != 0 || OccupiedTiles != 0 || _flora.Count != 0 || _walks.Entries != 0)
         {
             throw new InvalidOperationException("Tile changes can only be loaded into an empty layer.");
         }
@@ -328,11 +380,15 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
         {
             LoadResources(state.Resources);
             LoadOccupancy(state.Occupancy, registry);
+            LoadFlora(state.Flora);
+            _walks.Load(state.Walks);
         }
         catch (ArgumentException)
         {
             Array.Clear(_resources);
             Array.Clear(_occupancy);
+            _flora.Clear();
+            _walks.Clear();
             ChangedResourceTiles = 0;
             OccupiedTiles = 0;
             throw;
@@ -350,7 +406,7 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
         foreach (ResourceChunkState? saved in chunks)
         {
             ArgumentNullException.ThrowIfNull(saved, nameof(chunks));
-            int chunkIndex = CheckChunk(saved.ChunkX, saved.ChunkY, saved.Mask, saved.Amounts.Count, ref previous);
+            int chunkIndex = ChunkMask.Validate(saved.ChunkX, saved.ChunkY, saved.Mask, saved.Amounts.Count, ChunksPerSide, ref previous);
             var chunk = new ResourceChunk();
             saved.Mask.ToArray().CopyTo(chunk.Mask, 0);
             int next = 0;
@@ -377,7 +433,7 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
         foreach (OccupancyChunkState? saved in chunks)
         {
             ArgumentNullException.ThrowIfNull(saved, nameof(chunks));
-            int chunkIndex = CheckChunk(saved.ChunkX, saved.ChunkY, saved.Mask, saved.Owners.Count, ref previous);
+            int chunkIndex = ChunkMask.Validate(saved.ChunkX, saved.ChunkY, saved.Mask, saved.Owners.Count, ChunksPerSide, ref previous);
             var chunk = new OccupancyChunk();
             int next = 0;
             ForEachSet(saved.Mask.ToArray(), local =>
@@ -396,40 +452,6 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
         }
     }
 
-    private int CheckChunk(int cx, int cy, IReadOnlyList<ulong> mask, int values, ref int previous)
-    {
-        ArgumentNullException.ThrowIfNull(mask);
-        if ((uint)cx >= (uint)ChunksPerSide || (uint)cy >= (uint)ChunksPerSide)
-        {
-            throw new ArgumentException($"Chunk ({cx}, {cy}) is outside a {ChunksPerSide}x{ChunksPerSide} chunk map.", nameof(cx));
-        }
-
-        int chunkIndex = (cy * ChunksPerSide) + cx;
-        if (chunkIndex <= previous)
-        {
-            throw new ArgumentException("Tile chunks must be in strictly ascending chunk order.", nameof(cx));
-        }
-
-        previous = chunkIndex;
-        if (mask.Count != MaskWords)
-        {
-            throw new ArgumentException($"A chunk mask has {MaskWords} words, not {mask.Count}.", nameof(mask));
-        }
-
-        int bits = 0;
-        foreach (ulong word in mask)
-        {
-            bits += BitOperations.PopCount(word);
-        }
-
-        if (bits == 0 || bits != values)
-        {
-            throw new ArgumentException($"Chunk ({cx}, {cy}) has {bits} mask bits and {values} values; both must match and be non-zero.", nameof(mask));
-        }
-
-        return chunkIndex;
-    }
-
     private void Touch(int chunkIndex) => _chunkVersions[chunkIndex] = ++Version;
 
     private void CheckTile(int x, int y)
@@ -446,33 +468,23 @@ public sealed class TileChanges : ITileBlocker, IStateHashable
         return ((y / ChunkCoord.Size) * ChunksPerSide) + (x / ChunkCoord.Size);
     }
 
-    private static int LocalIndex(int x, int y) => ((y % ChunkCoord.Size) * ChunkCoord.Size) + (x % ChunkCoord.Size);
+    private static int LocalIndex(int x, int y) => ChunkMask.LocalIndex(x, y);
 
-    private static bool IsSet(ulong[] mask, int local) => (mask[local >> 6] & (1UL << (local & 63))) != 0;
+    private static bool IsSet(ulong[] mask, int local) => ChunkMask.IsSet(mask, local);
 
-    private static void Set(ulong[] mask, int local) => mask[local >> 6] |= 1UL << (local & 63);
+    private static void Set(ulong[] mask, int local) => ChunkMask.Set(mask, local);
 
-    private static void WriteMask(StateWriter writer, ulong[] mask)
-    {
-        foreach (ulong word in mask)
-        {
-            writer.WriteUInt64(word);
-        }
-    }
+    private static void WriteMask(StateWriter writer, ulong[] mask) => ChunkMask.Write(writer, mask);
 
     // Calls `action` with the local index of every set bit, in ascending order.
-    private static void ForEachSet(ulong[] mask, Action<int> action)
+    private static void ForEachSet(ulong[] mask, Action<int> action) => ChunkMask.ForEachSet(mask, action);
+
+    // Stock of the map's node on the tile with the resource layer's change, flora aside.
+    private int MapNodeAmount(int x, int y)
     {
-        for (int w = 0; w < mask.Length; w++)
-        {
-            ulong word = mask[w];
-            while (word != 0)
-            {
-                int bit = BitOperations.TrailingZeroCount(word);
-                action((w << 6) + bit);
-                word &= word - 1;
-            }
-        }
+        ResourceChunk? chunk = _resources[ChunkIndex(x, y)];
+        int local = LocalIndex(x, y);
+        return chunk is not null && IsSet(chunk.Mask, local) ? chunk.Amounts[local] : _map.GetResourceAmount(x, y);
     }
 
     private sealed class ResourceChunk

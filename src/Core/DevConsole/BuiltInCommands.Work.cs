@@ -9,7 +9,10 @@ using Core.Sim;
 
 namespace Core.DevConsole;
 
-/// <summary>Console commands of the job board and the food (NFR-07, FR-NPC-06, FR-NPC-07, FR-ECO-10): jobs, setprofession, setpriority, food.</summary>
+/// <summary>
+/// Console commands of the job board, the food and the tiles (NFR-07, FR-NPC-06, FR-NPC-07, FR-ECO-10, FR-WORLD-04,
+/// FR-WORLD-15): jobs, setprofession, setpriority, food, tile.
+/// </summary>
 internal static partial class BuiltInCommands
 {
     private static void RegisterWork(DevConsole console)
@@ -20,6 +23,7 @@ internal static partial class BuiltInCommands
         console.Register("setpriority", "setpriority <resident> <job> <0-4>",
             "Set a resident's priority for a job type: 1 highest, 4 lowest, 0 never (runs next tick; see 'jobs').", SetPriority);
         console.Register("food", "food", "Print the stored food, the daily need, the days it lasts, the shortage and the tax.", FoodInfo);
+        console.Register("tile", "tile [x y]", "Print the stumps, saplings, trails and roads of the map, or one tile: node, flora, walk counter and class.", TileInfo);
     }
 
     private static ConsoleResult JobList(DevConsoleContext context, IReadOnlyList<string> args)
@@ -157,6 +161,45 @@ internal static partial class BuiltInCommands
         }
 
         return ConsoleResult.Ok(lines);
+    }
+
+    private static ConsoleResult TileInfo(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        const string UsageText = "Usage: tile [x y]";
+        if (args.Count is not (0 or 2))
+        {
+            return ConsoleResult.Fail(UsageText);
+        }
+
+        if (!TryGetWorld(context, out GameWorld? world))
+        {
+            return NoWorld();
+        }
+
+        Tiles.TileChanges tiles = world.Tiles;
+        CultureInfo inv = CultureInfo.InvariantCulture;
+        if (args.Count == 0)
+        {
+            return ConsoleResult.Ok(string.Create(inv,
+                $"flora {tiles.FloraTiles} tiles (stumps, saplings, grown trees) | walked {tiles.WalkedTiles} tiles | trails {tiles.TrailTiles} | roads {tiles.RoadTiles}"));
+        }
+
+        if (!TryParseInt(args[0], out int x) || !TryParseInt(args[1], out int y))
+        {
+            return ConsoleResult.Fail($"Coordinates must be whole numbers. {UsageText}");
+        }
+
+        if (!world.Map.Terrain.Contains(x, y))
+        {
+            return ConsoleResult.Fail(string.Create(inv, $"Tile {x},{y} is outside the map (0..{world.Size - 1})."));
+        }
+
+        Tiles.FloraState flora = tiles.GetFlora(x, y);
+        EntityId occupant = tiles.GetOccupant(x, y);
+        string since = flora == Tiles.FloraState.None ? string.Empty : string.Create(inv, $" since tick {tiles.GetFloraTick(x, y)}");
+        return ConsoleResult.Ok(string.Create(inv,
+            $"tile {x},{y}: node {tiles.GetEffectiveResource(x, y)} ({tiles.GetEffectiveAmount(x, y)}) | flora {Tiles.TileStateNames.Flora[(int)flora]}{since} | "
+            + $"walk {tiles.GetWalkCounter(x, y)} ({Tiles.TileStateNames.RoadClasses[(int)tiles.GetRoadClass(x, y)]}) | occupant {(occupant == EntityId.None ? "none" : occupant.ToString())}"));
     }
 
     // A resident argument: "#5v1", "5v1" or just the index "5".

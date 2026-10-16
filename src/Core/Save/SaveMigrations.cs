@@ -105,12 +105,13 @@ internal sealed class SaveMigrationV2ToV3 : ISaveMigration
 }
 
 /// <summary>
-/// v3 → v4 (M3a, FR-NPC-01, FR-NPC-02, FR-NPC-06, FR-NPC-07, FR-ECO-01, FR-ECO-10). Adds empty
+/// v3 → v4 (M3a, FR-NPC-01, FR-NPC-02, FR-NPC-06, FR-NPC-07, FR-ECO-01, FR-ECO-10, FR-WORLD-04, FR-WORLD-15). Adds empty
 /// <c>components.resident</c>, <c>components.job</c>, <c>components.workOutput</c> and <c>components.storageFilter</c>
-/// stores, empty <c>jobs = {reservations: [], bans: []}</c> and <c>settlement = {reachedEra, daysWithoutFood: 0,
-/// lastLeaveDay: -1}</c>: v3 games had no residents, no fields and no filters, so a game with a world has reached the
-/// first era (<c>camp</c>), and a simulation without a world (<c>game.mapSize</c> 0) has none (empty string). A field
-/// cannot be in a v3 save (it came with M3a). The header is unchanged. Frozen: never edit after release.
+/// stores, empty <c>tiles.flora</c> and <c>tiles.walks</c>, empty <c>jobs = {reservations: [], bans: []}</c> and
+/// <c>settlement = {reachedEra, daysWithoutFood: 0, lastLeaveDay: -1}</c>: v3 games had no residents, no fields, no
+/// filters, no stumps (a tree felled in v3 stays gone) and no walk counters, so a game with a world has reached the first
+/// era (<c>camp</c>), and a simulation without a world (<c>game.mapSize</c> 0) has none (empty string). A field cannot
+/// be in a v3 save (it came with M3a). The header is unchanged. Frozen: never edit after release.
 /// </summary>
 internal sealed class SaveMigrationV3ToV4 : ISaveMigration
 {
@@ -121,15 +122,16 @@ internal sealed class SaveMigrationV3ToV4 : ISaveMigration
     public void Migrate(JsonObject header, JsonObject body)
     {
         ArgumentNullException.ThrowIfNull(body);
-        if (body["components"] is not JsonObject components || body["game"] is not JsonObject game)
+        if (body["components"] is not JsonObject components || body["game"] is not JsonObject game || body["tiles"] is not JsonObject tiles)
         {
-            throw new InvalidOperationException("v3 body has no 'components' or 'game' object.");
+            throw new InvalidOperationException("v3 body has no 'components', 'game' or 'tiles' object.");
         }
 
         if (body.ContainsKey("settlement") || body.ContainsKey("jobs") || components.ContainsKey("resident") || components.ContainsKey("job")
-            || components.ContainsKey("workOutput") || components.ContainsKey("storageFilter"))
+            || components.ContainsKey("workOutput") || components.ContainsKey("storageFilter") || tiles.ContainsKey("flora") || tiles.ContainsKey("walks"))
         {
-            throw new InvalidOperationException("v3 body already has v4 members ('settlement', 'jobs' or 'components.resident', 'job', 'workOutput', 'storageFilter').");
+            throw new InvalidOperationException(
+                "v3 body already has v4 members ('settlement', 'jobs', 'tiles.flora', 'tiles.walks' or 'components.resident', 'job', 'workOutput', 'storageFilter').");
         }
 
         bool hasWorld = game["mapSize"] is JsonValue size && size.TryGetValue(out int mapSize) && mapSize != 0;
@@ -137,6 +139,8 @@ internal sealed class SaveMigrationV3ToV4 : ISaveMigration
         components["job"] = new JsonArray();
         components["workOutput"] = new JsonArray();
         components["storageFilter"] = new JsonArray();
+        tiles["flora"] = new JsonArray();
+        tiles["walks"] = new JsonArray();
         body["settlement"] = new JsonObject
         {
             ["reachedEra"] = hasWorld ? "camp" : string.Empty,

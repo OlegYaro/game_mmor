@@ -303,6 +303,14 @@ public sealed class SaveGoldenTests
         Assert.Equal((0, GameWorld.NoLeaveDay), (world.DaysWithoutFood, world.LastLeaveDay));
         Assert.Equal(new Revealer(RevealerKind.Villager), world.Revealers.Get(residents[3]));
 
+        // Flora: the lumberjack's two felled trees and the sample's own stump and sapling; the residents' walks.
+        Assert.Equal(
+            [(23, 18, FloraState.Stump, 1015L), (24, 18, FloraState.Stump, 1848L), (41, 4, FloraState.Stump, V4Frozen.Tick), (4, 33, FloraState.Sapling, V4Frozen.Tick)],
+            new[] { (23, 18), (24, 18), (41, 4), (4, 33) }.Select(t => (t.Item1, t.Item2, world.Tiles.GetFlora(t.Item1, t.Item2), world.Tiles.GetFloraTick(t.Item1, t.Item2))));
+        Assert.Equal(4, world.Tiles.FloraTiles);
+        Assert.Equal((V4Frozen.WalkedTiles, 0, 0), (world.Tiles.WalkedTiles, world.Tiles.TrailTiles, world.Tiles.RoadTiles));
+        Assert.Equal(V4Frozen.WalkSum, Enumerable.Range(0, 64 * 64).Sum(i => world.Tiles.GetWalkCounter(i % 64, i / 64)));
+
         Mover walk = world.Movers.Get(residents[3]);
         Assert.True(walk.IsMoving);
         Assert.Equal(V4Frozen.NewcomerGoal, walk.Goal);
@@ -320,7 +328,8 @@ public sealed class SaveGoldenTests
 
     // Frozen together with save_v4.sav (values read once from the generated file, never from today's code). The sample
     // was made again on 16.10.2026 when jobs, reservations, field outputs, storage filters and the food state joined
-    // format v4 before its release (ADR 0007).
+    // format v4 before its release, and once more the same day for flora and walk counters (ADR 0007); the values of the
+    // second making stayed the same, only the flora and walk ones are new.
     private static class V4Frozen
     {
         public const long Tick = 2253;             // day 0, 06:00 + 3 ticks: the first morning brought the newcomer
@@ -338,6 +347,8 @@ public sealed class SaveGoldenTests
         public const long SmithThinks = 2262;
         public const int FieldOutput = 24;
         public const int StoredWood = 141;
+        public const int WalkedTiles = 41;
+        public const int WalkSum = 389;
     }
 
     private static void CreateV4SampleIfMissing()

@@ -64,8 +64,9 @@ public sealed record WorldState(
 /// <para>Renderer notes: map layers are whole-map spans indexed <c>y * Size + x</c> (<see cref="WorldMap"/>,
 /// <see cref="TerrainMap"/>). The map itself never changes; what changed since generation (gathered and vanished
 /// nodes, occupied tiles) is in <see cref="Tiles"/>: read resources through <see cref="TileChanges.GetEffectiveResource"/>
-/// and <see cref="TileChanges.GetEffectiveAmount"/>, and redraw chunks whose <see cref="TileChanges.GetChunkVersion"/>
-/// grew. Fog: <see cref="FogOfWar"/>.</para>
+/// and <see cref="TileChanges.GetEffectiveAmount"/> (a planted or regrown tree stands where the map has none), stumps and
+/// saplings through <see cref="TileChanges.GetFlora"/>, trails and roads through <see cref="TileChanges.GetRoadClass"/>,
+/// and redraw chunks whose <see cref="TileChanges.GetChunkVersion"/> grew. Fog: <see cref="FogOfWar"/>.</para>
 /// <para>Hero: <see cref="HeroEntity"/>, its <see cref="Position"/> (fixed point, updated every tick while walking, so
 /// the game interpolates between two ticks), <see cref="Heroes"/>, <see cref="Inventories"/> and <see cref="Movers"/>
 /// (the planned path). Orders are <see cref="MoveHeroCommand"/>, <see cref="GatherCommand"/> and
@@ -97,7 +98,7 @@ public sealed class GameWorld
     private readonly List<EconomyEvent> _economyEvents = [];
     private Pathfinder? _pathfinder;
 
-    internal GameWorld(WorldMap map, ulong mapHash, EntityWorld entities, DefId firstEra)
+    internal GameWorld(WorldMap map, ulong mapHash, EntityWorld entities, DefId firstEra, RoadsBalanceDef roads)
     {
         Map = map;
         MapHash = mapHash;
@@ -113,7 +114,7 @@ public sealed class GameWorld
         ReachedEra = firstEra;
         LastLeaveDay = NoLeaveDay;
         Fog = new FogOfWar(map.Size);
-        Tiles = new TileChanges(map);
+        Tiles = new TileChanges(map, roads);
     }
 
     /// <summary>The generated map (immutable).</summary>
@@ -206,7 +207,10 @@ public sealed class GameWorld
     /// <summary>Sequence of the latest building event; 0 before the first.</summary>
     public long LastBuildingEventSequence { get; private set; }
 
-    /// <summary>Changes of the tiles against the generated map: resource stocks and occupancy (FR-WORLD-05).</summary>
+    /// <summary>
+    /// Changes of the tiles against the generated map (FR-WORLD-05): resource stocks, occupancy, flora (stumps, saplings,
+    /// grown trees; FR-WORLD-04) and walk counters with trails and roads (FR-WORLD-15).
+    /// </summary>
     public TileChanges Tiles { get; }
 
     /// <summary>
@@ -216,8 +220,8 @@ public sealed class GameWorld
     public EntityId HeroEntity => Heroes.Count > 0 ? Heroes.Entities[0] : EntityId.None;
 
     /// <summary>
-    /// Path search over this map with <see cref="Tiles"/> as the blocking layer (occupied tiles are impassable). Built on
-    /// first use (derived state: never saved or hashed).
+    /// Path search over this map with <see cref="Tiles"/> as the blocking layer (occupied tiles are impassable) and the
+    /// cost layer (trails and roads are cheaper). Built on first use (derived state: never saved or hashed).
     /// </summary>
     public Pathfinder Pathfinder
     {
@@ -225,7 +229,7 @@ public sealed class GameWorld
         {
             if (_pathfinder is null)
             {
-                _pathfinder = new Pathfinder(new PassabilityGrid(Map.Terrain, Tiles));
+                _pathfinder = new Pathfinder(new PassabilityGrid(Map.Terrain, Tiles, Tiles));
                 Tiles.AttachPathfinder(_pathfinder);
             }
 

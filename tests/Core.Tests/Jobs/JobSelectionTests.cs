@@ -103,6 +103,7 @@ public sealed class JobSelectionTests
         (Simulation sim, _) = NewSettlement();
         EntityId lumberjack = Spawn(sim, "lumberjack");
         Assert.Equal(JobKind.Chop, JobOf(sim, lumberjack).Kind);
+        SetPriorities(sim, lumberjack, (JobKind.Chop, 1)); // no planting either
 
         sim.Enqueue(new SetWorkPriorityCommand(lumberjack, "chop", 0));
         sim.Step();

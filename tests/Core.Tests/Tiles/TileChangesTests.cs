@@ -53,7 +53,7 @@ public sealed class TileChangesTests
     [Trait("Req", "FR-WORLD-05")]
     public void UnchangedLayerReadsTheMap()
     {
-        var tiles = new TileChanges(Map);
+        var tiles = new TileChanges(Map, SimTestData.Real.Roads);
         (int x, int y) = FindResource(Map, k => k == ResourceKind.Tree);
 
         Assert.Equal(ResourceKind.Tree, tiles.GetEffectiveResource(x, y));
@@ -71,7 +71,7 @@ public sealed class TileChangesTests
     [Trait("Req", "FR-WORLD-05")]
     public void TakingLowersTheStockAndAnEmptyNodeDisappears()
     {
-        var tiles = new TileChanges(Map);
+        var tiles = new TileChanges(Map, SimTestData.Real.Roads);
         (int x, int y) = FindResource(Map, k => k == ResourceKind.Tree);
         int stock = Map.GetResourceAmount(x, y);
         long version = tiles.Version;
@@ -98,7 +98,7 @@ public sealed class TileChangesTests
     [Trait("Req", "FR-WORLD-05")]
     public void TakingFromEmptyTilesOrZeroChangesNothing()
     {
-        var tiles = new TileChanges(Map);
+        var tiles = new TileChanges(Map, SimTestData.Real.Roads);
         (int x, int y) = FindResource(Map, k => k == ResourceKind.None);
         (int tx, int ty) = FindResource(Map, k => k != ResourceKind.None);
 
@@ -117,7 +117,7 @@ public sealed class TileChangesTests
         WorldMap map = WorldGenTestData.LargeWorld(1);
         Assert.NotEmpty(map.Veins);
         Vein vein = map.Veins[0];
-        var tiles = new TileChanges(map);
+        var tiles = new TileChanges(map, SimTestData.Real.Roads);
         (int x, int y) = FindResource(map, k => k == vein.Kind);
         int before = map.GetResourceAmount(x, y);
 
@@ -132,7 +132,7 @@ public sealed class TileChangesTests
     [Trait("Req", "FR-BUILD-02")]
     public void OccupancyBlocksTilesAndTellsThePathfinder()
     {
-        var tiles = new TileChanges(Map);
+        var tiles = new TileChanges(Map, SimTestData.Real.Roads);
         var pathfinder = new Pathfinder(new PassabilityGrid(Map.Terrain, tiles));
         tiles.AttachPathfinder(pathfinder);
         (int x, int y) = FindLand(Map, skip: 100);
@@ -166,7 +166,7 @@ public sealed class TileChangesTests
     [Trait("Req", "FR-SAVE-04")]
     public void StateRoundTripsAndHashesOnlyTheChanges()
     {
-        var tiles = new TileChanges(Map);
+        var tiles = new TileChanges(Map, SimTestData.Real.Roads);
         ulong empty = Hash(tiles);
         (int ax, int ay) = FindResource(Map, k => k == ResourceKind.Tree);
         (int bx, int by) = FindResource(Map, k => k == ResourceKind.Tree, skip: 3);
@@ -179,7 +179,7 @@ public sealed class TileChangesTests
         Assert.True(tiles.TryOccupy(ox + 1, oy, owner));
 
         TileChangesState state = tiles.CaptureState();
-        var restored = new TileChanges(Map);
+        var restored = new TileChanges(Map, SimTestData.Real.Roads);
         restored.Load(state, registry);
 
         Assert.NotEqual(empty, Hash(tiles));
@@ -195,7 +195,7 @@ public sealed class TileChangesTests
         Assert.Equal([owner, owner], state.Occupancy.SelectMany(c => c.Owners));
 
         // Same changes in another order give the same hash: the layer is canonical.
-        var other = new TileChanges(Map);
+        var other = new TileChanges(Map, SimTestData.Real.Roads);
         other.TryOccupy(ox + 1, oy, owner);
         other.TakeResource(bx, by, 1000);
         other.TryOccupy(ox, oy, owner);
@@ -231,24 +231,24 @@ public sealed class TileChangesTests
 
         TileChangesState state = damage switch
         {
-            "outside" => new([good with { ChunkX = 2 }], []),
-            "order" => new([good, good], []),
-            "mask-length" => new([good with { Mask = [1] }], []),
-            "count" => new([good with { Amounts = [1, 2] }], []),
-            "empty" => new([good with { Mask = new ulong[TileChanges.MaskWords], Amounts = [] }], []),
-            "not-lowered" => new([good with { Amounts = [Map.GetResourceAmount(tx, ty)] }], []),
-            "no-node" => new([new ResourceChunkState(nx / 32, ny / 32, noNodeMask, [0])], []),
-            "dead-owner" => new([good], [new OccupancyChunkState(0, 0, mask, [new EntityId(owner.Index, 9)])]),
+            "outside" => new([good with { ChunkX = 2 }], [], [], []),
+            "order" => new([good, good], [], [], []),
+            "mask-length" => new([good with { Mask = [1] }], [], [], []),
+            "count" => new([good with { Amounts = [1, 2] }], [], [], []),
+            "empty" => new([good with { Mask = new ulong[TileChanges.MaskWords], Amounts = [] }], [], [], []),
+            "not-lowered" => new([good with { Amounts = [Map.GetResourceAmount(tx, ty)] }], [], [], []),
+            "no-node" => new([new ResourceChunkState(nx / 32, ny / 32, noNodeMask, [0])], [], [], []),
+            "dead-owner" => new([good], [new OccupancyChunkState(0, 0, mask, [new EntityId(owner.Index, 9)])], [], []),
             _ => throw new ArgumentOutOfRangeException(nameof(damage)),
         };
-        var tiles = new TileChanges(Map);
+        var tiles = new TileChanges(Map, SimTestData.Real.Roads);
 
         Assert.Throws<ArgumentException>(() => tiles.Load(state, registry));
         Assert.Equal(0, tiles.ChangedResourceTiles);
         Assert.Equal(0, tiles.OccupiedTiles);
-        Assert.Equal(Hash(new TileChanges(Map)), Hash(tiles));
+        Assert.Equal(Hash(new TileChanges(Map, SimTestData.Real.Roads)), Hash(tiles));
 
-        tiles.Load(new TileChangesState([good], []), registry);
+        tiles.Load(new TileChangesState([good], [], [], []), registry);
         Assert.Throws<InvalidOperationException>(() => tiles.Load(TileChangesState.Empty, registry));
     }
 }

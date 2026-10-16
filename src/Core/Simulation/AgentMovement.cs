@@ -29,9 +29,11 @@ internal enum WalkOutcome : byte
 /// saved: the planned path is part of the <see cref="Mover"/>, which is in the hash and the save. A search that runs out
 /// of nodes gives a partial path; at its end the walker plans again from where it stands. A search that stalls (the
 /// partial path is the start alone) runs once more over the whole map (<see cref="FindPath"/>).</para>
-/// <para>Speed: a step costs <c>stepTicks × 1000</c> progress units straight and ×1.4 diagonal (<see cref="Mover.StepCost"/>);
-/// walking adds <see cref="Mover.ProgressPerTick"/> per tick, sprinting more. The agent's rules pick the step ticks and
-/// the rate and react to the <see cref="WalkOutcome"/>.</para>
+/// <para>Speed: a step costs <c>stepTicks × 1000</c> progress units straight and ×1.4 diagonal (<see cref="Mover.StepCost"/>),
+/// times the trail or road permille of the tile stepped onto (<see cref="StepCost"/>); walking adds
+/// <see cref="Mover.ProgressPerTick"/> per tick, sprinting more. The agent's rules pick the step ticks and the rate and
+/// react to the <see cref="WalkOutcome"/>.</para>
+/// <para>Trampling (FR-WORLD-15): every finished step onto a tile raises that tile's walk counter (<see cref="Tiles.TileChanges"/>).</para>
 /// </remarks>
 internal static class AgentMovement
 {
@@ -165,7 +167,7 @@ internal static class AgentMovement
                 continue;
             }
 
-            int cost = Mover.StepCost(stepTicks, grid.XOf(from) != grid.XOf(to) && grid.YOf(from) != grid.YOf(to));
+            int cost = StepCost(world, stepTicks, from, to);
             if (progress < cost)
             {
                 mover = mover with { Path = path, StepIndex = index, StepProgress = progress };
@@ -176,6 +178,7 @@ internal static class AgentMovement
             progress -= cost;
             index++;
             stepStarts = true;
+            world.Tiles.Trample(grid.XOf(to), grid.YOf(to));
         }
 
         // End of the path (or within range of the goal): leftover progress is dropped.
@@ -230,6 +233,21 @@ internal static class AgentMovement
     /// about 300 000 (under 40 ms), up to a million for a detour across a 2048² map (50–90 ms, ADR 0003).
     /// </summary>
     public static int StallNodeLimit(PassabilityGrid grid) => Math.Min(grid.TileCount, PathfinderConfig.MaxNodeLimit);
+
+    /// <summary>
+    /// Progress units of the step from tile <paramref name="from"/> to its neighbour <paramref name="to"/>:
+    /// <see cref="Mover.StepCost"/> times the trail or road permille of <paramref name="to"/> / 1000 (FR-WORLD-15;
+    /// the same tile that sets the path cost), at least 1.
+    /// </summary>
+    public static int StepCost(GameWorld world, int stepTicks, int from, int to)
+    {
+        PassabilityGrid grid = world.Pathfinder.Grid;
+        int x = grid.XOf(to);
+        int y = grid.YOf(to);
+        int cost = Mover.StepCost(stepTicks, grid.XOf(from) != x && grid.YOf(from) != y);
+        int permille = world.Tiles.GetStepPermille(x, y);
+        return permille == Tiles.WalkLayer.PermilleBase ? cost : Math.Max(1, (int)((long)cost * permille / Tiles.WalkLayer.PermilleBase));
+    }
 
     /// <summary>True when <paramref name="mover"/> is a valid saved walking state on a map of <paramref name="size"/>².</summary>
     public static bool IsValidMover(Mover mover, int size)

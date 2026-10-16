@@ -25,6 +25,11 @@ internal sealed class TestCost(int size, int minCost) : ITileCost
 
     public int MinCost { get; } = minCost;
 
+    public bool IsUniform => false;
+
+    /// <summary>Where tiles may cost less than 10; every tile by default.</summary>
+    public TileArea CheapArea { get; set; } = TileArea.All;
+
     public int GetCost(int x, int y) => _costs[(y * Size) + x];
 
     public void Set(int x, int y, int cost) => _costs[(y * Size) + x] = cost;

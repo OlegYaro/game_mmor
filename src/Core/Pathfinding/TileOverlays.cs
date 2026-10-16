@@ -35,13 +35,30 @@ public sealed class NoTileBlocker : ITileBlocker
 /// costs <see cref="PathCosts.Diagonal(int)"/> of that value. Costs change only the price of a path, never the
 /// connectivity, so changing them needs no <see cref="ConnectivityMap.Invalidate"/>.
 /// </summary>
+/// <remarks>
+/// Costs, <see cref="MinCost"/> and <see cref="IsUniform"/> may change between two searches (trails appear and fade)
+/// but never during one, and must depend only on the simulation state, so searches stay deterministic.
+/// </remarks>
 public interface ITileCost
 {
     /// <summary>
-    /// Lower bound of <see cref="GetCost"/> over every tile, <see cref="PathCosts.MinTileCost"/> or more. The A*
-    /// heuristic is computed from it, so it must never exceed a real cost (else paths stop being optimal).
+    /// Lower bound of <see cref="GetCost"/> over every tile right now, <see cref="PathCosts.MinTileCost"/> or more. The
+    /// A* heuristic is computed from it, so it must never exceed a real cost (else paths stop being optimal).
     /// </summary>
     int MinCost { get; }
+
+    /// <summary>
+    /// True while every tile costs exactly <see cref="PathCosts.Straight"/>: the search then skips the cost layer and
+    /// uses the plain octile heuristic, giving the same paths as without a cost layer.
+    /// </summary>
+    bool IsUniform { get; }
+
+    /// <summary>
+    /// A rectangle that holds every tile cheaper than <see cref="PathCosts.Straight"/> right now: outside it every tile
+    /// costs at least <see cref="PathCosts.Straight"/>. It may be larger than needed (<see cref="TileArea.All"/> is always
+    /// correct); the smaller it is, the stronger the A* heuristic far from it (ADR 0003).
+    /// </summary>
+    TileArea CheapArea { get; }
 
     /// <summary>Straight-step cost of entering tile (<paramref name="x"/>, <paramref name="y"/>), from <see cref="MinCost"/> to <see cref="PathCosts.MaxTileCost"/>.</summary>
     int GetCost(int x, int y);
@@ -61,7 +78,41 @@ public sealed class UniformTileCost : ITileCost
     public int MinCost => PathCosts.Straight;
 
     /// <inheritdoc />
+    public bool IsUniform => true;
+
+    /// <inheritdoc />
+    public TileArea CheapArea => TileArea.None;
+
+    /// <inheritdoc />
     public int GetCost(int x, int y) => PathCosts.Straight;
+}
+
+/// <summary>An inclusive rectangle of tiles (<see cref="ITileCost.CheapArea"/>); empty when a minimum exceeds its maximum.</summary>
+/// <param name="MinX">Leftmost column.</param>
+/// <param name="MinY">Top row.</param>
+/// <param name="MaxX">Rightmost column.</param>
+/// <param name="MaxY">Bottom row.</param>
+public readonly record struct TileArea(int MinX, int MinY, int MaxX, int MaxY)
+{
+    // Far beyond any map, yet far from overflowing when a tile coordinate is subtracted.
+    private const int Far = 1 << 28;
+
+    /// <summary>Every tile of any map.</summary>
+    public static TileArea All { get; } = new(-Far, -Far, Far, Far);
+
+    /// <summary>No tile.</summary>
+    public static TileArea None { get; } = new(Far, Far, -Far, -Far);
+
+    /// <summary>True when the area holds no tile.</summary>
+    public bool IsEmpty => MinX > MaxX || MinY > MaxY;
+
+    /// <summary>
+    /// Chebyshev distance in tiles from (<paramref name="x"/>, <paramref name="y"/>) to the nearest tile of the area: 0
+    /// inside, the number of steps needed to enter it outside; <see cref="int.MaxValue"/> / 2 for an empty area.
+    /// </summary>
+    public int DistanceFrom(int x, int y) => IsEmpty
+        ? int.MaxValue / 2
+        : Math.Max(Math.Max(Math.Max(MinX - x, x - MaxX), 0), Math.Max(Math.Max(MinY - y, y - MaxY), 0));
 }
 
 /// <summary>Integer step costs (ADR 0003): 10 for a straight step, 14 for a diagonal one on normal ground.</summary>

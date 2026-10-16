@@ -183,7 +183,11 @@ internal static class SaveMapper
     private static TilesDto ToDto(TileChangesState tiles) => new(
         tiles.Resources.Select(c => new ResourceChunkDto(c.ChunkX, c.ChunkY, c.Mask.ToArray(), c.Amounts.ToArray())).ToArray(),
         tiles.Occupancy.Select(c => new OccupancyChunkDto(c.ChunkX, c.ChunkY, c.Mask.ToArray(),
-            c.Owners.Select(o => o.Index).ToArray(), c.Owners.Select(o => o.Generation).ToArray())).ToArray());
+            c.Owners.Select(o => o.Index).ToArray(), c.Owners.Select(o => o.Generation).ToArray())).ToArray(),
+        tiles.Flora.Select(c => new FloraChunkDto(c.ChunkX, c.ChunkY, c.Mask.ToArray(),
+            c.States.Select(f => NameOf(TileStateNames.Flora, (int)f, "flora state")).ToArray(), c.Ticks.ToArray(), c.Stocks.ToArray())).ToArray(),
+        tiles.Walks.Select(c => new WalkChunkDto(c.ChunkX, c.ChunkY, c.Mask.ToArray(), c.Counters.ToArray(), c.Ticks.ToArray(),
+            c.Classes.Select(r => NameOf(TileStateNames.RoadClasses, (int)r, "road class")).ToArray())).ToArray());
 
     /// <summary>Builds the simulation state from a parsed header and body; <paramref name="content"/> resolves the item ids.</summary>
     /// <exception cref="InvalidDataException">The body is structurally invalid (null entries, unknown names, items or RNG streams).</exception>
@@ -260,7 +264,7 @@ internal static class SaveMapper
         {
             if (body.Game.MapHash != 0 || body.Fog.ExploredRuns.Count != 0 || components.Revealer.Count != 0 || components.Hero.Count != 0
                 || components.Inventory.Count != 0 || components.Mover.Count != 0 || components.Building.Count != 0 || body.Tiles.Resources.Count != 0
-                || body.Tiles.Occupancy.Count != 0 || components.Resident.Count != 0 || body.Settlement.ReachedEra.Length != 0
+                || body.Tiles.Occupancy.Count != 0 || body.Tiles.Flora.Count != 0 || body.Tiles.Walks.Count != 0 || components.Resident.Count != 0 || body.Settlement.ReachedEra.Length != 0
                 || components.Job.Count != 0 || components.WorkOutput.Count != 0 || components.StorageFilter.Count != 0
                 || body.Jobs.Reservations.Count != 0 || body.Jobs.Bans.Count != 0 || body.Settlement.DaysWithoutFood != 0
                 || body.Settlement.LastLeaveDay != Sim.GameWorld.NoLeaveDay)
@@ -511,7 +515,25 @@ internal static class SaveMapper
                 c.OwnerIndices.Zip(c.OwnerGenerations, (index, generation) => new EntityId(index, generation)).ToArray());
         }
 
-        return new TileChangesState(resources, occupancy);
+        var flora = new FloraChunkState[tiles.Flora.Count];
+        for (int i = 0; i < flora.Length; i++)
+        {
+            FloraChunkDto? c = tiles.Flora[i];
+            NotNull(c, "flora chunk");
+            flora[i] = new FloraChunkState(c.X, c.Y, c.Mask.ToArray(),
+                c.States.Select(name => (FloraState)ValueOf(TileStateNames.Flora, name ?? string.Empty, "flora state")).ToArray(), c.Ticks.ToArray(), c.Stocks.ToArray());
+        }
+
+        var walks = new WalkChunkState[tiles.Walks.Count];
+        for (int i = 0; i < walks.Length; i++)
+        {
+            WalkChunkDto? c = tiles.Walks[i];
+            NotNull(c, "walk chunk");
+            walks[i] = new WalkChunkState(c.X, c.Y, c.Mask.ToArray(), c.Counters.ToArray(), c.Ticks.ToArray(),
+                c.Classes.Select(name => (RoadClass)ValueOf(TileStateNames.RoadClasses, name ?? string.Empty, "road class")).ToArray());
+        }
+
+        return new TileChangesState(resources, occupancy, flora, walks);
     }
 
     private static string NameOf(IReadOnlyList<string> names, int value, string what) =>

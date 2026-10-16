@@ -3,8 +3,9 @@ using Core.Logging;
 namespace Core.Sim;
 
 /// <summary>
-/// First system: moves <see cref="Simulation.Now"/> to the current tick and logs dawn, nightfall and new days,
-/// seasons and years (FR-TIME-01 groundwork).
+/// First system: moves <see cref="Simulation.Now"/> and the tile layer's clock (<see cref="Tiles.TileChanges.Tick"/>:
+/// fading trails and roads fall due) to the current tick and logs dawn, nightfall and new days, seasons and years
+/// (FR-TIME-01 groundwork).
 /// </summary>
 internal sealed class ClockSystem : ISimSystem
 {
@@ -18,6 +19,7 @@ internal sealed class ClockSystem : ISimSystem
         CalendarDate previous = sim.Now;
         CalendarDate now = sim.Calendar.At(sim.Tick);
         sim.Now = now;
+        sim.World?.Tiles.AdvanceTo(sim.Tick);
 
         SimLog log = sim.Log;
         if (now.Day != previous.Day)
@@ -67,7 +69,35 @@ internal sealed class ConstructionSystem : ISimSystem
 }
 
 /// <summary>
-/// Fourth system: at the first tick of every game day the residents eat from the storages, a shortage slows the work
+/// Fourth system: at the first tick of every game day the stumps and saplings whose time has come grow into trees
+/// (FR-WORLD-04) and walked tiles that faded back to plain ground are dropped from memory (FR-WORLD-15). Runs after the
+/// commands, so a building placed this tick has already cleared the flora under it, and before the work, so the
+/// residents see the new trees in the same tick. Simulations without a world skip it.
+/// </summary>
+internal sealed class TileSystem : ISimSystem
+{
+    public const string SystemName = "tiles";
+
+    public string Name => SystemName;
+
+    public void Update(Simulation sim)
+    {
+        if (sim.World is not { } world || sim.Tick == 0 || sim.Now.TickOfDay != 0)
+        {
+            return;
+        }
+
+        int grown = world.Tiles.GrowFlora(sim.Content.Regrowth, sim.Content.WorldGen.Resources.Trees, sim.Calendar.TicksPerDay);
+        world.Tiles.CompactWalks();
+        if (grown > 0)
+        {
+            sim.Log.Write(sim.Tick, LogLevel.Info, SystemName, "{count} trees grew", LogField.Of("count", grown));
+        }
+    }
+}
+
+/// <summary>
+/// Fifth system: at the first tick of every game day the residents eat from the storages, a shortage slows the work
 /// and sends hungry residents away, and the tax arrives (FR-ECO-10, FR-ECO-06). Runs after the construction, so a
 /// storage finished this tick already holds food, and before the residents, so a resident who leaves takes its first
 /// step this tick. Simulations without a world skip it.
@@ -82,7 +112,7 @@ internal sealed class EconomySystem : ISimSystem
 }
 
 /// <summary>
-/// Fifth system: homeless residents move into free house places, and once a day at the arrival hour a newcomer may
+/// Sixth system: homeless residents move into free house places, and once a day at the arrival hour a newcomer may
 /// arrive (FR-NPC-01, E2). Runs after the construction, so a house finished this tick already offers its places, and
 /// before the movement, so a newcomer takes its first step in the tick it appears. Simulations without a world skip it.
 /// </summary>
@@ -96,7 +126,7 @@ internal sealed class ResidentSystem : ISimSystem
 }
 
 /// <summary>
-/// Sixth system: walkers (the hero, residents) advance along their paths and heroes spend or regain stamina
+/// Seventh system: walkers (the hero, residents) advance along their paths and heroes spend or regain stamina
 /// (FR-HERO-01, FR-NPC-02). Runs after the commands, so an order moves the hero in the tick it executes, and before the
 /// fog, so sight follows the new position. Simulations without a world skip it.
 /// </summary>
@@ -110,7 +140,7 @@ internal sealed class MovementSystem : ISimSystem
 }
 
 /// <summary>
-/// Seventh system: residents work (FR-NPC-06, FR-NPC-07, ADR 0009): a resident with a job checks it and moves it on
+/// Eighth system: residents work (FR-NPC-06, FR-NPC-07, ADR 0009): a resident with a job checks it and moves it on
 /// (arrived, a work cycle done, the load handed in), an idle one whose think tick has come looks for a job on the board
 /// or walks to a free tile next to the center. Runs after the movement, so work starts in the tick a resident arrives.
 /// Simulations without a world skip it.
@@ -125,7 +155,7 @@ internal sealed class JobSystem : ISimSystem
 }
 
 /// <summary>
-/// Eighth system: heroes standing next to their node work on it and fill the backpack (FR-HERO-02, FR-WORLD-05). Runs
+/// Ninth system: heroes standing next to their node work on it and fill the backpack (FR-HERO-02, FR-WORLD-05). Runs
 /// after the movement, so gathering starts in the tick the hero arrives. Simulations without a world skip it.
 /// </summary>
 internal sealed class GatherSystem : ISimSystem

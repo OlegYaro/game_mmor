@@ -17,7 +17,10 @@ namespace Core.Pathfinding;
 /// duplicate, so every pop is a real expansion. The heap array only grows, so after warm-up a search allocates
 /// nothing.</para>
 /// <para>The heuristic is the octile distance with the grid's minimum step costs, admissible and consistent even
-/// when tiles cost less than 10, so a found path is a cheapest one.</para>
+/// when tiles cost less than 10, so a found path is a cheapest one; with a cost layer it adds the plain-ground surcharge
+/// for the steps that must land outside the layer's cheap area (<see cref="OutsideBound"/>), which keeps it strong away
+/// from trails and roads. The costs, their minimum and the cheap area are read once per search (they may change between
+/// searches as trails appear and fade, never during one).</para>
 /// </remarks>
 internal sealed class AStarSearch
 {
@@ -63,9 +66,10 @@ internal sealed class AStarSearch
         bool uniform = _grid.HasUniformCost;
         int minStraight = _grid.MinStraightCost;
         int minDiagonal = _grid.MinDiagonalCost;
+        var outside = new OutsideBound(uniform ? 0 : PathCosts.Straight - minStraight, uniform ? TileArea.None : _grid.CheapArea, goalX, goalY, box);
 
         _heapCount = 0;
-        int startH = Heuristic(start % size, start / size, goalX, goalY, box, minStraight, minDiagonal);
+        int startH = Heuristic(start % size, start / size, goalX, goalY, box, minStraight, minDiagonal, outside);
         Touch(start);
         nodes[start] = new Node { G = 0, Link = SeenFlag | RootDirection };
         Push(new OpenEntry(startH, startH, start));
@@ -117,7 +121,7 @@ internal sealed class AStarSearch
                 int nx = x + PassabilityGrid.DirectionX(d);
                 int ny = y + PassabilityGrid.DirectionY(d);
                 bool diagonal = d >= 4;
-                int step = uniform ? (diagonal ? PathCosts.DiagonalBase : PathCosts.Straight) : _grid.StepCost(nx, ny, diagonal);
+                int step = uniform ? (diagonal ? PathCosts.DiagonalBase : PathCosts.Straight) : _grid.StepCost(nx, ny, diagonal, minStraight);
                 int nextG = g + step;
                 if ((link & SeenFlag) != 0)
                 {
@@ -137,7 +141,7 @@ internal sealed class AStarSearch
                 {
                     neighbour.G = nextG;
                     neighbour.Link = SeenFlag | d;
-                    int h = Heuristic(nx, ny, goalX, goalY, box, minStraight, minDiagonal);
+                    int h = Heuristic(nx, ny, goalX, goalY, box, minStraight, minDiagonal, outside);
                     Push(new OpenEntry(nextG + h, h, next));
                 }
             }
@@ -155,14 +159,17 @@ internal sealed class AStarSearch
     }
 
     // Octile distance to the goal, or for an approach search (box = 1) to the 3×3 box around the target, which holds
-    // every goal tile: a lower bound either way.
+    // every goal tile, with the cheapest step costs; plus the plain-ground surcharge for the steps that must land outside
+    // the cheap area (see OutsideBound): a lower bound either way, and consistent.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int Heuristic(int x, int y, int goalX, int goalY, int box, int straight, int diagonal)
+    private static int Heuristic(int x, int y, int goalX, int goalY, int box, int straight, int diagonal, in OutsideBound outside)
     {
         int dx = Math.Max(0, Math.Abs(goalX - x) - box);
         int dy = Math.Max(0, Math.Abs(goalY - y) - box);
         int min = Math.Min(dx, dy);
-        return (diagonal * min) + (straight * (Math.Max(dx, dy) - min));
+        int max = Math.Max(dx, dy);
+        int h = (diagonal * min) + (straight * (max - min));
+        return outside.Surcharge == 0 ? h : h + (outside.Surcharge * outside.Steps(x, y, max));
     }
 
     private PathResult Finish(PathStatus status, int end, int cost, int expanded, List<int> path)
@@ -299,6 +306,28 @@ internal sealed class AStarSearch
     {
         ref int link = ref nodes[index].Link;
         link = (link & FlagBits) | (position << PositionShift);
+    }
+
+    /// <summary>
+    /// The part of the heuristic for a cost layer with cheap tiles (trails, roads) in <see cref="ITileCost.CheapArea"/>.
+    /// Every step that lands outside the area costs at least plain ground, that is <see cref="Surcharge"/> more than the
+    /// cheapest step the octile part counts. From a tile at Chebyshev distance <c>d</c> from the area, a path to the goal
+    /// lands outside it at least <c>min(c, max(d − 1, 0) + g)</c> times, where <c>c</c> is the Chebyshev distance to the
+    /// goal (a path that never enters the area) and <c>g</c> the goal's distance from the area (a path that enters it).
+    /// That count is the exact distance in a relaxed graph where outside landings cost 1 and inside ones 0, so it changes
+    /// by at most 1 per step and not at all on a step into the area; adding <see cref="Surcharge"/> times it to the
+    /// octile part keeps the heuristic consistent (A* closes nodes for good). Far from the trails it is the plain octile
+    /// distance on straight lines; inside the area it adds nothing.
+    /// </summary>
+    private readonly struct OutsideBound(int surcharge, TileArea area, int goalX, int goalY, int box)
+    {
+        public readonly int Surcharge = surcharge;
+        private readonly TileArea _area = area;
+        private readonly int _goalOutside = surcharge == 0 ? 0 : Math.Max(area.DistanceFrom(goalX, goalY) - box, 0);
+
+        // Landings outside the area on any path from (x, y) whose Chebyshev distance to the goal is `steps`.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Steps(int x, int y, int steps) => Math.Min(steps, Math.Max(_area.DistanceFrom(x, y) - 1, 0) + _goalOutside);
     }
 
     /// <summary>Per-tile search record; valid only when its run's stamp equals the current generation.</summary>

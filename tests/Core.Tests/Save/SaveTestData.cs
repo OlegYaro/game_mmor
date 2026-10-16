@@ -102,11 +102,14 @@ internal static class SaveTestData
 
     /// <summary>
     /// Script of the frozen <c>Golden/save_v4.sav</c> (first format with residents, the reached era, jobs, reservations,
-    /// field outputs, storage filters and the food state; made again on 16.10.2026 when the job board joined format v4
-    /// before its release): a normal 64² game; 150 wood and 30 berries given in tick 1; a campfire, two houses, a storage
-    /// (that refuses money) and a field built near the hero; a blacksmith, an automatic resident (a lumberjack) and a
-    /// farmer spawned at the center; then mornings run until the first newcomer arrives, and the save is taken 3 ticks
-    /// into its walk, while the others work, with a pending spawn of a farmer.
+    /// field outputs, storage filters, the food state, flora and walk counters; made again on 16.10.2026 when the job
+    /// board and then the stumps, saplings, trails and roads joined format v4 before its release): a normal 64² game; 150
+    /// wood and 30 berries given in tick 1; a campfire, two houses, a storage (that refuses money) and a field built near
+    /// the hero; a blacksmith, an automatic resident (a lumberjack) and a farmer spawned at the center; then mornings run
+    /// until the first newcomer arrives. Three ticks into its walk, while the others work, the first tree in tile order that
+    /// nobody works is felled (a stump) and a sapling is planted on the first free tile of the row three below the
+    /// center (straight into the tile layer, as a lumberjack and a planter would), and the save is taken with a pending
+    /// spawn of a farmer. The residents' walks left counters on their tiles.
     /// </summary>
     public static Simulation BuildV4Sample()
     {
@@ -129,6 +132,13 @@ internal static class SaveTestData
         sim.Step();
         Heroes.HeroTestWorld.StepUntil(sim, () => sim.World!.Residents.Count == 4, limit: 100_000);
         sim.Step(3);
+        GameWorld world = sim.World!;
+        int tree = Enumerable.Range(0, world.Size * world.Size).First(i => world.Tiles.GetEffectiveResource(i % world.Size, i / world.Size) == ResourceKind.Tree
+            && !world.Reservations.IsReserved(Core.Jobs.ReservationTarget.OfTile(i)));
+        Assert.True(world.Tiles.TakeResource(tree % world.Size, tree / world.Size, int.MaxValue) > 0);
+        Core.Buildings.Building center = world.Buildings.Get(Core.Buildings.Construction.FindCenter(sim));
+        int sx = Enumerable.Range(0, world.Size).First(x => world.Tiles.CanPlant(x, center.Y + 3));
+        Assert.True(world.Tiles.Plant(sx, center.Y + 3));
         sim.Enqueue(new SpawnResidentCommand("farmer"));
         return sim;
     }

@@ -94,7 +94,10 @@ public sealed record FogDto(IReadOnlyList<int> ExploredRuns);
 /// </summary>
 /// <param name="Resources">Chunks with changed resource stocks.</param>
 /// <param name="Occupancy">Chunks with occupied tiles.</param>
-public sealed record TilesDto(IReadOnlyList<ResourceChunkDto> Resources, IReadOnlyList<OccupancyChunkDto> Occupancy);
+/// <param name="Flora">Chunks with stumps, saplings or grown trees (FR-WORLD-04).</param>
+/// <param name="Walks">Chunks with walked tiles whose counter is above 0 at the saved tick (FR-WORLD-15).</param>
+public sealed record TilesDto(IReadOnlyList<ResourceChunkDto> Resources, IReadOnlyList<OccupancyChunkDto> Occupancy,
+    IReadOnlyList<FloraChunkDto> Flora, IReadOnlyList<WalkChunkDto> Walks);
 
 /// <summary>Changed resource stocks of one chunk.</summary>
 /// <param name="X">Chunk column.</param>
@@ -110,6 +113,24 @@ public sealed record ResourceChunkDto(int X, int Y, IReadOnlyList<ulong> Mask, I
 /// <param name="OwnerIndices">Owner slot index of each occupied tile in mask order.</param>
 /// <param name="OwnerGenerations">Owner generation of each occupied tile in mask order.</param>
 public sealed record OccupancyChunkDto(int X, int Y, IReadOnlyList<ulong> Mask, IReadOnlyList<int> OwnerIndices, IReadOnlyList<int> OwnerGenerations);
+
+/// <summary>Flora of one chunk: stumps, saplings and trees grown where the map has none.</summary>
+/// <param name="X">Chunk column.</param>
+/// <param name="Y">Chunk row.</param>
+/// <param name="Mask">16 words of the flora mask (same layout as <see cref="ResourceChunkDto.Mask"/>).</param>
+/// <param name="States">State of each tile in mask order: <c>stump</c>, <c>sapling</c> or <c>tree</c>.</param>
+/// <param name="Ticks">Tick each tile was felled, planted or grew, in mask order.</param>
+/// <param name="Stocks">Wood left in each grown tree, 0 for a stump or a sapling, in mask order.</param>
+public sealed record FloraChunkDto(int X, int Y, IReadOnlyList<ulong> Mask, IReadOnlyList<string> States, IReadOnlyList<long> Ticks, IReadOnlyList<int> Stocks);
+
+/// <summary>Walked tiles of one chunk (trails and roads, ADR 0007: only tiles whose counter has not faded to 0).</summary>
+/// <param name="X">Chunk column.</param>
+/// <param name="Y">Chunk row.</param>
+/// <param name="Mask">16 words of the walked-tile mask (same layout as <see cref="ResourceChunkDto.Mask"/>).</param>
+/// <param name="Counters">Walk counter right after the tile's last step, in mask order; it fades from there.</param>
+/// <param name="Ticks">Tick of the tile's last step, in mask order.</param>
+/// <param name="Classes">Class of each tile at the saved tick: <c>none</c>, <c>trail</c> or <c>road</c>.</param>
+public sealed record WalkChunkDto(int X, int Y, IReadOnlyList<ulong> Mask, IReadOnlyList<int> Counters, IReadOnlyList<long> Ticks, IReadOnlyList<string> Classes);
 
 /// <summary>State of one RNG stream.</summary>
 /// <param name="Stream">Stable stream name (see <see cref="SaveMapper.RngStreamNames"/>).</param>

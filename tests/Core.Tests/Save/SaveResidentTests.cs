@@ -182,12 +182,16 @@ public sealed class SaveResidentTests
         Assert.Equal("camp", (string?)game["settlement"]!["reachedEra"]);
         Assert.Equal(string.Empty, (string?)core["settlement"]!["reachedEra"]);
         Assert.Empty(game["components"]!["resident"]!.AsArray());
+        Assert.Empty(game["tiles"]!["flora"]!.AsArray()); // v3 had no stumps: a tree felled before stays gone
+        Assert.Empty(game["tiles"]!["walks"]!.AsArray());
         Assert.Throws<InvalidOperationException>(() => migration.Migrate(new JsonObject(), new JsonObject { ["game"] = new JsonObject() }));
+        Assert.Throws<InvalidOperationException>(() => migration.Migrate(new JsonObject(),
+            new JsonObject { ["components"] = new JsonObject(), ["game"] = new JsonObject { ["mapSize"] = 64 } }));
         Assert.Throws<InvalidOperationException>(() => migration.Migrate(new JsonObject(), game));
 
         static JsonObject Migrated(int mapSize)
         {
-            var body = new JsonObject { ["components"] = new JsonObject(), ["game"] = new JsonObject { ["mapSize"] = mapSize } };
+            var body = new JsonObject { ["components"] = new JsonObject(), ["game"] = new JsonObject { ["mapSize"] = mapSize }, ["tiles"] = new JsonObject() };
             new SaveMigrationV3ToV4().Migrate(new JsonObject(), body);
             return body;
         }

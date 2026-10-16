@@ -285,6 +285,9 @@ internal static class JobRules
                 }
 
                 return;
+            case JobKind.Plant:
+                job = job with { Phase = JobPhase.Working, WorkLeft = sim.Content.Regrowth.PlantActionTicks * JobBoard.BaseSpeedPermille };
+                return;
             default:
                 job = job with { Phase = JobPhase.Working, WorkLeft = GatherDefOf(sim, job.Kind).TicksPerAction * JobBoard.BaseSpeedPermille };
                 return;
@@ -298,6 +301,14 @@ internal static class JobRules
         if (left > 0)
         {
             job = job with { WorkLeft = left };
+            return;
+        }
+
+        if (job.Kind == JobKind.Plant)
+        {
+            PassabilityGrid plantGrid = world.Pathfinder.Grid;
+            bool planted = world.Tiles.Plant(plantGrid.XOf(job.TargetTile), plantGrid.YOf(job.TargetTile));
+            End(sim, world, entity, ref job, planted ? "the sapling is planted" : "the tile was taken");
             return;
         }
 
@@ -398,8 +409,7 @@ internal static class JobRules
                     JobKind.Farm => TryStartFarm(sim, world, entity, resident, at, ref job),
                     JobKind.Haul => TryStartHaul(sim, world, entity, resident, at, ref job),
                     JobKind.Chop or JobKind.Quarry or JobKind.Forage => TryStartGather(sim, world, entity, kind, at, ref job, ref checkedTiles),
-
-                    // Planting saplings arrives with tree regrowth (the next wave): the board offers no such job yet.
+                    JobKind.Plant => TryStartPlant(sim, world, entity, at, ref job, ref checkedTiles),
                     _ => false,
                 };
                 if (started)
@@ -440,6 +450,37 @@ internal static class JobRules
 
         world.Movers.Get(entity) = mover;
         job = job with { Kind = kind, Phase = JobPhase.ToTarget, Building = EntityId.None, TargetTile = tile, Storage = EntityId.None, GoalTile = tile, WorkLeft = 0 };
+        return true;
+    }
+
+    // Planting (FR-WORLD-04): a free tile near the forest inside the territory, reserved like a node.
+    private static bool TryStartPlant(Simulation sim, GameWorld world, EntityId entity, Spot at, ref ResidentJob job, ref int checkedTiles)
+    {
+        if (Construction.GetTerritory(sim) is not { } territory)
+        {
+            return false;
+        }
+
+        int tile = JobSearch.FindPlantTile(sim, world, entity, at.X, at.Y, territory, sim.Content.Regrowth.NearTreeRadius, at.Component, ref checkedTiles);
+        if (tile < 0)
+        {
+            return false;
+        }
+
+        ReservationTarget target = ReservationTarget.OfTile(tile);
+        if (!AgentMovement.TryPlan(sim, world, entity, tile, WorkRange, sprint: false, out Mover mover))
+        {
+            world.Reservations.Ban(entity, target, sim.Tick + sim.Content.Economy.JobRetryCooldownTicks);
+            return false;
+        }
+
+        if (!world.Reservations.TryReserveAll(entity, [new ReservationRequest(target, default, 1, 1)]))
+        {
+            return false;
+        }
+
+        world.Movers.Get(entity) = mover;
+        job = job with { Kind = JobKind.Plant, Phase = JobPhase.ToTarget, Building = EntityId.None, TargetTile = tile, Storage = EntityId.None, GoalTile = tile, WorkLeft = 0 };
         return true;
     }
 
@@ -747,6 +788,12 @@ internal static class JobRules
             return world.Tiles.GetEffectiveResource(grid.XOf(job.TargetTile), grid.YOf(job.TargetTile)) == JobKinds.ResourceOf(job.Kind);
         }
 
+        if (job.Kind == JobKind.Plant)
+        {
+            PassabilityGrid grid = world.Pathfinder.Grid;
+            return world.Tiles.CanPlant(grid.XOf(job.TargetTile), grid.YOf(job.TargetTile));
+        }
+
         return job.Kind == JobKind.Farm
             ? TryGetWorkplace(sim, world, job.Building, JobKind.Farm, out _, out _)
             : world.Buildings.TryGet(job.Building, out Building source) && source.State == BuildingState.Active && world.WorkOutputs.Has(job.Building);
@@ -784,7 +831,7 @@ internal static class JobRules
     // The targets a job must hold in its phase.
     private static IEnumerable<ReservationTarget> RequiredTargets(ResidentJob job)
     {
-        if (JobKinds.IsGathering(job.Kind))
+        if (JobKinds.IsGathering(job.Kind) || job.Kind == JobKind.Plant)
         {
             yield return ReservationTarget.OfTile(job.TargetTile);
         }
@@ -829,6 +876,8 @@ internal static class JobRules
         {
             JobKind.None => job.Phase == JobPhase.None && job.Building == EntityId.None && job.TargetTile == -1,
             JobKind.Chop or JobKind.Quarry or JobKind.Forage => job.Phase != JobPhase.None && job.Building == EntityId.None
+                && job.TargetTile >= 0 && job.TargetTile < tiles,
+            JobKind.Plant => job.Phase is JobPhase.ToTarget or JobPhase.Working && job.Building == EntityId.None && job.CarryCount == 0
                 && job.TargetTile >= 0 && job.TargetTile < tiles,
             JobKind.Farm => job.Phase is JobPhase.ToTarget or JobPhase.Working && job.TargetTile == -1 && job.CarryCount == 0
                 && TryGetWorkplace(sim, world, job.Building, JobKind.Farm, out _, out _),

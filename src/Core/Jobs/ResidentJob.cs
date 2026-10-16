@@ -13,7 +13,9 @@ namespace Core.Jobs;
 /// <para>Bodies: a gathering job (<see cref="JobKind.Chop"/>, <see cref="JobKind.Quarry"/>, <see cref="JobKind.Forage"/>)
 /// walks to its node (<see cref="JobPhase.ToTarget"/>), works action after action while the load fits
 /// (<see cref="JobPhase.Working"/>), then carries the load to a storage (<see cref="JobPhase.ToStorage"/>).
-/// <see cref="JobKind.Farm"/> walks to its field and works one cycle. <see cref="JobKind.Haul"/> walks to a building,
+/// <see cref="JobKind.Farm"/> walks to its field and works one cycle. <see cref="JobKind.Plant"/> walks to a free tile
+/// near the forest (<see cref="TargetTile"/>), works <see cref="RegrowthBalanceDef.PlantActionTicks"/> and leaves a
+/// sapling there. <see cref="JobKind.Haul"/> walks to a building,
 /// takes its output and carries it to a storage; without a building it only carries the resident's own load.</para>
 /// <para>The load stays with the resident when a job ends without handing it in (no storage, cancelled): the
 /// resident then hauls it first as soon as a storage has room, and takes no other job while it carries something.</para>
@@ -21,7 +23,7 @@ namespace Core.Jobs;
 /// <param name="Kind">The job type; <see cref="JobKind.None"/> without a job.</param>
 /// <param name="Phase">Where in the job body it is.</param>
 /// <param name="Building">The field (farm) or the building whose output it hauls; <see cref="EntityId.None"/> otherwise.</param>
-/// <param name="TargetTile">The node tile of a gathering job; -1 otherwise.</param>
+/// <param name="TargetTile">The node tile of a gathering job or the tile of a planting job; -1 otherwise.</param>
 /// <param name="Storage">The storage it carries the load to; <see cref="EntityId.None"/> until one is reserved.</param>
 /// <param name="GoalTile">The tile it walks to or works next to (a node, a footprint tile of the building or storage); -1 without one.</param>
 /// <param name="WorkLeft">Work left in the current action or cycle, in thousandths of a tick at base speed.</param>

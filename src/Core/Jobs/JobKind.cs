@@ -18,7 +18,7 @@ public enum JobKind : byte
     /// <summary>Fell a tree and carry the wood to a storage.</summary>
     Chop = 2,
 
-    /// <summary>Plant a sapling (the regrowth wave; no job of this type is offered yet).</summary>
+    /// <summary>Plant a sapling on a free tile near the forest (FR-WORLD-04); it grows into a tree.</summary>
     Plant = 3,
 
     /// <summary>Break stone off a rock and carry it to a storage.</summary>

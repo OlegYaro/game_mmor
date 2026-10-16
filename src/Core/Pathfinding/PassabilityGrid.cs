@@ -78,8 +78,6 @@ public sealed class PassabilityGrid
             throw new ArgumentOutOfRangeException(nameof(cost), minCost, $"Minimum tile cost must be {PathCosts.MinTileCost}..{PathCosts.MaxTileCost}.");
         }
 
-        MinStraightCost = minCost;
-        MinDiagonalCost = PathCosts.Diagonal(minCost);
         Size = terrain.Size;
         _indexOffsets = new int[DirectionCount];
         for (int d = 0; d < DirectionCount; d++)
@@ -111,14 +109,35 @@ public sealed class PassabilityGrid
     /// <summary>Number of tiles.</summary>
     public int TileCount => _static.Length;
 
-    /// <summary>Lower bound of a straight step's cost (<see cref="ITileCost.MinCost"/>); the heuristic uses it.</summary>
-    public int MinStraightCost { get; }
+    /// <summary>
+    /// Lower bound of a straight step's cost right now (<see cref="ITileCost.MinCost"/>; <see cref="PathCosts.Straight"/>
+    /// while the costs are uniform); the heuristic uses it.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The cost layer reports a minimum outside <see cref="PathCosts.MinTileCost"/>..<see cref="PathCosts.MaxTileCost"/>.</exception>
+    public int MinStraightCost
+    {
+        get
+        {
+            if (HasUniformCost)
+            {
+                return PathCosts.Straight;
+            }
 
-    /// <summary>Lower bound of a diagonal step's cost.</summary>
-    public int MinDiagonalCost { get; }
+            int min = _cost.MinCost;
+            return min is >= PathCosts.MinTileCost and <= PathCosts.MaxTileCost
+                ? min
+                : throw new InvalidOperationException($"Minimum tile cost {min} is outside {PathCosts.MinTileCost}..{PathCosts.MaxTileCost}.");
+        }
+    }
 
-    /// <summary>True when every tile costs <see cref="PathCosts.Straight"/> (no cost layer).</summary>
-    public bool HasUniformCost => _uniformCost;
+    /// <summary>Lower bound of a diagonal step's cost right now.</summary>
+    public int MinDiagonalCost => PathCosts.Diagonal(MinStraightCost);
+
+    /// <summary>True while every tile costs <see cref="PathCosts.Straight"/> (no cost layer, or one that is <see cref="ITileCost.IsUniform"/> now).</summary>
+    public bool HasUniformCost => _uniformCost || _cost.IsUniform;
+
+    /// <summary>The rectangle outside which every tile costs at least <see cref="PathCosts.Straight"/> (<see cref="ITileCost.CheapArea"/>); empty while the costs are uniform.</summary>
+    public TileArea CheapArea => HasUniformCost ? TileArea.None : _cost.CheapArea;
 
     /// <summary>X offset of direction <paramref name="direction"/> (0..7).</summary>
     public static int DirectionX(int direction) => _dx[direction];
@@ -177,26 +196,28 @@ public sealed class PassabilityGrid
 
     /// <summary>Straight-step cost of entering tile (<paramref name="x"/>, <paramref name="y"/>) from <see cref="ITileCost"/>.</summary>
     /// <exception cref="InvalidOperationException">The cost provider returned a value outside <see cref="MinStraightCost"/>..<see cref="PathCosts.MaxTileCost"/>.</exception>
-    public int TileCost(int x, int y)
-    {
-        if (_uniformCost)
-        {
-            return PathCosts.Straight;
-        }
-
-        int cost = _cost.GetCost(x, y);
-        if (cost < MinStraightCost || cost > PathCosts.MaxTileCost)
-        {
-            throw new InvalidOperationException($"Tile cost {cost} at ({x}, {y}) is outside {MinStraightCost}..{PathCosts.MaxTileCost}.");
-        }
-
-        return cost;
-    }
+    public int TileCost(int x, int y) => HasUniformCost ? PathCosts.Straight : CheckedCost(x, y, MinStraightCost);
 
     /// <summary>Cost of the step into (<paramref name="x"/>, <paramref name="y"/>): the tile cost, or its diagonal for a diagonal step.</summary>
     public int StepCost(int x, int y, bool diagonal)
     {
         int cost = TileCost(x, y);
+        return diagonal ? PathCosts.Diagonal(cost) : cost;
+    }
+
+    /// <summary>
+    /// <see cref="StepCost"/> for a search that already read <paramref name="minCost"/> (<see cref="MinStraightCost"/>)
+    /// and knows the costs are not uniform: one call into the cost layer per step.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal int StepCost(int x, int y, bool diagonal, int minCost)
+    {
+        int cost = _cost.GetCost(x, y);
+        if ((uint)(cost - minCost) > (uint)(PathCosts.MaxTileCost - minCost))
+        {
+            ThrowCostOutOfRange(x, y, cost, minCost);
+        }
+
         return diagonal ? PathCosts.Diagonal(cost) : cost;
     }
 
@@ -233,6 +254,20 @@ public sealed class PassabilityGrid
     }
 
     private bool IsBlockedAt(int x, int y) => _hasBlocker && _blocker.IsBlocked(x, y);
+
+    private int CheckedCost(int x, int y, int minCost)
+    {
+        int cost = _cost.GetCost(x, y);
+        if (cost < minCost || cost > PathCosts.MaxTileCost)
+        {
+            ThrowCostOutOfRange(x, y, cost, minCost);
+        }
+
+        return cost;
+    }
+
+    private static void ThrowCostOutOfRange(int x, int y, int cost, int minCost) =>
+        throw new InvalidOperationException($"Tile cost {cost} at ({x}, {y}) is outside {minCost}..{PathCosts.MaxTileCost}.");
 
     private int ComputeStaticMask(int x, int y)
     {

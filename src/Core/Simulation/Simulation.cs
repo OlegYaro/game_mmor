@@ -161,7 +161,7 @@ public sealed class Simulation : IStateHashable
         Difficulty = difficulty;
         if (map is not null)
         {
-            World = new GameWorld(map, mapHash, Entities, ResidentRules.FirstEra(content));
+            World = new GameWorld(map, mapHash, Entities, ResidentRules.FirstEra(content), content.Roads);
         }
 
         _systems = systems.ToArray();
@@ -268,6 +268,7 @@ public sealed class Simulation : IStateHashable
 
         sim.Tick = state.Tick;
         sim.Now = sim.Calendar.At(state.Tick);
+        sim.World?.Tiles.AdvanceTo(state.Tick);
         foreach (ComponentEntry<Position> entry in state.Positions)
         {
             if (!sim.Entities.IsAlive(entry.Entity))
@@ -541,6 +542,7 @@ public sealed class Simulation : IStateHashable
         new ClockSystem(),
         new CommandSystem(),
         new ConstructionSystem(),
+        new TileSystem(),
         new EconomySystem(),
         new ResidentSystem(),
         new MovementSystem(),
