@@ -67,6 +67,12 @@ public partial class GameRoot : Node
         GetNode<PauseMenu>("Ui/PauseMenu").ExitToMenuRequested += () => ExitToMenuRequested?.Invoke();
     }
 
+    public override void _Process(double delta)
+    {
+        // A menu (pause, console) blocks the host's speed keys; the world input handlers follow the same flag.
+        InputState.WorldInputBlocked = _host?.InputBlocked ?? false;
+    }
+
     public override void _ExitTree()
     {
         if (_host is not null)
@@ -109,6 +115,7 @@ public partial class GameRoot : Node
         var inspector = GetNode<InspectorPanel>("Ui/InspectorPanel");
         menu.BuildingChosen += id => BuildMode.Begin(id);
         inspector.MoveRequested += entity => BuildMode.BeginMove(entity);
+        inspector.CloseRequested += Selection.Clear;
         BuildMode.ToggleRequested += menu.ToggleVisible;
         BuildMode.ActiveChanged += () =>
         {

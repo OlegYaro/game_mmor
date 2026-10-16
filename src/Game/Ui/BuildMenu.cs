@@ -95,7 +95,7 @@ public partial class BuildMenu : PanelContainer
             }
 
             string captured = category;
-            var tab = new Button { Text = BuildingText.CategoryKey(category), ToggleMode = true, CustomMinimumSize = new Vector2(0, 36) };
+            var tab = new Button { Text = BuildingText.CategoryKey(category), ToggleMode = true, CustomMinimumSize = new Vector2(0, 36), FocusMode = FocusModeEnum.None };
             tab.Pressed += () => SelectCategory(captured);
             _tabRow.AddChild(tab);
             _tabs[category] = tab;
@@ -202,7 +202,7 @@ public partial class BuildMenu : PanelContainer
     private void AddEntry(BuildingDef def)
     {
         var box = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(190, 0) };
-        var button = new Button { Text = BuildingText.NameKey(def.Id), CustomMinimumSize = new Vector2(190, 44) };
+        var button = new Button { Text = BuildingText.NameKey(def.Id), CustomMinimumSize = new Vector2(190, 44), FocusMode = FocusModeEnum.None };
         string id = def.Id;
         button.Pressed += () =>
         {

@@ -40,6 +40,9 @@ public partial class InspectorPanel : PanelContainer
     /// <summary>The shown building, or <see cref="EntityId.None"/> when the panel is closed.</summary>
     public EntityId Selected { get; private set; }
 
+    /// <summary>Raised by the Close button; the owner clears the selection, which hides the panel.</summary>
+    public event Action? CloseRequested;
+
     /// <summary>The "Upgrade" button.</summary>
     public Button UpgradeButton { get; private set; } = null!;
 
@@ -105,7 +108,7 @@ public partial class InspectorPanel : PanelContainer
         column.AddChild(_demolishInfo);
         column.AddChild(CancelButton);
         column.AddChild(_cancelInfo);
-        column.AddChild(UiKit.Button("ui.inspector.close", () => Hide()));
+        column.AddChild(UiKit.Button("ui.inspector.close", () => CloseRequested?.Invoke()));
         margin.AddChild(column);
         AddChild(margin);
     }
@@ -113,10 +116,25 @@ public partial class InspectorPanel : PanelContainer
     /// <summary>Connects the panel to the host. The panel closes when the simulation is replaced.</summary>
     public void Bind(SimulationHost host)
     {
+        if (_host is not null)
+        {
+            _host.SimulationChanged -= OnSimulationChanged;
+        }
+
         _host = host;
-        host.SimulationChanged += () => Hide();
+        host.SimulationChanged += OnSimulationChanged;
         Hide();
     }
+
+    public override void _ExitTree()
+    {
+        if (_host is not null)
+        {
+            _host.SimulationChanged -= OnSimulationChanged;
+        }
+    }
+
+    private void OnSimulationChanged() => Hide();
 
     /// <summary>Opens the panel for <paramref name="building"/>. Does nothing for an entity that is not a building.</summary>
     public void Show(EntityId building)

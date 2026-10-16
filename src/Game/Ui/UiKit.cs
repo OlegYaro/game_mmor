@@ -11,7 +11,8 @@ public static class UiKit
     /// <summary>A button whose text is the translation key <paramref name="key"/>.</summary>
     public static Button Button(string key, Action onPressed)
     {
-        var button = new Button { Text = key, CustomMinimumSize = new Vector2(0, 44) };
+        // No keyboard focus: a focused button would take Space (pause) as ui_accept and press itself again.
+        var button = new Button { Text = key, CustomMinimumSize = new Vector2(0, 44), FocusMode = Control.FocusModeEnum.None };
         button.Pressed += onPressed;
         return button;
     }
