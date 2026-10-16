@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -57,16 +58,41 @@ public sealed record FogBalanceDef(
 /// <param name="Weight">Weight of one item in grams.</param>
 /// <param name="NameKey">Localization key of the name; derived from the id when omitted.</param>
 /// <param name="SpoilsInto">Optional id of another item this one turns into when it spoils.</param>
+/// <param name="Category">Optional item category: resource, food, material or currency (M3a).</param>
+/// <param name="FoodValue">Food units one item gives when eaten (provisional); 0 means not edible. Only food items may have more than 0.</param>
 public sealed record ItemDef(
     [property: RegularExpression(ContentId.Pattern)] string Id,
     [property: Range(1, 100000)] int StackSize,
     [property: Range(0, 1000000)] int Weight,
     string? NameKey = null,
-    [property: RegularExpression(ContentId.Pattern)] string? SpoilsInto = null) : IContentDef
+    [property: RegularExpression(ContentId.Pattern)] string? SpoilsInto = null,
+    [property: RegularExpression(ItemCategories.Pattern)]
+    [property: Description("resource, food, material or currency. Optional.")]
+    string? Category = null,
+    [property: Range(0, 1000)]
+    [property: Description("Food units one item gives when eaten (provisional). A resident needs foodPerResidentPerDay units per day (data/balance/economy.json). 0 means not edible; only food items may be above 0.")]
+    int FoodValue = 0) : IContentDef
 {
     /// <summary>The localization key of the name: the explicit one or <c>item.{id}.name</c>.</summary>
     [JsonIgnore]
     public string EffectiveNameKey => NameKey ?? ContentKeys.ItemName(Id);
+
+    /// <summary>Checks that only food items are edible.</summary>
+    /// <returns>(JSON path below the definition, message) per problem.</returns>
+    public IEnumerable<(string Path, string Message)> CheckConsistency()
+    {
+        if (FoodValue > 0 && Category != "food")
+        {
+            yield return ("foodValue", $"Item '{Id}' has a foodValue but is not in the food category.");
+        }
+    }
+}
+
+/// <summary>Item categories (M3a); the pattern is also emitted into the JSON schema.</summary>
+public static class ItemCategories
+{
+    /// <summary>Pattern of an item category.</summary>
+    public const string Pattern = "^(resource|food|material|currency)$";
 }
 
 /// <summary>Builds localization keys from content ids (FR-UI-09).</summary>

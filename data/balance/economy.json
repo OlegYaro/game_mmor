@@ -1,0 +1,31 @@
+{
+  "$schema": "../schema/economy.schema.json",
+  "items": [
+    {
+      "id": "economy",
+      "foodPerResidentPerDay": 1,
+      "shortageSlowdownPermille": 500,
+      "daysWithoutFoodUntilFirstLeaves": 2,
+      "leaveIntervalDays": 1,
+      "warnDaysBeforeEmpty": 2,
+      "taxPerResidentPerDay": 2,
+      "maxResidents": 100,
+      "arrivalHour": 6,
+      "arrivalFreeSlotPoints": 25,
+      "arrivalMaxSlots": 2,
+      "arrivalFoodPoints": 25,
+      "arrivalFoodDays": 3,
+      "arrivalNoRaidPoints": 20,
+      "arrivalNoRaidDays": 2,
+      "arrivalFamePointsDivisor": 5,
+      "arrivalEraPoints": [ 0, 10, 20, 30 ],
+      "arrivalChanceCapPermille": 800,
+      "haulCapacity": 20,
+      "jobRetryCooldownTicks": 600,
+      "thinkIntervalTicks": 10,
+      "skillSpeedPermillePerPoint": 25,
+      "initialSkillMax": 6,
+      "autoAssignPattern": [ "carrier", "lumberjack", "farmer", "stonemason" ]
+    }
+  ]
+}

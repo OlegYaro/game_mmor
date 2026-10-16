@@ -1,0 +1,13 @@
+{
+  "$schema": "../schema/regrowth.schema.json",
+  "items": [
+    {
+      "id": "regrowth",
+      "stumpRegrowDaysNearTree": 10,
+      "stumpRegrowDaysFar": 30,
+      "nearTreeRadius": 2,
+      "saplingGrowDays": 10,
+      "plantActionTicks": 30
+    }
+  ]
+}

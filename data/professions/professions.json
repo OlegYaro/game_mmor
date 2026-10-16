@@ -1,16 +1,16 @@
 {
   "$schema": "../schema/professions.schema.json",
   "items": [
-    { "id": "carrier", "kind": "ordinary", "skill": "construction" },
-    { "id": "builder", "kind": "ordinary", "skill": "construction" },
-    { "id": "lumberjack", "kind": "ordinary", "skill": "crafting" },
-    { "id": "stonemason", "kind": "ordinary", "skill": "mining" },
-    { "id": "miner", "kind": "ordinary", "skill": "mining" },
-    { "id": "farmer", "kind": "ordinary", "skill": "farming" },
-    { "id": "hunter", "kind": "ordinary", "skill": "hunting" },
-    { "id": "guard", "kind": "ordinary", "skill": "melee" },
-    { "id": "blacksmith", "kind": "specialist", "skill": "smithing" },
-    { "id": "healer", "kind": "specialist", "skill": "medicine" },
-    { "id": "armorer", "kind": "specialist", "skill": "smithing" }
+    { "id": "carrier", "kind": "ordinary", "skill": "construction", "jobTypes": [ "haul" ] },
+    { "id": "builder", "kind": "ordinary", "skill": "construction", "jobTypes": [] },
+    { "id": "lumberjack", "kind": "ordinary", "skill": "mining", "jobTypes": [ "chop", "plant" ] },
+    { "id": "stonemason", "kind": "ordinary", "skill": "mining", "jobTypes": [ "quarry" ] },
+    { "id": "miner", "kind": "ordinary", "skill": "mining", "jobTypes": [] },
+    { "id": "farmer", "kind": "ordinary", "skill": "farming", "jobTypes": [ "farm", "forage" ] },
+    { "id": "hunter", "kind": "ordinary", "skill": "hunting", "jobTypes": [] },
+    { "id": "guard", "kind": "ordinary", "skill": "melee", "jobTypes": [] },
+    { "id": "blacksmith", "kind": "specialist", "skill": "smithing", "jobTypes": [] },
+    { "id": "healer", "kind": "specialist", "skill": "medicine", "jobTypes": [] },
+    { "id": "armorer", "kind": "specialist", "skill": "smithing", "jobTypes": [] }
   ]
 }

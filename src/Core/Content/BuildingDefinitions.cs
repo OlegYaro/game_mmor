@@ -41,13 +41,31 @@ public sealed record BuildingFootprint(
 /// <param name="Requirements">Conditions to build or upgrade to this level; all must hold.</param>
 /// <param name="Capacity">Resident places (housing); 0 when the building has none.</param>
 /// <param name="Storage">Item stacks the building stores (storage); 0 when it has none.</param>
+/// <param name="Work">Resident work done at this level (production buildings); null when residents do not work here.</param>
 public sealed record BuildingLevelDef(
     IReadOnlyList<ItemAmountDef> Cost,
     [property: Range(1, 100000)] int BuildTicks,
     [property: Range(1, 100000)] int MoveTicks,
     IReadOnlyList<RequirementDef> Requirements,
     [property: Range(0, 1000)] int Capacity = 0,
-    [property: Range(0, 100000)] int Storage = 0) : IContentSection;
+    [property: Range(0, 100000)] int Storage = 0,
+    WorkDef? Work = null) : IContentSection;
+
+/// <summary>
+/// Resident work at a building level (M3a): <paramref name="Slots"/> residents each repeat a cycle that yields items.
+/// All numbers are provisional.
+/// </summary>
+/// <param name="Job">Job type, one of the values of <see cref="JobTypes"/>.</param>
+/// <param name="Slots">Residents that can work here at once.</param>
+/// <param name="CycleTicks">Ticks of one work cycle at base speed.</param>
+/// <param name="Item">Item produced per cycle (item definition id).</param>
+/// <param name="Yield">Items produced per cycle.</param>
+public sealed record WorkDef(
+    [property: RegularExpression(JobTypes.Pattern)] string Job,
+    [property: Range(1, 100)] int Slots,
+    [property: Range(1, 1000000)] int CycleTicks,
+    [property: RegularExpression(ContentId.Pattern)] string Item,
+    [property: Range(1, 100000)] int Yield) : IContentSection;
 
 /// <summary>An item and how many of it.</summary>
 /// <param name="Item">Item definition id.</param>

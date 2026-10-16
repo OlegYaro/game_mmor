@@ -1,0 +1,17 @@
+{
+  "$schema": "../schema/names.schema.json",
+  "items": [
+    {
+      "id": "human_names",
+      "names": [
+        "Alden", "Brann", "Cedric", "Doran", "Edric", "Faris", "Garrick", "Hale", "Ivor", "Joren",
+        "Kellan", "Loris", "Marek", "Nolan", "Orrin", "Perrin", "Quill", "Rowan", "Silas", "Tobin",
+        "Ulric", "Varek", "Wystan", "Yoren", "Zane", "Aldra", "Brina", "Cora", "Delia", "Elara",
+        "Fenna", "Gwen", "Helga", "Isolde", "Jessa", "Kira", "Lysa", "Maren", "Nessa", "Orla",
+        "Petra", "Rhea", "Sanna", "Talia", "Una", "Vesna", "Wren", "Ysolde", "Zora", "Bram",
+        "Corin", "Dunstan", "Emmet", "Finn", "Gideon", "Hollis", "Jory", "Kendrick", "Leif", "Merrin",
+        "Osric", "Piers", "Renn", "Sorrel", "Tamsin", "Wilmer"
+      ]
+    }
+  ]
+}

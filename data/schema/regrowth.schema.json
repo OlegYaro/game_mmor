@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RegrowthBalanceFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "stumpRegrowDaysNearTree": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Days for a stump to regrow when a living tree is within nearTreeRadius (provisional)."
+          },
+          "stumpRegrowDaysFar": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Days for a stump to regrow otherwise; not below the near value (provisional)."
+          },
+          "nearTreeRadius": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 16,
+            "description": "Radius in tiles that counts as near a living tree (provisional)."
+          },
+          "saplingGrowDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Days for a planted sapling to become a tree (provisional)."
+          },
+          "plantActionTicks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000,
+            "description": "Ticks a resident needs to plant a sapling (provisional)."
+          }
+        },
+        "required": [
+          "id",
+          "stumpRegrowDaysNearTree",
+          "stumpRegrowDaysFar",
+          "nearTreeRadius",
+          "saplingGrowDays",
+          "plantActionTicks"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

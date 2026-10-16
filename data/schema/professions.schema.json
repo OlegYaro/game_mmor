@@ -26,12 +26,23 @@
           "skill": {
             "type": "string",
             "pattern": "^(construction|mining|farming|hunting|cooking|crafting|smithing|medicine|trading|knowledge|melee|shooting)$"
+          },
+          "jobTypes": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": "Job types this profession takes: haul, chop, plant, quarry, forage or farm. No repeats; may be empty."
           }
         },
         "required": [
           "id",
           "kind",
-          "skill"
+          "skill",
+          "jobTypes"
         ],
         "additionalProperties": false
       }

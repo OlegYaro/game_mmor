@@ -1,9 +1,11 @@
 {
   "$schema": "../schema/items.schema.json",
   "items": [
-    { "id": "wood", "stackSize": 100, "weight": 2000 },
-    { "id": "stone", "stackSize": 50, "weight": 5000 },
-    { "id": "wheat", "stackSize": 200, "weight": 100 },
-    { "id": "berries", "stackSize": 100, "weight": 50 }
+    { "id": "wood", "stackSize": 100, "weight": 2000, "category": "resource" },
+    { "id": "stone", "stackSize": 50, "weight": 5000, "category": "resource" },
+    { "id": "wheat", "stackSize": 200, "weight": 100, "category": "resource", "foodValue": 0 },
+    { "id": "berries", "stackSize": 100, "weight": 50, "category": "food", "foodValue": 1 },
+    { "id": "vegetable", "stackSize": 100, "weight": 300, "category": "food", "foodValue": 1 },
+    { "id": "gold", "stackSize": 1000, "weight": 10, "category": "currency" }
   ]
 }

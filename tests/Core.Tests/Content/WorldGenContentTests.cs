@@ -29,7 +29,7 @@ public sealed class WorldGenContentTests
 
     private static InMemoryContentSource Base() =>
         new InMemoryContentSource().Add("balance/time.json", TimeJson).Add("balance/fog.json", _fogJson).Add("balance/saves.json", _savesJson)
-            .Add("balance/hero.json", _heroJson).Add("balance/construction.json", _constructionJson);
+            .Add("balance/hero.json", _heroJson).Add("balance/construction.json", _constructionJson).AddEconomyData();
 
     private static ContentLoadResult LoadWorld(string worldJson) =>
         ContentCatalog.Load(Base().Add("worldgen/world.json", worldJson));

@@ -22,6 +22,25 @@ internal static class TestPaths
         return dir?.FullName ?? throw new DirectoryNotFoundException("Game.sln not found above " + AppContext.BaseDirectory);
     }
 
+    /// <summary>
+    /// Adds the real economy, roads, regrowth, name, era and profession files (M3a): the economy balance references
+    /// professions and counts eras, so these files only make sense together.
+    /// </summary>
+    public static InMemoryContentSource AddEconomyData(this InMemoryContentSource source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        foreach (string path in new[]
+        {
+            "balance/economy.json", "balance/roads.json", "balance/regrowth.json", "names/names.json",
+            "eras/eras.json", "professions/professions.json",
+        })
+        {
+            source.Add(path, File.ReadAllText(Path.Combine(Data, path)));
+        }
+
+        return source;
+    }
+
     /// <summary>Reads every data/**/*.json except data/schema into an in-memory source with forward-slash relative paths.</summary>
     public static InMemoryContentSource LoadDataSource()
     {

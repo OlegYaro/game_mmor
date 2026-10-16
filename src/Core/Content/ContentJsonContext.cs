@@ -24,6 +24,10 @@ namespace Core.Content;
 [JsonSerializable(typeof(RaceFile))]
 [JsonSerializable(typeof(ItemFile))]
 [JsonSerializable(typeof(WorldGenFile))]
+[JsonSerializable(typeof(EconomyBalanceFile))]
+[JsonSerializable(typeof(RoadsBalanceFile))]
+[JsonSerializable(typeof(RegrowthBalanceFile))]
+[JsonSerializable(typeof(NameListFile))]
 public sealed partial class ContentJsonContext : JsonSerializerContext
 {
 }

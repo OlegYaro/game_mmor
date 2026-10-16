@@ -3,6 +3,8 @@ item.wood.name,Дерево,Wood
 item.stone.name,Камень,Stone
 item.wheat.name,Пшеница,Wheat
 item.berries.name,Ягоды,Berries
+item.vegetable.name,Овощи,Vegetables
+item.gold.name,Золото,Gold
 ui.hud.day,День,Day
 ui.hud.night,Ночь,Night
 ui.speed.paused,Пауза,Paused
@@ -109,6 +111,7 @@ build.hint.move,ЛКМ: перенести / R: поворот / ПКМ или E
 building.campfire.name,Костёр,Campfire
 building.house.name,Дом,House
 building.storage.name,Склад,Storage
+building.field.name,Поле,Field
 ui.res.tooltip,В рюкзаке | на складах,In the backpack | in the storages
 ui.build.title,Строительство (B - закрыть),Build (B to close)
 ui.build.category.settlement_center,Центр,Center

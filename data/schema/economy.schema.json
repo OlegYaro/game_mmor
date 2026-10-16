@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EconomyBalanceFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "foodPerResidentPerDay": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Food units one resident eats per game day (provisional)."
+          },
+          "shortageSlowdownPermille": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Work speed while the settlement is out of food, in thousandths (provisional)."
+          },
+          "daysWithoutFoodUntilFirstLeaves": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Days without food after which the first resident leaves (provisional)."
+          },
+          "leaveIntervalDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Days between two leaving residents while food is still missing (provisional)."
+          },
+          "warnDaysBeforeEmpty": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Days of food left at which the player is warned (provisional)."
+          },
+          "taxPerResidentPerDay": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Gold per resident per day; multiplied by the settlement center level in code (provisional)."
+          },
+          "maxResidents": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Upper limit of residents (NFR-01)."
+          },
+          "arrivalHour": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23,
+            "description": "Hour of the day when a newcomer may arrive (provisional)."
+          },
+          "arrivalFreeSlotPoints": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Arrival chance points per free house place (provisional)."
+          },
+          "arrivalMaxSlots": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Free places counted at most (provisional)."
+          },
+          "arrivalFoodPoints": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Arrival chance points when food lasts arrivalFoodDays for everyone including the newcomer (provisional)."
+          },
+          "arrivalFoodDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Days of food needed for the food points (provisional)."
+          },
+          "arrivalNoRaidPoints": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Arrival chance points when there was no raid for arrivalNoRaidDays (provisional)."
+          },
+          "arrivalNoRaidDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Raid-free days needed for the no-raid points (provisional)."
+          },
+          "arrivalFamePointsDivisor": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Fame is divided by this to get arrival chance points (provisional)."
+          },
+          "arrivalEraPoints": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Arrival chance points per era, in era order; one entry per era, each 0..100 (provisional)."
+          },
+          "arrivalChanceCapPermille": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Largest arrival chance, in thousandths (provisional)."
+          },
+          "haulCapacity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Items a carrier moves in one trip (provisional)."
+          },
+          "jobRetryCooldownTicks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "Ticks a failed job stays banned for the resident (provisional)."
+          },
+          "thinkIntervalTicks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Ticks between two decisions of an idle resident (provisional)."
+          },
+          "skillSpeedPermillePerPoint": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Work speed gain per skill point, in thousandths (provisional)."
+          },
+          "initialSkillMax": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "description": "A newcomer starts with each skill between 0 and this value (provisional)."
+          },
+          "autoAssignPattern": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": "Profession ids handed to newcomers in turn, wrapping around. Ordinary professions only; at least one."
+          }
+        },
+        "required": [
+          "id",
+          "foodPerResidentPerDay",
+          "shortageSlowdownPermille",
+          "daysWithoutFoodUntilFirstLeaves",
+          "leaveIntervalDays",
+          "warnDaysBeforeEmpty",
+          "taxPerResidentPerDay",
+          "maxResidents",
+          "arrivalHour",
+          "arrivalFreeSlotPoints",
+          "arrivalMaxSlots",
+          "arrivalFoodPoints",
+          "arrivalFoodDays",
+          "arrivalNoRaidPoints",
+          "arrivalNoRaidDays",
+          "arrivalFamePointsDivisor",
+          "arrivalEraPoints",
+          "arrivalChanceCapPermille",
+          "haulCapacity",
+          "jobRetryCooldownTicks",
+          "thinkIntervalTicks",
+          "skillSpeedPermillePerPoint",
+          "initialSkillMax",
+          "autoAssignPattern"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

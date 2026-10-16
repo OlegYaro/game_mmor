@@ -134,6 +134,46 @@
                   "default": 0,
                   "minimum": 0,
                   "maximum": 100000
+                },
+                "work": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "job": {
+                      "type": "string",
+                      "pattern": "^(haul|chop|plant|quarry|forage|farm)$"
+                    },
+                    "slots": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "cycleTicks": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1000000
+                    },
+                    "item": {
+                      "type": "string",
+                      "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+                    },
+                    "yield": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100000
+                    }
+                  },
+                  "required": [
+                    "job",
+                    "slots",
+                    "cycleTicks",
+                    "item",
+                    "yield"
+                  ],
+                  "additionalProperties": false,
+                  "default": null
                 }
               },
               "required": [

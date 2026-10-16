@@ -74,6 +74,24 @@
           "storage": 40
         }
       ]
+    },
+    {
+      "id": "field",
+      "category": "production",
+      "footprint": { "width": 3, "height": 3 },
+      "outsideTerritory": false,
+      "placement": "flat",
+      "rotatable": false,
+      "provisional": true,
+      "levels": [
+        {
+          "cost": [ { "item": "wood", "count": 15 } ],
+          "buildTicks": 100,
+          "moveTicks": 33,
+          "requirements": [],
+          "work": { "job": "farm", "slots": 2, "cycleTicks": 400, "item": "vegetable", "yield": 6 }
+        }
+      ]
     }
   ]
 }

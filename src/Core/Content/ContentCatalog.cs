@@ -36,6 +36,10 @@ public sealed class ContentCatalog
         Hero = defs.OfType<HeroBalanceDef>().Single();
         Construction = defs.OfType<ConstructionBalanceDef>().Single();
         WorldGen = defs.OfType<WorldGenParamsDef>().Single();
+        Economy = defs.OfType<EconomyBalanceDef>().Single();
+        Roads = defs.OfType<RoadsBalanceDef>().Single();
+        Regrowth = defs.OfType<RegrowthBalanceDef>().Single();
+        Names = defs.OfType<NameListDef>().ToArray();
         Items = defs.OfType<ItemDef>().ToArray();
         Eras = defs.OfType<EraDef>().OrderBy(e => e.Order).ToArray();
         Races = defs.OfType<RaceDef>().ToArray();
@@ -64,6 +68,18 @@ public sealed class ContentCatalog
 
     /// <summary>Construction rules such as refunds (data/balance/construction.json).</summary>
     public ConstructionBalanceDef Construction { get; }
+
+    /// <summary>Economy and resident numbers (data/balance/economy.json).</summary>
+    public EconomyBalanceDef Economy { get; }
+
+    /// <summary>Footpath and road numbers (data/balance/roads.json).</summary>
+    public RoadsBalanceDef Roads { get; }
+
+    /// <summary>Tree regrowth and planting numbers (data/balance/regrowth.json).</summary>
+    public RegrowthBalanceDef Regrowth { get; }
+
+    /// <summary>Resident name lists, ordered by id (data/names/*.json).</summary>
+    public IReadOnlyList<NameListDef> Names { get; }
 
     /// <summary>World generator parameters (data/worldgen/*.json, ADR 0006).</summary>
     public WorldGenParamsDef WorldGen { get; }
@@ -150,6 +166,13 @@ public sealed class ContentCatalog
         RequireExactlyOne<HeroBalanceDef>(loaded, errors, "data/balance/hero.json");
         RequireExactlyOne<ConstructionBalanceDef>(loaded, errors, "data/balance/construction.json");
         RequireExactlyOne<WorldGenParamsDef>(loaded, errors, "data/worldgen/*.json");
+        RequireExactlyOne<EconomyBalanceDef>(loaded, errors, "data/balance/economy.json");
+        RequireExactlyOne<RoadsBalanceDef>(loaded, errors, "data/balance/roads.json");
+        RequireExactlyOne<RegrowthBalanceDef>(loaded, errors, "data/balance/regrowth.json");
+        if (!loaded.Any(l => l.Def is NameListDef))
+        {
+            errors.Add(new ContentError(ContentErrorKind.Missing, string.Empty, string.Empty, "No NameListDef found (data/names/*.json)."));
+        }
 
         // Cross-reference pass runs only on structurally valid data so it does not report follow-up noise.
         if (errors.Count == 0)
@@ -224,6 +247,10 @@ public sealed class ContentCatalog
                 ProfessionFile f => f.Items,
                 RelationModifierFile f => f.Items,
                 WorldGenFile f => f.Items,
+                EconomyBalanceFile f => f.Items,
+                RoadsBalanceFile f => f.Items,
+                RegrowthBalanceFile f => f.Items,
+                NameListFile f => f.Items,
                 _ => throw new JsonException("Unexpected file content."),
             };
         }
@@ -322,6 +349,32 @@ public sealed class ContentCatalog
                 }
             }
 
+            if (def is RoadsBalanceDef roads)
+            {
+                AddConsistency(file, index, roads.CheckConsistency(), errors);
+            }
+            else if (def is RegrowthBalanceDef regrowth)
+            {
+                AddConsistency(file, index, regrowth.CheckConsistency(), errors);
+            }
+            else if (def is NameListDef names)
+            {
+                AddConsistency(file, index, names.CheckConsistency(), errors);
+            }
+            else if (def is ItemDef consistentItem)
+            {
+                AddConsistency(file, index, consistentItem.CheckConsistency(), errors);
+            }
+            else if (def is EconomyBalanceDef economy)
+            {
+                AddConsistency(file, index, economy.CheckConsistency(), errors);
+                CheckEconomy(file, index, economy, loaded.Count(l => l.Def is EraDef), byId, errors);
+            }
+            else if (def is ProfessionDef profession)
+            {
+                CheckProfession(file, index, profession, errors);
+            }
+
             if (def is RaceDef race)
             {
                 CheckRace(file, index, race, byId, errors);
@@ -360,6 +413,55 @@ public sealed class ContentCatalog
                 {
                     errors.Add(new ContentError(ContentErrorKind.Reference, file, $"$.items[{index}].spoilsInto", $"Item '{def.Id}' references '{target}', which is not an item."));
                 }
+            }
+        }
+    }
+
+    private static void AddConsistency(string file, int index, IEnumerable<(string Path, string Message)> problems, List<ContentError> errors)
+    {
+        foreach ((string path, string message) in problems)
+        {
+            errors.Add(new ContentError(ContentErrorKind.Validation, file, $"$.items[{index}].{path}", message));
+        }
+    }
+
+    private static void CheckProfession(string file, int index, ProfessionDef profession, List<ContentError> errors)
+    {
+        HashSet<string> seen = new(StringComparer.Ordinal);
+        for (int i = 0; i < profession.JobTypes.Count; i++)
+        {
+            string job = profession.JobTypes[i];
+            string path = $"$.items[{index}].jobTypes[{i}]";
+            if (!JobTypes.IsValid(job))
+            {
+                errors.Add(new ContentError(ContentErrorKind.Validation, file, path, $"Profession '{profession.Id}' has unknown job type '{job}'."));
+            }
+            else if (!seen.Add(job))
+            {
+                errors.Add(new ContentError(ContentErrorKind.Validation, file, path, $"Profession '{profession.Id}' lists job type '{job}' twice."));
+            }
+        }
+    }
+
+    private static void CheckEconomy(string file, int index, EconomyBalanceDef economy, int eraCount, Dictionary<string, IContentDef> byId, List<ContentError> errors)
+    {
+        if (economy.ArrivalEraPoints.Count != eraCount)
+        {
+            errors.Add(new ContentError(ContentErrorKind.Validation, file, $"$.items[{index}].arrivalEraPoints",
+                $"arrivalEraPoints has {economy.ArrivalEraPoints.Count} entries but there are {eraCount} eras."));
+        }
+
+        for (int i = 0; i < economy.AutoAssignPattern.Count; i++)
+        {
+            string path = $"$.items[{index}].autoAssignPattern[{i}]";
+            string id = economy.AutoAssignPattern[i];
+            if (byId.TryGetValue(id, out IContentDef? found) && found is ProfessionDef { Kind: not "ordinary" })
+            {
+                errors.Add(new ContentError(ContentErrorKind.Reference, file, path, $"'{economy.Id}' assigns '{id}', which is not an ordinary profession."));
+            }
+            else
+            {
+                CheckTarget<ProfessionDef>(file, path, economy.Id, id, "profession", byId, errors);
             }
         }
     }
@@ -424,6 +526,11 @@ public sealed class ContentCatalog
                     errors.Add(new ContentError(ContentErrorKind.Validation, file, path,
                         $"Building '{building.Id}' level {level + 1} lists item '{levelDef.Cost[i].Item}' twice in its cost (entries {first} and {i}); put the total in one entry."));
                 }
+            }
+
+            if (levelDef.Work is { } work)
+            {
+                CheckTarget<ItemDef>(file, $"$.items[{index}].levels[{level}].work.item", building.Id, work.Item, "item", byId, errors);
             }
 
             for (int i = 0; i < levelDef.Requirements.Count; i++)

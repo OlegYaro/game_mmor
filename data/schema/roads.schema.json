@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RoadsBalanceFile",
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^([a-z][a-z0-9_]*:)?[a-z][a-z0-9_]*$"
+          },
+          "stepIncrement": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 255,
+            "description": "Counter growth per step on a tile (provisional)."
+          },
+          "decayEveryTicks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000,
+            "description": "The counter falls by 1 per this many ticks, computed lazily on access (provisional)."
+          },
+          "maxCounter": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 255,
+            "description": "Largest counter value (provisional)."
+          },
+          "trailThreshold": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 255,
+            "description": "Counter at which a tile becomes a trail (provisional)."
+          },
+          "roadThreshold": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 255,
+            "description": "Counter at which a tile becomes a road (provisional)."
+          },
+          "trailKeepThreshold": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 255,
+            "description": "A trail stays a trail while the counter is at least this (provisional)."
+          },
+          "roadKeepThreshold": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 255,
+            "description": "A road stays a road while the counter is at least this (provisional)."
+          },
+          "trailCostPermille": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Path step cost on a trail relative to base, in thousandths; lower is faster (provisional)."
+          },
+          "roadCostPermille": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Path step cost on a road relative to base, in thousandths; lower is faster (provisional)."
+          }
+        },
+        "required": [
+          "id",
+          "stepIncrement",
+          "decayEveryTicks",
+          "maxCounter",
+          "trailThreshold",
+          "roadThreshold",
+          "trailKeepThreshold",
+          "roadKeepThreshold",
+          "trailCostPermille",
+          "roadCostPermille"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

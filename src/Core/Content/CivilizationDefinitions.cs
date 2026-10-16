@@ -110,12 +110,25 @@ public sealed record RaceDef(
 /// <param name="Id">Definition id.</param>
 /// <param name="Kind"><c>ordinary</c> or <c>specialist</c>. The specialist list (blacksmith, healer, armorer) is proposal A7 and awaits the owner.</param>
 /// <param name="Skill">The skill this profession works with.</param>
+/// <param name="JobTypes">Job types residents of this profession take from the job board (values of <see cref="Content.JobTypes"/>), no repeats; empty when none yet.</param>
 public sealed record ProfessionDef(
     [property: RegularExpression(ContentId.Pattern)] string Id,
     [property: RegularExpression("^(ordinary|specialist)$")]
     [property: Description("ordinary or specialist. The specialist list (blacksmith, healer, armorer) is proposal A7, not yet confirmed by the owner.")]
     string Kind,
-    [property: RegularExpression(SkillNames.Pattern)] string Skill) : IContentDef;
+    [property: RegularExpression(SkillNames.Pattern)] string Skill,
+    [property: Description("Job types this profession takes: haul, chop, plant, quarry, forage or farm. No repeats; may be empty.")]
+    IReadOnlyList<string> JobTypes) : IContentDef;
+
+/// <summary>Job types of the resident job board (M3a); the pattern is also emitted into the JSON schemas.</summary>
+public static class JobTypes
+{
+    /// <summary>Pattern of a job type.</summary>
+    public const string Pattern = "^(haul|chop|plant|quarry|forage|farm)$";
+
+    /// <summary>True when <paramref name="value"/> is a known job type.</summary>
+    public static bool IsValid(string value) => System.Text.RegularExpressions.Regex.IsMatch(value, Pattern);
+}
 
 /// <summary>
 /// A reason that changes the relation between two factions, <c>data/balance/relations.json</c> (P-18). A relation is a

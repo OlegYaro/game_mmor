@@ -1,0 +1,17 @@
+{
+  "$schema": "../schema/roads.schema.json",
+  "items": [
+    {
+      "id": "roads",
+      "stepIncrement": 4,
+      "decayEveryTicks": 90,
+      "maxCounter": 255,
+      "trailThreshold": 40,
+      "roadThreshold": 120,
+      "trailKeepThreshold": 25,
+      "roadKeepThreshold": 90,
+      "trailCostPermille": 800,
+      "roadCostPermille": 600
+    }
+  ]
+}
