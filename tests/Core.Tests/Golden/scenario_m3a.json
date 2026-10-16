@@ -1,0 +1,21 @@
+{
+  "formatVersion": 1,
+  "seed": 3801090,
+  "contentHash": "aac879ec38a65a9d",
+  "endTick": 90020,
+  "mapSize": 64,
+  "difficulty": "normal",
+  "commands": [
+    {"tick":1,"command":{"kind":"give_item","item":"wood","count":140}},
+    {"tick":2,"command":{"kind":"give_item","item":"stone","count":10}},
+    {"tick":3,"command":{"kind":"give_item","item":"berries","count":30}},
+    {"tick":4,"command":{"kind":"place_building","building":"campfire","x":30,"y":30,"rotation":0}},
+    {"tick":5,"command":{"kind":"place_building","building":"house","x":28,"y":28,"rotation":0}},
+    {"tick":6,"command":{"kind":"place_building","building":"house","x":30,"y":28,"rotation":0}},
+    {"tick":7,"command":{"kind":"place_building","building":"storage","x":32,"y":28,"rotation":0}},
+    {"tick":8,"command":{"kind":"place_building","building":"field","x":28,"y":31,"rotation":0}},
+    {"tick":108,"command":{"kind":"upgrade_building","index":2,"generation":1}},
+    {"tick":109,"command":{"kind":"move_hero","x":31,"y":27,"sprint":false}},
+    {"tick":142,"command":{"kind":"deposit_hero_items","index":4,"generation":1}}
+  ]
+}
