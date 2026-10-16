@@ -187,7 +187,7 @@ public static class WorldRenderSmoke
         }
 
         GD.Print($"Smoke world render: map {MapSize}, {view.Chunks.Active.Count} chunks, start chunk {ground} ground + {objects} -> {revealedObjects} object cells");
-        return CheckHero(view, sim, start);
+        return CheckHero(view, sim, start) ?? BuildingRenderSmoke.Check(view, sim);
     }
 
     // Picking, the hero sprite, a move order and a gather order through the Core commands (FR-HERO-01, FR-HERO-02).

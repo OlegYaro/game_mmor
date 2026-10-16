@@ -28,6 +28,12 @@ public partial class GameRoot : Node
     /// <summary>Flags shared by the world input handlers (hero control, build mode, inspector).</summary>
     public GameInputState InputState { get; } = new();
 
+    /// <summary>The building selected on the map.</summary>
+    public BuildingSelection Selection { get; } = new();
+
+    /// <summary>Build mode: <see cref="BuildMode.Begin"/> / <see cref="BuildMode.BeginMove"/>, <see cref="BuildMode.ToggleRequested"/>.</summary>
+    public BuildMode BuildMode { get; } = new() { Name = "BuildMode" };
+
     /// <summary>The player asked to leave for the main menu.</summary>
     public event Action? ExitToMenuRequested;
 
@@ -46,6 +52,14 @@ public partial class GameRoot : Node
             _worldView.ObjectsRoot.AddChild(_entities);
             _playerInput = new PlayerInput { Name = "PlayerInput" };
             AddChild(_playerInput);
+            var buildings = new BuildingLayer { Name = "BuildingLayer" };
+            var overlay = new FootprintOverlay();
+            AddChild(buildings);
+            _worldView.AddChild(overlay);
+            buildings.Attach(_worldView);
+            overlay.Attach(_worldView, Selection);
+            AddChild(BuildMode);
+            BuildMode.Attach(_worldView, InputState, Selection, overlay, command => _host?.Send(command));
         }
 
         _errorPanel = GetNode<Control>("Ui/ErrorPanel");
