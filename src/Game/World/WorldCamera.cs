@@ -37,6 +37,9 @@ public partial class WorldCamera : Camera2D
     /// <summary>When false the mouse at the window edge does not pan.</summary>
     public bool EdgePanEnabled { get; set; } = true;
 
+    /// <summary>When false WASD and the arrows do not pan (they steer the hero); the edge and middle-drag still pan.</summary>
+    public bool KeyPanEnabled { get; set; } = true;
+
     /// <summary>Tile <c>F</c> returns to when there is no follow target (the start tile).</summary>
     public Vector2I HomeTile { get; set; }
 
@@ -296,24 +299,27 @@ public partial class WorldCamera : Camera2D
         }
 
         Vector2 dir = Vector2.Zero;
-        if (Input.IsPhysicalKeyPressed(Key.A) || Input.IsPhysicalKeyPressed(Key.Left))
+        if (KeyPanEnabled)
         {
-            dir.X -= 1;
-        }
+            if (Input.IsPhysicalKeyPressed(Key.A) || Input.IsPhysicalKeyPressed(Key.Left))
+            {
+                dir.X -= 1;
+            }
 
-        if (Input.IsPhysicalKeyPressed(Key.D) || Input.IsPhysicalKeyPressed(Key.Right))
-        {
-            dir.X += 1;
-        }
+            if (Input.IsPhysicalKeyPressed(Key.D) || Input.IsPhysicalKeyPressed(Key.Right))
+            {
+                dir.X += 1;
+            }
 
-        if (Input.IsPhysicalKeyPressed(Key.W) || Input.IsPhysicalKeyPressed(Key.Up))
-        {
-            dir.Y -= 1;
-        }
+            if (Input.IsPhysicalKeyPressed(Key.W) || Input.IsPhysicalKeyPressed(Key.Up))
+            {
+                dir.Y -= 1;
+            }
 
-        if (Input.IsPhysicalKeyPressed(Key.S) || Input.IsPhysicalKeyPressed(Key.Down))
-        {
-            dir.Y += 1;
+            if (Input.IsPhysicalKeyPressed(Key.S) || Input.IsPhysicalKeyPressed(Key.Down))
+            {
+                dir.Y += 1;
+            }
         }
 
         if (dir != Vector2.Zero)

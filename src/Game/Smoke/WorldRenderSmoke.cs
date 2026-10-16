@@ -187,6 +187,260 @@ public static class WorldRenderSmoke
         }
 
         GD.Print($"Smoke world render: map {MapSize}, {view.Chunks.Active.Count} chunks, start chunk {ground} ground + {objects} -> {revealedObjects} object cells");
+        return CheckHero(view, sim, start);
+    }
+
+    // Picking, the hero sprite, a move order and a gather order through the Core commands (FR-HERO-01, FR-HERO-02).
+    private static string? CheckHero(WorldView view, CoreSimulation sim, StartPoint start)
+    {
+        GameWorld world = sim.World!;
+        WorldArt art = view.Chunks.Art!;
+        string? picked = CheckPicking(view, world, art, start);
+        if (picked is not null)
+        {
+            return picked;
+        }
+
+        var layer = new EntityLayer();
+        view.ObjectsRoot.AddChild(layer);
+        try
+        {
+            layer.Bind(sim, art);
+            string? result = CheckHeroSprite(layer, sim, world, art, start) ?? CheckHeroOrders(view, layer, sim, world);
+            if (result is null)
+            {
+                GD.Print("Smoke world render: picking, hero sprite, move and gather orders ok");
+            }
+
+            return result;
+        }
+        finally
+        {
+            layer.Unbind();
+            view.ObjectsRoot.RemoveChild(layer);
+            layer.Free();
+        }
+    }
+
+    // On flat ground the picked tile is the one under the cursor: it matches the engine LocalToMap of the ground-plane centre and the
+    // tile itself at the centre of its raised top face.
+    private static string? CheckPicking(WorldView view, GameWorld world, WorldArt art, StartPoint start)
+    {
+        WorldCamera camera = view.Camera;
+        camera.CenterOnTile(start.X, start.Y);
+        Vector2 half = camera.GetViewportRect().Size / 2;
+        TerrainMap terrain = world.Map.Terrain;
+        int samples = 0;
+        int engineSamples = 0;
+        for (int y = start.Y - 8; y <= start.Y + 8; y++)
+        {
+            for (int x = start.X - 8; x <= start.X + 8; x++)
+            {
+                if (!IsFlat(terrain, x, y, 2))
+                {
+                    continue;
+                }
+
+                int h = art.VisualHeight(terrain.GetBiome(x, y), terrain.GetFeatures(x, y), terrain.GetHeight(x, y));
+                (int px, int py) = IsoProjection.TileCenter(x, y, h);
+                Vector2 screen = ((new Vector2(px, py) - camera.Position) * camera.Zoom.X) + half;
+                if (!WorldPicker.TryPickTile(view, screen, out int tx, out int ty) || tx != x || ty != y)
+                {
+                    return $"picking: tile {x},{y} (height {h}) picked as {tx},{ty}";
+                }
+
+                samples++;
+                if (view.Chunks.Active.TryGetValue(ChunkCoord.OfTile(x, y), out WorldChunk? chunk))
+                {
+                    Vector2I cell = chunk.Ground.LocalToMap(new Vector2(px, py + (IsoProjection.HeightStep * h)));
+                    if (cell != new Vector2I(tx, ty))
+                    {
+                        return $"picking: picked {tx},{ty} but LocalToMap gives {cell}";
+                    }
+
+                    engineSamples++;
+                }
+            }
+        }
+
+        if (samples == 0)
+        {
+            return "picking: no flat tile near the start to test";
+        }
+
+        GD.Print($"Smoke world render: picker matches {samples} flat tiles ({engineSamples} against LocalToMap)");
         return null;
+    }
+
+    private static bool IsFlat(TerrainMap terrain, int x, int y, int radius)
+    {
+        if (!terrain.Contains(x - radius, y - radius) || !terrain.Contains(x + radius, y + radius))
+        {
+            return false;
+        }
+
+        int height = terrain.GetHeight(x, y);
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                if (terrain.GetHeight(x + dx, y + dy) != height)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static string? CheckHeroSprite(EntityLayer layer, CoreSimulation sim, GameWorld world, WorldArt art, StartPoint start)
+    {
+        if (layer.HeroSprite is null || !layer.HasHero)
+        {
+            return "hero: no sprite was created";
+        }
+
+        if (!sim.Positions.TryGet(world.HeroEntity, out Core.Entities.Position position))
+        {
+            return "hero: the hero entity has no position";
+        }
+
+        (int cx, int cy) = IsoProjection.TileCenter(position.TileX, position.TileY);
+        if (layer.HeroGroundPoint.DistanceTo(new Vector2(cx, cy)) > 0.5f || position.TileX != start.X || position.TileY != start.Y)
+        {
+            return $"hero: sprite at {layer.HeroGroundPoint}, tile {position.TileX},{position.TileY} centre ({cx},{cy}), start {start.X},{start.Y}";
+        }
+
+        TerrainMap terrain = world.Map.Terrain;
+        int lift = IsoProjection.HeightStep * art.VisualHeight(terrain.GetBiome(start.X, start.Y), terrain.GetFeatures(start.X, start.Y), terrain.GetHeight(start.X, start.Y));
+        if (!Mathf.IsEqualApprox(layer.HeroSprite.Position.Y, -lift))
+        {
+            return $"hero: sprite lift {layer.HeroSprite.Position.Y}, tile height lift {lift}";
+        }
+
+        return null;
+    }
+
+    private static string? CheckHeroOrders(WorldView view, EntityLayer layer, CoreSimulation sim, GameWorld world)
+    {
+        Core.Pathfinding.PassabilityGrid grid = world.Pathfinder.Grid;
+        Core.Entities.EntityId hero = world.HeroEntity;
+        Core.Entities.Position before = sim.Positions.Get(hero);
+
+        // Move: the nearest walkable tile 3 to 5 tiles away.
+        (int X, int Y)? target = null;
+        for (int d = 3; d <= 5 && target is null; d++)
+        {
+            foreach ((int dx, int dy) in new[] { (d, 0), (0, d), (-d, 0), (0, -d), (d, d), (-d, -d) })
+            {
+                if (grid.IsPassable(before.TileX + dx, before.TileY + dy))
+                {
+                    target = (before.TileX + dx, before.TileY + dy);
+                    break;
+                }
+            }
+        }
+
+        if (target is null)
+        {
+            return "hero: no walkable tile near the start";
+        }
+
+        sim.Enqueue(new MoveHeroCommand(target.Value.X, target.Value.Y));
+        sim.Step(5);
+        Core.Entities.Position moved = sim.Positions.Get(hero);
+        if (moved == before)
+        {
+            world.Heroes.TryGet(hero, out Core.Heroes.Hero state);
+            return $"hero: no movement after a move order to {target.Value.X},{target.Value.Y} ({state.LastOrder})";
+        }
+
+        for (int i = 0; i < 600 && world.Heroes.Get(hero).Activity != Core.Heroes.HeroActivity.Idle; i++)
+        {
+            sim.Step();
+        }
+
+        Core.Entities.Position arrived = sim.Positions.Get(hero);
+        layer.Sync();
+        (int ax, int ay) = IsoProjection.TileCenter(arrived.TileX, arrived.TileY);
+        if (arrived.TileX != target.Value.X || arrived.TileY != target.Value.Y || layer.HeroGroundPoint.DistanceTo(new Vector2(ax, ay)) > 0.5f)
+        {
+            return $"hero: arrived at {arrived.TileX},{arrived.TileY}, wanted {target.Value.X},{target.Value.Y}; sprite {layer.HeroGroundPoint}";
+        }
+
+        // Camera follow and the key panning switch.
+        WorldCamera camera = view.Camera;
+        if (!camera.KeyPanEnabled)
+        {
+            return "camera: key panning is off by default";
+        }
+
+        camera.FollowProvider = () => layer.HeroFollowPoint;
+        camera.Recenter();
+        bool following = camera.IsFollowing;
+        camera.FollowProvider = null;
+        if (!following)
+        {
+            return "camera: Recenter does not follow the hero";
+        }
+
+        return CheckGather(view, sim, world);
+    }
+
+    private static string? CheckGather(WorldView view, CoreSimulation sim, GameWorld world)
+    {
+        Core.Entities.EntityId hero = world.HeroEntity;
+        Core.Entities.Position at = sim.Positions.Get(hero);
+        var trees = new List<(int X, int Y)>();
+        for (int y = at.TileY - 30; y <= at.TileY + 30; y++)
+        {
+            for (int x = at.TileX - 30; x <= at.TileX + 30; x++)
+            {
+                if (world.Map.Terrain.Contains(x, y) && world.Tiles.GetEffectiveResource(x, y) == ResourceKind.Tree
+                    && view.Chunks.Active.ContainsKey(ChunkCoord.OfTile(x, y)))
+                {
+                    trees.Add((x, y));
+                }
+            }
+        }
+
+        trees.Sort((a, b) => Math.Max(Math.Abs(a.X - at.TileX), Math.Abs(a.Y - at.TileY)).CompareTo(Math.Max(Math.Abs(b.X - at.TileX), Math.Abs(b.Y - at.TileY))));
+        foreach ((int x, int y) in trees.Take(20))
+        {
+            sim.Enqueue(new GatherCommand(x, y));
+            sim.Step();
+            if (world.Heroes.Get(hero).LastOrder != Core.Heroes.HeroOrderResult.Accepted)
+            {
+                continue;
+            }
+
+            WorldChunk chunk = view.Chunks.Active[ChunkCoord.OfTile(x, y)];
+            var cell = new Vector2I(x, y);
+            if (chunk.Objects.GetCellSourceId(cell) != WorldArt.ObjectSource)
+            {
+                return $"gather: the tree at {x},{y} is not drawn before gathering";
+            }
+
+            for (int i = 0; i < 3000 && world.Tiles.GetEffectiveResource(x, y) != ResourceKind.None; i++)
+            {
+                sim.Step();
+            }
+
+            if (world.Tiles.GetEffectiveResource(x, y) != ResourceKind.None)
+            {
+                return $"gather: the tree at {x},{y} was not used up ({world.Heroes.Get(hero).LastStop})";
+            }
+
+            view.BuildNow();
+            if (chunk.Objects.GetCellSourceId(cell) != -1)
+            {
+                return $"gather: the tree at {x},{y} is still drawn after it was cut";
+            }
+
+            return null;
+        }
+
+        return $"gather: no reachable tree near the hero to test ({trees.Count} candidates, last order {world.Heroes.Get(hero).LastOrder})";
     }
 }

@@ -84,6 +84,9 @@ public sealed class WorldArt
 
     private WorldArt(TileSet tileSet) => TileSet = tileSet;
 
+    /// <summary>The atlas table the art was built from (sprites outside the TileSet, e.g. the hero, read their cells here).</summary>
+    public AtlasTable Table { get; private set; } = null!;
+
     /// <summary>Pixels the tallest object art reaches above its tile's ground centre (from the table's object cells).</summary>
     public int ObjectRise { get; private set; }
 
@@ -137,7 +140,7 @@ public sealed class WorldArt
             TileOffsetAxis = TileSet.TileOffsetAxisEnum.Horizontal,
             TileSize = new Vector2I(IsoProjection.TileWidth, IsoProjection.TileHeight),
         };
-        var built = new WorldArt(tileSet);
+        var built = new WorldArt(tileSet) { Table = table };
 
         TileSetAtlasSource? ground = CreateSource(table, "tiles", out Vector2I groundUnit, out error);
         if (ground is null)

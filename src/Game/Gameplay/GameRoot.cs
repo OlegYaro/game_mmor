@@ -22,6 +22,11 @@ public partial class GameRoot : Node
     private WorldView? _worldView;
     private MinimapView? _minimapView;
     private Control _errorPanel = null!;
+    private EntityLayer? _entities;
+    private PlayerInput? _playerInput;
+
+    /// <summary>Flags shared by the world input handlers (hero control, build mode, inspector).</summary>
+    public GameInputState InputState { get; } = new();
 
     /// <summary>The player asked to leave for the main menu.</summary>
     public event Action? ExitToMenuRequested;
@@ -33,6 +38,14 @@ public partial class GameRoot : Node
         if (_minimapView is Control minimap)
         {
             minimap.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        }
+
+        if (_worldView is not null)
+        {
+            _entities = new EntityLayer { Name = "Entities" };
+            _worldView.ObjectsRoot.AddChild(_entities);
+            _playerInput = new PlayerInput { Name = "PlayerInput" };
+            AddChild(_playerInput);
         }
 
         _errorPanel = GetNode<Control>("Ui/ErrorPanel");
@@ -53,6 +66,15 @@ public partial class GameRoot : Node
     {
         _host = host;
         host.SimulationChanged += OnSimulationChanged;
+        if (_worldView is not null)
+        {
+            _playerInput?.Bind(host, _worldView, InputState);
+            if (_entities is not null)
+            {
+                _entities.TickSeconds = () => 1.0 / (host.Scheduler.TicksPerSecond * (int)host.Scheduler.Speed);
+            }
+        }
+
         GetNode<Hud>("Ui/Hud").Bind(host);
         GetNode<PauseMenu>("Ui/PauseMenu").Bind(host);
         DevConsolePanel console = GetNode<DevConsolePanel>("Ui/DevConsolePanel");
@@ -80,10 +102,36 @@ public partial class GameRoot : Node
             _minimapView.Bind(_host.Simulation, _worldView?.Camera);
         }
 
+        BindHero();
         Core.WorldGen.StartPoint? start = _host.Simulation.World?.Map.Start;
         if (start is { } point)
         {
             CenterCamera(point.X, point.Y);
+        }
+
+        if (_entities is { HasHero: true } entities && _worldView is not null)
+        {
+            // Follow the hero (F returns to it); WASD steers the hero instead of panning.
+            _worldView.Camera.FollowProvider = () => entities.HeroFollowPoint;
+            _worldView.Camera.KeyPanEnabled = false;
+            _worldView.Camera.Recenter();
+        }
+    }
+
+    // Shows the hero of the bound simulation, or nothing (and restores key panning) when the game has none.
+    private void BindHero()
+    {
+        if (_entities is null || _worldView is null || _host is null)
+        {
+            return;
+        }
+
+        _entities.Unbind();
+        _worldView.Camera.FollowProvider = null;
+        _worldView.Camera.KeyPanEnabled = true;
+        if (WorldArt.TryGetShared(out WorldArt art, out _))
+        {
+            _entities.Bind(_host.Simulation, art);
         }
     }
 

@@ -1,6 +1,7 @@
 using Core.Fog;
 using Core.Geometry;
 using Core.Sim;
+using Core.Tiles;
 using Core.WorldGen;
 using Godot;
 
@@ -29,6 +30,9 @@ public sealed class WorldChunk
 
     /// <summary>Fog chunk version the objects layer was built for.</summary>
     internal long FogVersion { get; set; }
+
+    /// <summary>Tile-change (resources, occupancy) chunk version the objects layer was built for.</summary>
+    internal long TileVersion { get; set; }
 }
 
 /// <summary>
@@ -381,6 +385,7 @@ public sealed class ChunkManager
         TileMapLayer layer = chunk.Objects;
         layer.Clear();
         chunk.FogVersion = _world!.Fog.GetChunkVersion(chunk.Coord.X, chunk.Coord.Y);
+        chunk.TileVersion = _world.Tiles.GetChunkVersion(chunk.Coord.X, chunk.Coord.Y);
         WorldArt art = _art!;
         ReadOnlySpan<byte> heights = _world.Map.Terrain.Heights;
         int size = _world.Size;
@@ -415,11 +420,10 @@ public sealed class ChunkManager
             }
         }
 
-        ReadOnlySpan<ResourceKind> resources = world.Map.ResourceKinds;
-        int size = world.Size;
+        // Effective resources: gathered nodes are gone from the map (Core owns the stock, FR-WORLD-14).
+        TileChanges tiles = world.Tiles;
         for (int ly = 0; ly < ChunkCoord.Size; ly++)
         {
-            int row = (y0 + ly) * size;
             for (int lx = 0; lx < ChunkCoord.Size; lx++)
             {
                 int local = (ly * ChunkCoord.Size) + lx;
@@ -428,7 +432,7 @@ public sealed class ChunkManager
                     continue;
                 }
 
-                WorldObject? obj = WorldArt.ObjectOf(resources[row + x0 + lx]);
+                WorldObject? obj = WorldArt.ObjectOf(tiles.GetEffectiveResource(x0 + lx, y0 + ly));
                 if (obj is not null)
                 {
                     _objects.Add((x0 + lx, y0 + ly, obj.Value));
@@ -440,9 +444,11 @@ public sealed class ChunkManager
     private void RefreshFogObjects()
     {
         FogOfWar fog = _world!.Fog;
+        TileChanges tiles = _world.Tiles;
         foreach (WorldChunk chunk in _active.Values)
         {
-            if (fog.GetChunkVersion(chunk.Coord.X, chunk.Coord.Y) != chunk.FogVersion)
+            if (fog.GetChunkVersion(chunk.Coord.X, chunk.Coord.Y) != chunk.FogVersion
+                || tiles.GetChunkVersion(chunk.Coord.X, chunk.Coord.Y) != chunk.TileVersion)
             {
                 BuildObjects(chunk);
             }
