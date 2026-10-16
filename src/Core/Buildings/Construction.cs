@@ -269,6 +269,64 @@ public static class Construction
     }
 
     /// <summary>
+    /// What an upgrade order for <paramref name="entity"/> would answer right now (the order uses this check): not an
+    /// active building, last level, requirements of the next level, materials. <see cref="BuildResult.Ok"/> when it would be accepted.
+    /// </summary>
+    public static BuildResult CheckUpgrade(Simulation sim, EntityId entity)
+    {
+        ArgumentNullException.ThrowIfNull(sim);
+        if (sim.World is not { } world || !world.Buildings.TryGet(entity, out Building building))
+        {
+            return BuildResult.NotABuilding;
+        }
+
+        BuildingDef def = DefOf(sim.Content, building);
+        BuildingLevelDef? next = building.Level < def.Levels.Count ? def.Levels[building.Level] : null;
+        if (building.State != BuildingState.Active)
+        {
+            return BuildResult.Busy;
+        }
+
+        if (next is null)
+        {
+            return BuildResult.MaxLevel;
+        }
+
+        if (!MeetsRequirements(sim, next))
+        {
+            return BuildResult.RequirementNotMet;
+        }
+
+        return CanPay(sim, next.Cost) ? BuildResult.Ok : BuildResult.NotEnoughMaterials;
+    }
+
+    /// <summary>
+    /// What a demolish order for <paramref name="entity"/> would answer right now (the order uses this check): busy,
+    /// the center (E4), the last built storage (E4). <see cref="BuildResult.Ok"/> when it would be accepted.
+    /// </summary>
+    public static BuildResult CheckDemolish(Simulation sim, EntityId entity)
+    {
+        ArgumentNullException.ThrowIfNull(sim);
+        if (sim.World is not { } world || !world.Buildings.TryGet(entity, out Building building))
+        {
+            return BuildResult.NotABuilding;
+        }
+
+        BuildingDef def = DefOf(sim.Content, building);
+        if (building.State != BuildingState.Active)
+        {
+            return BuildResult.Busy;
+        }
+
+        if (IsCenter(def))
+        {
+            return BuildResult.CenterNotRemovable;
+        }
+
+        return IsStorage(def) && !BuildingRules.HasOtherBuiltStorage(sim, world, entity) ? BuildResult.LastStorage : BuildResult.Ok;
+    }
+
+    /// <summary>
     /// The refund of levels <paramref name="fromLevel"/>..<paramref name="toLevel"/> (1-based, inclusive) of
     /// <paramref name="def"/> at <paramref name="permille"/>: the costs of those levels are summed per item, then each sum
     /// is multiplied by <paramref name="permille"/> / 1000 and rounded down (E5). Items keep the order of their first

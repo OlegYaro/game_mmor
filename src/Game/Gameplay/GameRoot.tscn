@@ -4,6 +4,10 @@
 [ext_resource type="Script" path="res://Ui/Hud.cs" id="2_hud"]
 [ext_resource type="Script" path="res://Ui/DevConsolePanel.cs" id="3_console"]
 [ext_resource type="Script" path="res://Menu/PauseMenu.cs" id="4_pause"]
+[ext_resource type="Script" path="res://Ui/ResourceBar.cs" id="5_resbar"]
+[ext_resource type="Script" path="res://Ui/BuildMenu.cs" id="6_buildmenu"]
+[ext_resource type="Script" path="res://Ui/InspectorPanel.cs" id="7_inspector"]
+[ext_resource type="Script" path="res://Ui/BuildingMessages.cs" id="8_buildmsg"]
 
 [node name="GameRoot" type="Node"]
 script = ExtResource("1_root")
@@ -61,6 +65,18 @@ anchor_right = 1.0
 offset_bottom = 360.0
 grow_horizontal = 2
 script = ExtResource("3_console")
+
+[node name="ResourceBar" type="PanelContainer" parent="Ui"]
+script = ExtResource("5_resbar")
+
+[node name="BuildMenu" type="PanelContainer" parent="Ui"]
+script = ExtResource("6_buildmenu")
+
+[node name="InspectorPanel" type="PanelContainer" parent="Ui"]
+script = ExtResource("7_inspector")
+
+[node name="BuildingMessages" type="Node" parent="Ui"]
+script = ExtResource("8_buildmsg")
 
 [node name="PauseMenu" type="Control" parent="Ui"]
 layout_mode = 3
