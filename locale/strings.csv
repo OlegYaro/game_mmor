@@ -170,3 +170,77 @@ ui.build.result.center_in_use,Вокруг центра уже есть здан
 ui.build.result.buildings_outside_territory,Часть зданий окажется вне территории,Some buildings would end up outside the territory
 ui.build.result.same_place,Это то же самое место,This is the same place
 ui.build.result.items_lost,Часть вещей не поместилась и пропала,Some items did not fit and were lost
+ui.residents.toast.arrived,Пришёл житель,A resident has arrived
+ui.residents.toast.left_hungry,Житель ушёл голодным,A resident left hungry
+ui.residents.toast.food_low,Еды хватит на {0} дн.,Food will last {0} more days
+ui.residents.toast.food_last_day,Еды хватит меньше чем на день,Food will last less than a day
+ui.residents.toast.food_shortage,Еда кончилась: работа замедлена,Out of food: work is slowed down
+ui.residents.toast.tax,Налог: +{0} золота,Tax: +{0} gold
+ui.window.close,Закрыть,Close
+ui.window.residents_button,Жители (J),Residents (J)
+ui.window.storage_button,Склад (K),Storage (K)
+ui.residents.title,Жители,Residents
+ui.residents.empty,В поселении пока нет жителей,There are no residents in the settlement yet
+ui.residents.col.name,Имя,Name
+ui.residents.col.profession,Профессия,Profession
+ui.residents.col.state,Состояние,State
+ui.residents.col.home,Дом,Home
+ui.residents.job.haul,Носка,Haul
+ui.residents.job.chop,Рубка,Chop
+ui.residents.job.plant,Посадка,Plant
+ui.residents.job.quarry,Камень,Quarry
+ui.residents.job.forage,Сбор,Forage
+ui.residents.job.farm,Поле,Farm
+ui.residents.priority.tooltip,Приоритет работы: 1 - в первую очередь и далее до 4; 0 - не выполнять. Нажатие переключает на следующее значение,Work priority: 1 is done first up to 4; 0 means never. A click switches to the next value
+ui.residents.profession.tooltip,Сменить профессию (специалистов сменить нельзя),Change the profession (specialists cannot be changed)
+ui.residents.state.arriving,Идёт в поселение,Arriving
+ui.residents.state.idle,Ждёт работы,Waiting for work
+ui.residents.state.walking,Идёт,Walking
+ui.residents.state.working,Работает,Working
+ui.residents.state.leaving,Уходит,Leaving
+ui.residents.work.haul,Носит грузы,Hauling
+ui.residents.work.chop,Рубит деревья,Chopping trees
+ui.residents.work.plant,Сажает деревья,Planting trees
+ui.residents.work.quarry,Добывает камень,Quarrying stone
+ui.residents.work.forage,Собирает ягоды,Foraging
+ui.residents.work.farm,Работает в поле,Farming
+ui.residents.work_format,{0} - {1},{0} - {1}
+ui.residents.phase.none,ждёт,waiting
+ui.residents.phase.to_target,идёт к цели,going to the target
+ui.residents.phase.working,работает,working
+ui.residents.phase.to_storage,несёт на склад,carrying to storage
+ui.residents.home.yes,Есть,Yes
+ui.residents.home.no,Бездомный,Homeless
+ui.residents.summary.population,Жителей: {0} из {1} мест в домах,Residents: {0} with {1} places in houses
+ui.residents.summary.food,Еды на {0} дн.,Food for {0} days
+ui.residents.summary.food_none,Еда: некому есть,Food: nobody to feed
+ui.residents.summary.tax,Налог в день: {0},Tax per day: {0}
+ui.storage.title,Склад,Storage
+ui.storage.totals,Запасы,Stock
+ui.storage.col.item,Предмет,Item
+ui.storage.col.backpack,Рюкзак героя,Hero backpack
+ui.storage.col.storages,Склады,Storages
+ui.storage.list,Склады поселения,Settlement storages
+ui.storage.none,Готовых складов пока нет,There are no finished storages yet
+ui.storage.row,{0}: уровень {1}   ячеек занято {2} из {3}   {4},{0}: level {1}   stacks used {2} of {3}   {4}
+ui.storage.filter,Выбранный склад принимает,The chosen storage accepts
+ui.storage.filter.tooltip,Какие категории предметов склад принимает,Which item categories the storage accepts
+ui.storage.category.resource,Ресурсы,Resources
+ui.storage.category.food,Еда,Food
+ui.storage.category.material,Материалы,Materials
+ui.storage.category.currency,Деньги,Currency
+ui.storage.deposit,Сдать рюкзак героя,Deposit hero backpack
+ui.storage.deposit.tooltip,Герой должен стоять рядом со складом,The hero must stand next to the storage
+ui.storage.food,Еды на {0} дн. (запас {1}; нужно {2} в день),Food for {0} days (stock {1}; {2} needed per day)
+ui.storage.food_none,Еда: некому есть,Food: nobody to feed
+profession.carrier.name,Носильщик,Carrier
+profession.builder.name,Строитель,Builder
+profession.lumberjack.name,Лесоруб,Lumberjack
+profession.stonemason.name,Каменотёс,Stonemason
+profession.miner.name,Шахтёр,Miner
+profession.farmer.name,Фермер,Farmer
+profession.hunter.name,Охотник,Hunter
+profession.guard.name,Стражник,Guard
+profession.blacksmith.name,Кузнец,Blacksmith
+profession.healer.name,Лекарь,Healer
+profession.armorer.name,Бронник,Armorer
