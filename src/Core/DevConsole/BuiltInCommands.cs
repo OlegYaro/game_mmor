@@ -6,6 +6,7 @@ using Core.Entities;
 using Core.Fog;
 using Core.Heroes;
 using Core.Logging;
+using Core.Residents;
 using Core.Save;
 using Core.Sim;
 using Core.WorldGen;
@@ -15,7 +16,7 @@ namespace Core.DevConsole;
 /// <summary>
 /// The built-in console commands: help, tick, speed, pause, resume, seed, hash, spawn, save, load, log (M0),
 /// world, worldhash, fog, reveal, goto (M1), hero, herogo, give, build, check, upgrade, movebuilding, demolish,
-/// cancelbuilding and buildings (M2).
+/// cancelbuilding and buildings (M2), spawnresident and residents (M3).
 /// </summary>
 internal static class BuiltInCommands
 {
@@ -50,6 +51,8 @@ internal static class BuiltInCommands
         console.Register("demolish", "demolish <entity>", "Demolish a building for a partial refund (runs next tick; see 'buildings').", (c, a) => EntityOrder(c, a, "demolish", e => new DemolishBuildingCommand(e)));
         console.Register("cancelbuilding", "cancelbuilding <entity>", "Cancel a building's construction, upgrade or move (runs next tick; see 'buildings').", (c, a) => EntityOrder(c, a, "cancelbuilding", e => new CancelBuildingCommand(e)));
         console.Register("buildings", "buildings", "List the buildings, the territory and the last building order's result.", BuildingList);
+        console.Register("spawnresident", "spawnresident [profession]", "Create a resident next to the center (runs next tick, recorded in replays; see 'residents').", SpawnResident);
+        console.Register("residents", "residents", "List the residents, the house places and today's odds of a newcomer.", ResidentList);
     }
 
     private static ConsoleResult Usage(DevConsole console, string name) =>
@@ -503,6 +506,70 @@ internal static class BuiltInCommands
             BuildingEvent last = world.BuildingEvents[^1];
             string lost = last.Lost.Count == 0 ? string.Empty : "; lost " + string.Join(", ", last.Lost.Select(l => string.Create(inv, $"{l.Count} {l.Item}")));
             lines.Add(string.Create(inv, $"last order (tick {last.Tick}): {last.Command} {last.BuildingId} {last.Building} at {last.X},{last.Y}: {Construction.NameOf(last.Result)}{lost}"));
+        }
+
+        return ConsoleResult.Ok(lines);
+    }
+
+    private static ConsoleResult SpawnResident(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        if (args.Count > 1)
+        {
+            return ConsoleResult.Fail("Usage: spawnresident [profession]");
+        }
+
+        if (!TryGetWorld(context, out _))
+        {
+            return NoWorld();
+        }
+
+        Simulation sim = context.Simulation.Current;
+        string profession = args.Count == 1 ? args[0].ToLowerInvariant() : string.Empty;
+        if (profession.Length > 0 && !sim.Content.TryGet(profession, out ProfessionDef _))
+        {
+            return ConsoleResult.Fail($"Unknown profession '{args[0]}'. Professions: {string.Join(", ", sim.Content.Professions.Select(p => p.Id))}.");
+        }
+
+        PendingCommand pending = sim.Enqueue(new SpawnResidentCommand(profession));
+        return ConsoleResult.Ok(string.Create(CultureInfo.InvariantCulture,
+            $"spawn resident {(profession.Length == 0 ? "(automatic profession)" : profession)} queued for tick {pending.ExecuteTick} (see 'residents' for the result)"));
+    }
+
+    private static ConsoleResult ResidentList(DevConsoleContext context, IReadOnlyList<string> args)
+    {
+        if (args.Count != 0)
+        {
+            return ConsoleResult.Fail("Usage: residents");
+        }
+
+        if (!TryGetWorld(context, out GameWorld? world))
+        {
+            return NoWorld();
+        }
+
+        Simulation sim = context.Simulation.Current;
+        CultureInfo inv = CultureInfo.InvariantCulture;
+        ArrivalOdds odds = Arrivals.ComputeOdds(sim);
+        List<string> lines =
+        [
+            string.Create(inv, $"population {odds.Population}/{sim.Content.Economy.MaxResidents} | era {Construction.CurrentEra(sim).Id} (reached {sim.Content.Get(world.ReachedEra).Id}) | free places {Housing.TotalFreePlaces(sim)} | homeless {Housing.CountHomeless(world)}"),
+            string.Create(inv, $"newcomer at {sim.Content.Economy.ArrivalHour:D2}:00: chance {odds.ChancePermille}‰ from {odds.Points} points | center {(odds.HasCenter ? "yes" : "no")} | places {odds.FreePlaces} -> {odds.SlotPoints} | food {odds.Food}/{odds.FoodNeeded} -> {odds.FoodPoints} | no raids -> {odds.NoRaidPoints} | fame -> {odds.FamePoints} | era -> {odds.EraPoints}"),
+        ];
+
+        ReadOnlySpan<EntityId> owners = world.Residents.Entities;
+        for (int i = 0; i < owners.Length; i++)
+        {
+            Resident r = world.Residents.Values[i];
+            Position position = sim.Positions.Get(owners[i]);
+            Core.Heroes.Mover mover = world.Movers.Get(owners[i]);
+            string walk = mover.IsMoving ? string.Create(inv, $" | walking, {mover.Path.Count - 1 - mover.StepIndex} steps left") : string.Empty;
+            lines.Add(string.Create(inv,
+                $"{owners[i]} {ResidentRules.NameOf(sim.Content, r)} {sim.Content.Get(r.Profession).Id} {SaveMapper.ResidentStateNames[(int)r.State]} at {position.TileX},{position.TileY} | home {(r.Home == EntityId.None ? "none" : r.Home.ToString())} | skills {string.Join(" ", r.Skills.ToArray())}{walk}"));
+        }
+
+        if (owners.Length == 0)
+        {
+            lines.Add("no residents");
         }
 
         return ConsoleResult.Ok(lines);

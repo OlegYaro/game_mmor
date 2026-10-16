@@ -103,7 +103,10 @@ internal static class BuildingRules
         Report(sim, MoveBuildingCommand.KindName, result, entity, def.Id, x, y);
     }
 
-    /// <summary>Executes <see cref="DemolishBuildingCommand"/>: refund (E5) and the storage's stock go to the other storages, then the backpack.</summary>
+    /// <summary>
+    /// Executes <see cref="DemolishBuildingCommand"/>: refund (E5) and the storage's stock go to the other storages, then
+    /// the backpack; a house's residents lose their home and move into other houses with free places, if any.
+    /// </summary>
     public static void OrderDemolish(Simulation sim, EntityId entity)
     {
         if (!TryGetBuilding(sim, DemolishBuildingCommand.KindName, entity, out GameWorld? world, out Building building, out BuildingDef? def))
@@ -133,6 +136,7 @@ internal static class BuildingRules
 
         returned.AddRange(Construction.Refund(def, 1, building.Level, sim.Content.Construction.DemolishRefundPermille));
         Remove(sim, world, entity, building, def);
+        Residents.ResidentRules.Evict(sim, entity);
         IReadOnlyList<ItemAmountDef> lost = Deliver(sim, returned);
         Report(sim, DemolishBuildingCommand.KindName, BuildResult.Ok, entity, def.Id, building.X, building.Y, lost);
     }

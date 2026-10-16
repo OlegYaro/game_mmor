@@ -67,9 +67,23 @@ internal sealed class ConstructionSystem : ISimSystem
 }
 
 /// <summary>
-/// Fourth system: walkers advance along their paths and heroes spend or regain stamina (FR-HERO-01). Runs after the
-/// commands, so an order moves the hero in the tick it executes, and before the fog, so sight follows the new position.
-/// Simulations without a world skip it.
+/// Fourth system: homeless residents move into free house places, and once a day at the arrival hour a newcomer may
+/// arrive (FR-NPC-01, E2). Runs after the construction, so a house finished this tick already offers its places, and
+/// before the movement, so a newcomer takes its first step in the tick it appears. Simulations without a world skip it.
+/// </summary>
+internal sealed class ResidentSystem : ISimSystem
+{
+    public const string SystemName = "residents";
+
+    public string Name => SystemName;
+
+    public void Update(Simulation sim) => Core.Residents.ResidentRules.Update(sim);
+}
+
+/// <summary>
+/// Fifth system: walkers (the hero, residents) advance along their paths and heroes spend or regain stamina
+/// (FR-HERO-01, FR-NPC-02). Runs after the commands, so an order moves the hero in the tick it executes, and before the
+/// fog, so sight follows the new position. Simulations without a world skip it.
 /// </summary>
 internal sealed class MovementSystem : ISimSystem
 {
@@ -81,7 +95,7 @@ internal sealed class MovementSystem : ISimSystem
 }
 
 /// <summary>
-/// Fifth system: heroes standing next to their node work on it and fill the backpack (FR-HERO-02, FR-WORLD-05). Runs
+/// Sixth system: heroes standing next to their node work on it and fill the backpack (FR-HERO-02, FR-WORLD-05). Runs
 /// after the movement, so gathering starts in the tick the hero arrives. Simulations without a world skip it.
 /// </summary>
 internal sealed class GatherSystem : ISimSystem

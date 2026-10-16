@@ -28,6 +28,7 @@ namespace Core.Save;
 [JsonDerivedType(typeof(UpgradeBuildingCommandDto), UpgradeBuildingCommand.KindName)]
 [JsonDerivedType(typeof(MoveBuildingCommandDto), MoveBuildingCommand.KindName)]
 [JsonDerivedType(typeof(DemolishBuildingCommandDto), DemolishBuildingCommand.KindName)]
+[JsonDerivedType(typeof(SpawnResidentCommandDto), SpawnResidentCommand.KindName)]
 public abstract record CommandDto
 {
     /// <summary>JSON name of the discriminator property.</summary>
@@ -56,6 +57,7 @@ public abstract record CommandDto
             UpgradeBuildingCommand c => new UpgradeBuildingCommandDto(c.Building.Index, c.Building.Generation),
             MoveBuildingCommand c => new MoveBuildingCommandDto(c.Building.Index, c.Building.Generation, c.X, c.Y, c.Rotation),
             DemolishBuildingCommand c => new DemolishBuildingCommandDto(c.Building.Index, c.Building.Generation),
+            SpawnResidentCommand c => new SpawnResidentCommandDto(c.Profession),
             _ => throw new NotSupportedException($"Command kind '{command.Kind}' ({command.GetType().Name}) has no CommandDto."),
         };
     }
@@ -169,4 +171,12 @@ public sealed record DemolishBuildingCommandDto(int Index, int Generation) : Com
 {
     /// <inheritdoc />
     public override ISimCommand ToCommand() => new DemolishBuildingCommand(new EntityId(Index, Generation));
+}
+
+/// <summary>DTO of <see cref="SpawnResidentCommand"/>.</summary>
+/// <param name="Profession">Profession id; empty for the automatic pattern.</param>
+public sealed record SpawnResidentCommandDto(string Profession) : CommandDto
+{
+    /// <inheritdoc />
+    public override ISimCommand ToCommand() => new SpawnResidentCommand(Profession);
 }

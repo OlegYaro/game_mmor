@@ -97,6 +97,38 @@ internal static class SaveTestData
         return sim;
     }
 
+    /// <summary>Seed of <see cref="BuildV4Sample"/>; part of the frozen save_v4.sav expectations.</summary>
+    public const ulong V4SampleSeed = 0x5A5E_0004;
+
+    /// <summary>
+    /// Script of the frozen <c>Golden/save_v4.sav</c> (first format with residents and the reached era): a normal 64²
+    /// game; 100 wood and 30 berries given in tick 1; a campfire and two houses built near the hero; a blacksmith and an
+    /// automatic resident (a lumberjack) spawned at the center; then mornings run until the first newcomer arrives, and
+    /// the save is taken 3 ticks into its walk, with a pending spawn of a farmer.
+    /// </summary>
+    public static Simulation BuildV4Sample()
+    {
+        Simulation sim = Simulation.CreateNewGame(SimTestData.Real, new NewGameOptions(V4SampleSeed, 64, Difficulty.Normal));
+        sim.Enqueue(new GiveItemCommand("wood", 100));
+        sim.Enqueue(new GiveItemCommand("berries", 30));
+        sim.Step();
+        foreach (string building in new[] { "campfire", "house", "house" })
+        {
+            (int x, int y) = Buildings.BuildingTestWorld.FindSpot(sim, building);
+            sim.Enqueue(new PlaceBuildingCommand(building, x, y));
+            sim.Step();
+            Heroes.HeroTestWorld.StepUntil(sim, () => sim.World!.Buildings.Values[^1].State == Core.Buildings.BuildingState.Active);
+        }
+
+        sim.Enqueue(new SpawnResidentCommand("blacksmith"));
+        sim.Enqueue(new SpawnResidentCommand());
+        sim.Step();
+        Heroes.HeroTestWorld.StepUntil(sim, () => sim.World!.Residents.Count == 3, limit: 100_000);
+        sim.Step(3);
+        sim.Enqueue(new SpawnResidentCommand("farmer"));
+        return sim;
+    }
+
     /// <summary>
     /// A new 64² game where the hero walks (sprinting) to a node, gathers from it and is then sent elsewhere; a marker
     /// occupies a tile. Runs <paramref name="ticks"/> ticks after the orders.
@@ -153,7 +185,7 @@ internal static class SaveTestData
             sim.Step();
         }
 
-        sim.Rng[RngStreamId.Storyteller].NextUInt64();
+        sim.Rng[RngStreamId.Events].NextUInt64();
         sim.Enqueue(new SpawnMarkerCommand(new Position(1, 2)));
         sim.Enqueue(new DestroyEntityCommand(sim.Entities.Registry.AliveEntities().First()));
         return sim;

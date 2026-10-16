@@ -465,7 +465,8 @@ public sealed class SaveGameTests
         tree.Remove("game");
         tree.Remove("fog");
         tree.Remove("tiles");
-        foreach (string store in new[] { "revealer", "hero", "inventory", "mover", "building" })
+        tree.Remove("settlement");
+        foreach (string store in new[] { "revealer", "hero", "inventory", "mover", "building", "resident" })
         {
             tree["components"]!.AsObject().Remove(store);
         }

@@ -22,6 +22,7 @@ public sealed class SaveGoldenTests
     private const string V1Sample = "save_v1.sav";
     private const string V2Sample = "save_v2.sav";
     private const string V3Sample = "save_v3.sav";
+    private const string V4Sample = "save_v4.sav";
 
     [Fact]
     [Trait("Req", "FR-SAVE-02")]
@@ -216,10 +217,94 @@ public sealed class SaveGoldenTests
         Assert.Equal(5, world.Tiles.OccupiedTiles);
         Assert.Equal([new PendingCommand(V3Frozen.Tick + 1, V3Frozen.PendingSequence, new GatherCommand(V3Frozen.TreeX, V3Frozen.TreeY))], sim.PendingCommands);
 
+        // v3 -> v4: no residents, the first era reached.
+        Assert.Equal(0, world.Residents.Count);
+        Assert.Equal("camp", SimTestData.Real.Get(world.ReachedEra).Id);
+        Assert.Equal("camp", Construction.CurrentEra(sim).Id);
+
         // It keeps running: the pending order sends the hero back to the tree, which it gathers again; the house gets built.
         Heroes.HeroTestWorld.StepUntil(sim, () => world.Tiles.GetEffectiveAmount(V3Frozen.TreeX, V3Frozen.TreeY) < V3Frozen.TreeStock);
         Assert.Equal(HeroActivity.Gathering, world.Heroes.Get(heroEntity).Activity);
         Heroes.HeroTestWorld.StepUntil(sim, () => world.Buildings.Get(new EntityId(2, 1)).State == BuildingState.Active);
+    }
+
+    [Fact]
+    [Trait("Req", "FR-SAVE-02")]
+    [Trait("Req", "FR-SAVE-04")]
+    public void SaveV3SampleIsUpgradedByTheShippedMigrationOnly()
+    {
+        SaveLoadResult withoutV4 = SaveGame.Read(GoldenFiles.ReadBytes(V3Sample), SimTestData.Real, null, [new SaveMigrationV1ToV2(), new SaveMigrationV2ToV3()]);
+
+        Assert.Equal(SaveErrorKind.MissingMigration, withoutV4.Error!.Kind);
+        Assert.Contains("v3 to v4", withoutV4.Error.Message, StringComparison.Ordinal);
+    }
+
+    // The first format with residents (name, profession, skills, home, state) and the reached era.
+    [Fact]
+    [Trait("Req", "FR-SAVE-02")]
+    [Trait("Req", "FR-SAVE-04")]
+    [Trait("Req", "FR-NPC-01")]
+    [Trait("Req", "FR-NPC-02")]
+    public void SaveV4SampleLoads()
+    {
+        CreateV4SampleIfMissing();
+
+        SaveLoadResult result = SaveGame.Read(GoldenFiles.ReadBytes(V4Sample), SimTestData.Real);
+
+        Assert.True(result.Succeeded, result.Error?.Message);
+        Assert.Equal(4, result.SourceFormatVersion);
+        Simulation sim = result.Simulation!;
+        GameWorld world = sim.World!;
+        Assert.Equal(V4Frozen.Tick, sim.Tick);
+        Assert.Equal(V4Frozen.MapHash, ContentHash.Format(world.MapHash));
+        Assert.Equal("camp", SimTestData.Real.Get(world.ReachedEra).Id);
+        Assert.Equal(3, Construction.SettlementPopulation(sim));
+
+        var house1 = new EntityId(2, 1);
+        var house2 = new EntityId(3, 1);
+        (string Name, string Profession, int[] Skills, EntityId Home, Core.Residents.ResidentState State)[] expected =
+        [
+            ("Osric", "blacksmith", [3, 6, 0, 0, 4, 2, 4, 2, 3, 0, 3, 2], house1, Core.Residents.ResidentState.Idle),
+            ("Loris", "lumberjack", [1, 5, 5, 0, 6, 3, 4, 0, 4, 4, 0, 4], house1, Core.Residents.ResidentState.Idle),
+            ("Brina", "farmer", [6, 6, 5, 1, 4, 3, 1, 2, 0, 0, 0, 6], house2, Core.Residents.ResidentState.Arriving),
+        ];
+        Assert.Equal([new EntityId(4, 1), new EntityId(5, 1), new EntityId(6, 1)], world.Residents.Entities.ToArray());
+        Assert.Equal(expected, world.Residents.Values.ToArray().Select(r => (Core.Residents.ResidentRules.NameOf(sim.Content, r),
+            sim.Content.Get(r.Profession).Id, r.Skills.ToArray(), r.Home, r.State)));
+        Assert.All(world.Residents.Values.ToArray(), r => Assert.Equal(Core.Residents.Resident.NoJob, r.Job));
+        Mover walk = world.Movers.Get(new EntityId(6, 1));
+        Assert.True(walk.IsMoving);
+        Assert.Equal(V4Frozen.NewcomerGoal, walk.Goal);
+        Assert.Equal([new PendingCommand(V4Frozen.Tick + 1, V4Frozen.PendingSequence, new SpawnResidentCommand("farmer"))], sim.PendingCommands);
+
+        // It keeps running: the pending spawn makes four residents (a village); the newcomer reaches the campfire.
+        sim.Step();
+        Assert.Equal("village", Construction.CurrentEra(sim).Id);
+        Heroes.HeroTestWorld.StepUntil(sim, () => world.Residents.Get(new EntityId(6, 1)).State == Core.Residents.ResidentState.Idle);
+        Position at = sim.Positions.Get(new EntityId(6, 1));
+        Assert.Equal(V4Frozen.NewcomerGoal, (at.TileY * 64) + at.TileX);
+        Assert.Equal(1, AgentMovement.Distance(at.TileX, at.TileY, V4Frozen.CampfireX, V4Frozen.CampfireY));
+    }
+
+    // Frozen together with save_v4.sav (values read once from the generated file, never from today's code).
+    private static class V4Frozen
+    {
+        public const long Tick = 11253;            // day 1, 06:00 + 3 ticks: the second morning brought the newcomer
+        public const string MapHash = "0efbce35c5418c88";
+        public const long PendingSequence = 7;
+        public const int CampfireX = 30;
+        public const int CampfireY = 30;
+        public const int NewcomerGoal = 1886;     // tile (30, 29), next to the campfire
+    }
+
+    private static void CreateV4SampleIfMissing()
+    {
+        string path = GoldenFiles.PathOf(V4Sample);
+        if (GoldenFiles.Updating && !File.Exists(path) && SaveFormat.CurrentVersion == 4)
+        {
+            Directory.CreateDirectory(GoldenFiles.Directory);
+            File.WriteAllBytes(path, SaveGame.ToBytes(SaveTestData.BuildV4Sample()));
+        }
     }
 
     // Frozen together with save_v3.sav (values read once from the generated file, never from today's code). The sample

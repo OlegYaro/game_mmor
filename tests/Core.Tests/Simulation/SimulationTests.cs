@@ -29,7 +29,7 @@ public sealed class SimulationTests
     {
         var sim = new Simulation(Seed, SimTestData.Real);
 
-        Assert.Equal(["clock", "commands", "construction", "movement", "gather", "fog"], sim.Systems.Select(s => s.Name));
+        Assert.Equal(["clock", "commands", "construction", "residents", "movement", "gather", "fog"], sim.Systems.Select(s => s.Name));
     }
 
     [Fact]

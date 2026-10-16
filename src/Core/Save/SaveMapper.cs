@@ -4,6 +4,7 @@ using Core.Determinism;
 using Core.Entities;
 using Core.Fog;
 using Core.Heroes;
+using Core.Residents;
 using Core.Sim;
 using Core.Tiles;
 
@@ -38,6 +39,9 @@ internal static class SaveMapper
     /// <summary>Stable save names of <see cref="HeroOrderResult"/>, indexed by value. Append only.</summary>
     public static readonly IReadOnlyList<string> HeroOrderResultNames =
         ["none", "accepted", "outside_map", "unexplored", "impassable", "unreachable", "no_resource"];
+
+    /// <summary>Stable save names of <see cref="ResidentState"/>, indexed by value. Append only.</summary>
+    public static readonly IReadOnlyList<string> ResidentStateNames = ["arriving", "idle", "walking", "working", "leaving"];
 
     /// <summary>Header of a state: the world's generator version for a game, the running generator's otherwise.</summary>
     public static SaveHeader ToHeader(SimulationState state, string codec) =>
@@ -88,16 +92,25 @@ internal static class SaveMapper
             .ToArray();
 
         BuildingEntryDto[] buildings = world is null ? [] : world.Buildings.Select(e => ToDto(e, content)).ToArray();
+        ResidentEntryDto[] residents = world is null ? [] : world.Residents.Select(e => ToDto(e, content)).ToArray();
 
         return new SaveBodyDto(
             state.Tick,
             rng,
             new EntitiesDto(state.Entities.Generations.ToArray(), state.Entities.Alive.ToArray()),
-            new ComponentsDto(positions, revealers, heroes, inventories, movers, buildings),
+            new ComponentsDto(positions, revealers, heroes, inventories, movers, buildings, residents),
             new CommandQueueDto(state.NextCommandSequence, pending),
             new GameDto(DifficultyNames.ToName(state.Difficulty), world?.MapSize ?? 0, world?.MapHash ?? 0),
             new FogDto(exploredRuns),
-            ToDto(world?.Tiles ?? TileChangesState.Empty));
+            ToDto(world?.Tiles ?? TileChangesState.Empty),
+            new SettlementDto(world is null ? string.Empty : content.Get(world.ReachedEra).Id));
+    }
+
+    private static ResidentEntryDto ToDto(ComponentEntry<Resident> entry, ContentCatalog content)
+    {
+        Resident r = entry.Value;
+        return new ResidentEntryDto(entry.Entity.Index, entry.Entity.Generation, ResidentRules.NameOf(content, r), content.Get(r.Profession).Id,
+            r.Skills.ToArray(), r.Home.Index, r.Home.Generation, NameOf(ResidentStateNames, (int)r.State, "resident state"), r.Job);
     }
 
     private static HeroEntryDto ToDto(ComponentEntry<Hero> entry)
@@ -209,9 +222,10 @@ internal static class SaveMapper
         {
             if (body.Game.MapHash != 0 || body.Fog.ExploredRuns.Count != 0 || components.Revealer.Count != 0 || components.Hero.Count != 0
                 || components.Inventory.Count != 0 || components.Mover.Count != 0 || components.Building.Count != 0 || body.Tiles.Resources.Count != 0
-                || body.Tiles.Occupancy.Count != 0)
+                || body.Tiles.Occupancy.Count != 0 || components.Resident.Count != 0 || body.Settlement.ReachedEra.Length != 0)
             {
-                throw new InvalidDataException("A save without a world (mapSize 0) must have mapHash 0, no fog runs, revealers, hero or building components or tile changes.");
+                throw new InvalidDataException(
+                    "A save without a world (mapSize 0) must have mapHash 0, no fog runs, revealers, hero, building or resident components, tile changes or reached era.");
             }
 
             return null;
@@ -242,7 +256,40 @@ internal static class SaveMapper
             components.Inventory.Select(i => ToInventory(i, content)).ToArray(),
             components.Mover.Select(ToMover).ToArray(),
             components.Building.Select(b => ToBuilding(b, content)).ToArray(),
-            ToTiles(body.Tiles));
+            ToTiles(body.Tiles),
+            components.Resident.Select(r => ToResident(r, content)).ToArray(),
+            ToEra(body.Settlement.ReachedEra, content));
+    }
+
+    private static DefId ToEra(string id, ContentCatalog content) =>
+        content.TryGetId(id, out DefId era) && content.Get(era) is EraDef ? era : throw new InvalidDataException($"Unknown era '{id}'.");
+
+    private static ComponentEntry<Resident> ToResident(ResidentEntryDto? dto, ContentCatalog content)
+    {
+        NotNull(dto, "resident entry");
+        int name = content.TryGet(ResidentRules.NameListId, out NameListDef names) ? IndexOf(names.Names, dto.Name) : -1;
+        if (name < 0)
+        {
+            throw new InvalidDataException($"Unknown resident name '{dto.Name}'.");
+        }
+
+        if (!content.TryGetId(dto.Profession, out DefId profession) || content.Get(profession) is not ProfessionDef)
+        {
+            throw new InvalidDataException($"Unknown profession '{dto.Profession}'.");
+        }
+
+        SkillSet skills;
+        try
+        {
+            skills = SkillSet.From(dto.Skills.ToArray());
+        }
+        catch (ArgumentException ex)
+        {
+            throw new InvalidDataException($"Resident skills are invalid: {ex.Message}", ex);
+        }
+
+        return new ComponentEntry<Resident>(new EntityId(dto.Index, dto.Generation), new Resident(name, profession, skills,
+            new EntityId(dto.HomeIndex, dto.HomeGeneration), (ResidentState)ValueOf(ResidentStateNames, dto.State, "resident state"), dto.Job));
     }
 
     private static ComponentEntry<Building> ToBuilding(BuildingEntryDto? dto, ContentCatalog content)

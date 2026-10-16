@@ -1,0 +1,16 @@
+{
+  "formatVersion": 1,
+  "seed": 3801089,
+  "contentHash": "92ed6a73e1619fa5",
+  "endTick": 20391,
+  "mapSize": 64,
+  "difficulty": "normal",
+  "commands": [
+    {"tick":1,"command":{"kind":"give_item","item":"wood","count":100}},
+    {"tick":2,"command":{"kind":"give_item","item":"berries","count":40}},
+    {"tick":3,"command":{"kind":"place_building","building":"campfire","x":30,"y":30,"rotation":0}},
+    {"tick":4,"command":{"kind":"place_building","building":"house","x":28,"y":28,"rotation":0}},
+    {"tick":5,"command":{"kind":"place_building","building":"house","x":30,"y":28,"rotation":0}},
+    {"tick":6,"command":{"kind":"place_building","building":"storage","x":32,"y":28,"rotation":0}}
+  ]
+}

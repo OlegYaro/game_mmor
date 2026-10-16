@@ -24,7 +24,7 @@ public interface ISaveMigration
 public static class SaveMigrations
 {
     /// <summary>All shipped migrations, one per format step (order does not matter; the chain is resolved by version).</summary>
-    public static IReadOnlyList<ISaveMigration> All { get; } = [new SaveMigrationV1ToV2(), new SaveMigrationV2ToV3()];
+    public static IReadOnlyList<ISaveMigration> All { get; } = [new SaveMigrationV1ToV2(), new SaveMigrationV2ToV3(), new SaveMigrationV3ToV4()];
 }
 
 /// <summary>
@@ -100,6 +100,40 @@ internal sealed class SaveMigrationV2ToV3 : ISaveMigration
         {
             ["resources"] = new JsonArray(),
             ["occupancy"] = new JsonArray(),
+        };
+    }
+}
+
+/// <summary>
+/// v3 → v4 (M3a, FR-NPC-01, FR-NPC-02). Adds an empty <c>components.resident</c> store and
+/// <c>settlement = {reachedEra}</c>: v3 games had no residents, so a game with a world has reached the first era
+/// (<c>camp</c>), and a simulation without a world (<c>game.mapSize</c> 0) has none (empty string). The header is
+/// unchanged. Frozen: never edit after release.
+/// </summary>
+internal sealed class SaveMigrationV3ToV4 : ISaveMigration
+{
+    /// <inheritdoc />
+    public int FromVersion => 3;
+
+    /// <inheritdoc />
+    public void Migrate(JsonObject header, JsonObject body)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        if (body["components"] is not JsonObject components || body["game"] is not JsonObject game)
+        {
+            throw new InvalidOperationException("v3 body has no 'components' or 'game' object.");
+        }
+
+        if (body.ContainsKey("settlement") || components.ContainsKey("resident"))
+        {
+            throw new InvalidOperationException("v3 body already has v4 members ('settlement' or 'components.resident').");
+        }
+
+        bool hasWorld = game["mapSize"] is JsonValue size && size.TryGetValue(out int mapSize) && mapSize != 0;
+        components["resident"] = new JsonArray();
+        body["settlement"] = new JsonObject
+        {
+            ["reachedEra"] = hasWorld ? "camp" : string.Empty,
         };
     }
 }

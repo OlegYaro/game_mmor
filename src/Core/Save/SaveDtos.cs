@@ -1,6 +1,6 @@
 namespace Core.Save;
 
-// Save format v3 DTOs (ADR 0007). They describe ONLY the current format version: older files are brought up to
+// Save format v4 DTOs (ADR 0007). They describe ONLY the current format version: older files are brought up to
 // date by ISaveMigration on the JSON tree before they are bound to these types. Property order is the declaration
 // order (constructor parameter order) and is part of the format; every property is always written. There are no
 // dictionaries: collections are arrays in a canonical order, so output is byte-stable.
@@ -14,8 +14,9 @@ namespace Core.Save;
 public sealed record SaveHeader(int FormatVersion, string GameVersion, int WorldGenVersion, ulong Seed, string Codec);
 
 /// <summary>
-/// Save body, format v3 (v1 plus <c>game</c>, <c>fog</c> and the <c>revealer</c> store in v2; plus <c>tiles</c> and the
-/// <c>hero</c>, <c>inventory</c>, <c>mover</c> and <c>building</c> stores in v3).
+/// Save body, format v4 (v1 plus <c>game</c>, <c>fog</c> and the <c>revealer</c> store in v2; plus <c>tiles</c> and the
+/// <c>hero</c>, <c>inventory</c>, <c>mover</c> and <c>building</c> stores in v3; plus <c>settlement</c> and the
+/// <c>resident</c> store in v4).
 /// </summary>
 /// <param name="Tick">Last executed tick.</param>
 /// <param name="Rng">One entry per RNG stream, in stream id order.</param>
@@ -25,6 +26,7 @@ public sealed record SaveHeader(int FormatVersion, string GameVersion, int World
 /// <param name="Game">New-game parameters and map identity.</param>
 /// <param name="Fog">Explored fog layer.</param>
 /// <param name="Tiles">Tile changes against the generated map.</param>
+/// <param name="Settlement">State of the player's settlement.</param>
 public sealed record SaveBodyDto(
     long Tick,
     IReadOnlyList<RngStreamDto> Rng,
@@ -33,7 +35,14 @@ public sealed record SaveBodyDto(
     CommandQueueDto Commands,
     GameDto Game,
     FogDto Fog,
-    TilesDto Tiles);
+    TilesDto Tiles,
+    SettlementDto Settlement);
+
+/// <summary>State of the player's settlement that is not in a component (FR-BUILD-13).</summary>
+/// <param name="ReachedEra">
+/// Id of the highest era reached (the era never falls back when residents leave); empty without a world.
+/// </param>
+public sealed record SettlementDto(string ReachedEra);
 
 /// <summary>
 /// New-game parameters and the identity of the map (FR-SAVE-05). The map itself is not saved: it is regenerated from
@@ -94,13 +103,15 @@ public sealed record EntitiesDto(IReadOnlyList<int> Generations, IReadOnlyList<b
 /// <param name="Inventory">Inventory components in ascending entity index order (empty without a world).</param>
 /// <param name="Mover">Mover components in ascending entity index order (empty without a world).</param>
 /// <param name="Building">Building components in ascending entity index order (empty without a world).</param>
+/// <param name="Resident">Resident components in ascending entity index order (empty without a world).</param>
 public sealed record ComponentsDto(
     IReadOnlyList<PositionEntryDto> Position,
     IReadOnlyList<RevealerEntryDto> Revealer,
     IReadOnlyList<HeroEntryDto> Hero,
     IReadOnlyList<InventoryEntryDto> Inventory,
     IReadOnlyList<MoverEntryDto> Mover,
-    IReadOnlyList<BuildingEntryDto> Building);
+    IReadOnlyList<BuildingEntryDto> Building,
+    IReadOnlyList<ResidentEntryDto> Resident);
 
 /// <summary>One position component with its owner.</summary>
 /// <param name="Index">Owner slot index.</param>
@@ -203,6 +214,27 @@ public sealed record BuildingEntryDto(
     int TargetY,
     int TargetRotation,
     int Settlement);
+
+/// <summary>One resident component with its owner (FR-NPC-01, FR-NPC-02). Its position and mover are in their stores.</summary>
+/// <param name="Index">Owner slot index.</param>
+/// <param name="Generation">Owner generation.</param>
+/// <param name="Name">First name from the <c>human_names</c> list (the name, so reordering the list does not change it).</param>
+/// <param name="Profession">Profession id.</param>
+/// <param name="Skills">The twelve skill levels (0..20) in the order construction, mining, farming, hunting, cooking, crafting, smithing, medicine, trading, knowledge, melee, shooting.</param>
+/// <param name="HomeIndex">Home building slot index; 0 with generation 0 when homeless.</param>
+/// <param name="HomeGeneration">Home building generation; 0 when homeless.</param>
+/// <param name="State">State name: <c>arriving</c>, <c>idle</c>, <c>walking</c>, <c>working</c> or <c>leaving</c>.</param>
+/// <param name="Job">Job on the job board; 0 for none.</param>
+public sealed record ResidentEntryDto(
+    int Index,
+    int Generation,
+    string Name,
+    string Profession,
+    IReadOnlyList<int> Skills,
+    int HomeIndex,
+    int HomeGeneration,
+    string State,
+    int Job);
 
 /// <summary>The command queue.</summary>
 /// <param name="NextSequence">Sequence number of the next enqueued command.</param>

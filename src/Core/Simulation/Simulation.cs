@@ -5,6 +5,7 @@ using Core.Entities;
 using Core.Fog;
 using Core.Heroes;
 using Core.Logging;
+using Core.Residents;
 using Core.WorldGen;
 
 namespace Core.Sim;
@@ -39,15 +40,17 @@ public sealed record SimulationState(
 /// </summary>
 /// <remarks>
 /// <para>Two kinds exist. A game (<see cref="CreateNewGame"/>) has a <see cref="World"/>: generated map, tile changes,
-/// fog of war, revealers, the hero, buildings and a difficulty; it adds the <c>game</c>, <c>fog</c> and <c>tiles</c>
-/// hash subsystems and the <c>revealer</c>, <c>hero</c>, <c>inventory</c>, <c>mover</c> and <c>building</c> stores. A
-/// core simulation (the constructor; M0 tests and replays) has no world and keeps exactly the M0 state layout.</para>
+/// fog of war, revealers, the hero, buildings, residents and a difficulty; it adds the <c>game</c>, <c>fog</c>,
+/// <c>tiles</c> and <c>residents</c> hash subsystems and the <c>revealer</c>, <c>hero</c>, <c>inventory</c>,
+/// <c>mover</c>, <c>building</c> and <c>resident</c> stores. A core simulation (the constructor; M0 tests and replays)
+/// has no world and keeps exactly the M0 state layout.</para>
 /// <para><see cref="Tick"/> is the number of the last executed tick; it is 0 before the first <see cref="Step"/>.
 /// <see cref="Step"/> first increments it, then runs the systems for the new value.</para>
 /// <para>The host changes state only through <see cref="Enqueue"/>. Systems and commands make structural entity
-/// changes only through <see cref="Buffer"/>, played back after every system. The one exception are the building
-/// orders: a placement creates its entity and a demolition or cancel destroys it at once, so that a later order of the
-/// same tick already sees the reserved or freed tiles (nothing iterates the stores while commands run).</para>
+/// changes only through <see cref="Buffer"/>, played back after every system. The exceptions are the building orders
+/// and new residents: a placement creates its entity and a demolition or cancel destroys it at once, so that a later
+/// order of the same tick already sees the reserved or freed tiles, and a resident is created at once, so that the
+/// population, the reached era and the house places count it in the same tick (nothing iterates the stores then).</para>
 /// </remarks>
 public sealed class Simulation : IStateHashable
 {
@@ -75,6 +78,9 @@ public sealed class Simulation : IStateHashable
     /// <summary>Hash subsystem (games only): tile changes against the generated map.</summary>
     public const string TilesHashName = "tiles";
 
+    /// <summary>Hash subsystem (games only): the reached era and the resident components.</summary>
+    public const string ResidentsHashName = "residents";
+
     /// <summary>Name of the <see cref="Position"/> store.</summary>
     public const string PositionStoreName = "position";
 
@@ -93,6 +99,9 @@ public sealed class Simulation : IStateHashable
     /// <summary>Name of the <see cref="Buildings.Building"/> store (games only; registered after <see cref="MoverStoreName"/>).</summary>
     public const string BuildingStoreName = "building";
 
+    /// <summary>Name of the <see cref="Resident"/> store (games only; registered after <see cref="BuildingStoreName"/>).</summary>
+    public const string ResidentStoreName = "resident";
+
     private const string EcbCategory = "ecb";
 
     private readonly ISimSystem[] _systems;
@@ -102,6 +111,7 @@ public sealed class Simulation : IStateHashable
     private readonly StateWriterAdapter _componentState;
     private readonly StateWriterAdapter _commandState;
     private readonly StateWriterAdapter _gameState;
+    private readonly StateWriterAdapter _residentState;
     private long _nextSequence;
     private bool _stepping;
 
@@ -134,7 +144,7 @@ public sealed class Simulation : IStateHashable
         Difficulty = difficulty;
         if (map is not null)
         {
-            World = new GameWorld(map, mapHash, Entities);
+            World = new GameWorld(map, mapHash, Entities, ResidentRules.FirstEra(content));
         }
 
         _systems = systems.ToArray();
@@ -145,6 +155,7 @@ public sealed class Simulation : IStateHashable
         _componentState = new StateWriterAdapter(Entities.WriteComponentState);
         _commandState = new StateWriterAdapter(WriteCommandState);
         _gameState = new StateWriterAdapter(WriteGameState);
+        _residentState = new StateWriterAdapter(w => World?.WriteResidentState(w));
     }
 
     /// <summary>World seed.</summary>
@@ -269,6 +280,7 @@ public sealed class Simulation : IStateHashable
             sim.World.Fog.LoadExplored(state.World.ExploredBits);
             HeroRules.Restore(sim, state.World);
             BuildingRules.Restore(sim, state.World);
+            ResidentRules.Restore(sim, state.World);
         }
 
         long previousTick = state.Tick + 1;
@@ -369,7 +381,7 @@ public sealed class Simulation : IStateHashable
                 ? null
                 : new WorldState(World.Size, World.Map.Version, World.MapHash, World.Fog.CopyExplored(), World.Revealers.GetEntries(),
                     World.Heroes.GetEntries(), World.Inventories.GetEntries(), World.Movers.GetEntries(), World.Buildings.GetEntries(),
-                    World.Tiles.CaptureState()));
+                    World.Tiles.CaptureState(), World.Residents.GetEntries(), World.ReachedEra));
     }
 
     /// <summary>Queues a command for tick <c><see cref="Tick"/> + 1</c> (also when called from inside a step).</summary>
@@ -427,7 +439,8 @@ public sealed class Simulation : IStateHashable
 
     /// <summary>
     /// Hashes of each subsystem in fixed order: calendar, rng, entities, components, commands, and for a game also
-    /// game (difficulty, map identity), fog and tiles. The log is excluded (see <see cref="SimLog"/>).
+    /// game (difficulty, map identity), fog, tiles and residents (reached era and resident components). The log is
+    /// excluded (see <see cref="SimLog"/>).
     /// </summary>
     public SubsystemHashes ComputeHashes() => World is null
         ? _hasher.HashSubsystems(
@@ -444,7 +457,8 @@ public sealed class Simulation : IStateHashable
             (CommandsHashName, _commandState),
             (GameHashName, _gameState),
             (FogHashName, World.Fog),
-            (TilesHashName, World.Tiles));
+            (TilesHashName, World.Tiles),
+            (ResidentsHashName, _residentState));
 
     /// <summary>Writes the full canonical state: each subsystem of <see cref="ComputeHashes"/>, in the same order.</summary>
     public void WriteState(StateWriter writer)
@@ -460,6 +474,7 @@ public sealed class Simulation : IStateHashable
             WriteGameState(writer);
             World.Fog.WriteState(writer);
             World.Tiles.WriteState(writer);
+            World.WriteResidentState(writer);
         }
     }
 
@@ -500,6 +515,7 @@ public sealed class Simulation : IStateHashable
         new ClockSystem(),
         new CommandSystem(),
         new ConstructionSystem(),
+        new ResidentSystem(),
         new MovementSystem(),
         new GatherSystem(),
         new FogSystem(),

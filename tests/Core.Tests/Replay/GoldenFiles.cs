@@ -34,6 +34,9 @@ internal static class GoldenFiles
     private static readonly Lazy<ReplayGolden> _m2 = new(() => LoadOrUpdate(
         "scenario_m2", M2Scenario.Record, sampleInterval: 50));
 
+    private static readonly Lazy<ReplayGolden> _residents = new(() => LoadOrUpdate(
+        "scenario_m3a_residents", ResidentScenario.Record, sampleInterval: 500));
+
     /// <summary>True when the run may (re)write goldens.</summary>
     public static bool Updating => Environment.GetEnvironmentVariable(UpdateVariable) == "1";
 
@@ -54,6 +57,9 @@ internal static class GoldenFiles
 
     /// <summary>M2 acceptance scenario (<see cref="M2Scenario"/>): gathering, campfire, house, storage, upgrade, move; hashes every 50 ticks.</summary>
     public static ReplayGolden M2 => _m2.Value;
+
+    /// <summary>M3a residents scenario (<see cref="ResidentScenario"/>): a settlement, then newcomers over several mornings; hashes every 500 ticks.</summary>
+    public static ReplayGolden Residents => _residents.Value;
 
     /// <summary>New-game parameters of <see cref="World"/>.</summary>
     public static NewGameOptions WorldOptions { get; } = new(0x3011D_F06, 64, Difficulty.Hard);

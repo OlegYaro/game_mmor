@@ -100,13 +100,13 @@ public static class Construction
     }
 
     /// <summary>
-    /// Number of residents of the player's settlement. M2 has no residents, so this is always 0; M3 counts them here and
-    /// the era (and with it the territory radius) follows.
+    /// Number of residents of the player's settlement: every living resident, newcomers still walking in included. The
+    /// era (and with it the territory radius) follows it upwards (<see cref="CurrentEra"/>).
     /// </summary>
     public static int SettlementPopulation(Simulation sim)
     {
         ArgumentNullException.ThrowIfNull(sim);
-        return 0;
+        return sim.World?.Residents.Count ?? 0;
     }
 
     /// <summary>
@@ -128,11 +128,22 @@ public static class Construction
         return eras[0];
     }
 
-    /// <summary>The era of the player's settlement (from <see cref="SettlementPopulation"/>).</summary>
+    /// <summary>
+    /// The era of the player's settlement: the era of the current <see cref="SettlementPopulation"/>, but never below the
+    /// highest era reached before (<see cref="GameWorld.ReachedEra"/>). A settlement that loses residents keeps its era
+    /// and territory, so no building ends up outside the territory.
+    /// </summary>
     public static EraDef CurrentEra(Simulation sim)
     {
         ArgumentNullException.ThrowIfNull(sim);
-        return EraFor(sim.Content, SettlementPopulation(sim));
+        EraDef byPopulation = EraFor(sim.Content, SettlementPopulation(sim));
+        if (sim.World is not { } world)
+        {
+            return byPopulation;
+        }
+
+        EraDef reached = sim.Content.Get<EraDef>(world.ReachedEra);
+        return reached.Order > byPopulation.Order ? reached : byPopulation;
     }
 
     /// <summary>The player's settlement center (any state), or <see cref="EntityId.None"/> when there is none.</summary>
@@ -277,8 +288,8 @@ public static class Construction
 
     /// <summary>
     /// True when the settlement meets every requirement of <paramref name="level"/>: an <c>era</c> requirement needs the
-    /// current era's order to be at least the required era's; a <c>specialist</c> requirement is never met in M2 (there
-    /// are no residents yet).
+    /// current era's order to be at least the required era's; a <c>specialist</c> requirement is never met yet
+    /// (specialists come with M3b).
     /// </summary>
     public static bool MeetsRequirements(Simulation sim, BuildingLevelDef level)
     {

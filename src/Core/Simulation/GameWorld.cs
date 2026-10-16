@@ -6,6 +6,7 @@ using Core.Entities;
 using Core.Fog;
 using Core.Heroes;
 using Core.Pathfinding;
+using Core.Residents;
 using Core.Tiles;
 using Core.WorldGen;
 
@@ -25,6 +26,8 @@ namespace Core.Sim;
 /// <param name="Movers">Mover components in ascending entity index order.</param>
 /// <param name="Buildings">Building components in ascending entity index order.</param>
 /// <param name="Tiles">Tile changes against the generated map (<see cref="TileChanges"/>).</param>
+/// <param name="Residents">Resident components in ascending entity index order.</param>
+/// <param name="ReachedEra">The highest era the player's settlement has reached (<see cref="GameWorld.ReachedEra"/>).</param>
 public sealed record WorldState(
     int MapSize,
     int GeneratorVersion,
@@ -35,7 +38,9 @@ public sealed record WorldState(
     IReadOnlyList<ComponentEntry<Inventory>> Inventories,
     IReadOnlyList<ComponentEntry<Mover>> Movers,
     IReadOnlyList<ComponentEntry<Building>> Buildings,
-    TileChangesState Tiles);
+    TileChangesState Tiles,
+    IReadOnlyList<ComponentEntry<Resident>> Residents,
+    DefId ReachedEra);
 
 /// <summary>
 /// The world of a game simulation (<see cref="Simulation.CreateNewGame"/>): the generated map, the tile changes, the
@@ -53,17 +58,24 @@ public sealed record WorldState(
 /// <see cref="StopHeroCommand"/> through <see cref="Simulation.Enqueue"/>.</para>
 /// <para>Buildings: <see cref="Buildings"/>, the placement check and the territory in <see cref="Construction"/>, the
 /// outcome of every building order in <see cref="BuildingEvents"/>.</para>
+/// <para>Residents: <see cref="Residents"/> (with a <see cref="Position"/> and a <see cref="Movers"/> entry each, so the
+/// game interpolates them like the hero), housing in <see cref="Housing"/>, the arrival odds in <see cref="Arrivals"/>,
+/// arrivals and housing changes in <see cref="ResidentEvents"/>; the era never falls below <see cref="ReachedEra"/>.</para>
 /// </remarks>
 public sealed class GameWorld
 {
     /// <summary>How many of the latest <see cref="BuildingEvents"/> are kept.</summary>
     public const int BuildingEventCapacity = 64;
 
+    /// <summary>How many of the latest <see cref="ResidentEvents"/> are kept.</summary>
+    public const int ResidentEventCapacity = 64;
+
     private readonly List<RevealSource> _sources = [];
     private readonly List<BuildingEvent> _buildingEvents = [];
+    private readonly List<ResidentEvent> _residentEvents = [];
     private Pathfinder? _pathfinder;
 
-    internal GameWorld(WorldMap map, ulong mapHash, EntityWorld entities)
+    internal GameWorld(WorldMap map, ulong mapHash, EntityWorld entities, DefId firstEra)
     {
         Map = map;
         MapHash = mapHash;
@@ -72,6 +84,8 @@ public sealed class GameWorld
         Inventories = entities.AddStore<Inventory>(Simulation.InventoryStoreName);
         Movers = entities.AddStore<Mover>(Simulation.MoverStoreName);
         Buildings = entities.AddStore<Building>(Simulation.BuildingStoreName);
+        Residents = entities.AddStore<Resident>(Simulation.ResidentStoreName);
+        ReachedEra = firstEra;
         Fog = new FogOfWar(map.Size);
         Tiles = new TileChanges(map);
     }
@@ -102,6 +116,26 @@ public sealed class GameWorld
 
     /// <summary>Building components (store <see cref="Simulation.BuildingStoreName"/>); see <see cref="Construction"/>.</summary>
     public ComponentStore<Building> Buildings { get; }
+
+    /// <summary>Resident components (store <see cref="Simulation.ResidentStoreName"/>); see <see cref="Housing"/> and <see cref="Arrivals"/>.</summary>
+    public ComponentStore<Resident> Residents { get; }
+
+    /// <summary>
+    /// The highest era (<see cref="EraDef"/>) the player's settlement has reached. The era grows with the population but
+    /// never falls back (<see cref="Construction.CurrentEra"/>), so the territory never shrinks under existing buildings.
+    /// Part of the state: saved and hashed (subsystem <see cref="Simulation.ResidentsHashName"/>).
+    /// </summary>
+    public DefId ReachedEra { get; internal set; }
+
+    /// <summary>
+    /// The latest resident events (arrivals, spawns, evictions, housing), oldest first (at most
+    /// <see cref="ResidentEventCapacity"/>), for the game's event panel. Presentation only: not part of the state, not
+    /// saved (empty after a load), not hashed.
+    /// </summary>
+    public IReadOnlyList<ResidentEvent> ResidentEvents => _residentEvents;
+
+    /// <summary>Sequence of the latest resident event; 0 before the first.</summary>
+    public long LastResidentEventSequence { get; private set; }
 
     /// <summary>
     /// The latest processed building orders, oldest first (at most <see cref="BuildingEventCapacity"/>), for the game's
@@ -151,6 +185,26 @@ public sealed class GameWorld
 
         _buildingEvents.Add(added);
         return added;
+    }
+
+    /// <summary>Appends a resident event (dropping the oldest beyond <see cref="ResidentEventCapacity"/>) and returns it.</summary>
+    internal ResidentEvent AddResidentEvent(long tick, ResidentEventKind kind, EntityId resident, string name, string profession, EntityId home, int x, int y)
+    {
+        var added = new ResidentEvent(++LastResidentEventSequence, tick, kind, resident, name, profession, home, x, y);
+        if (_residentEvents.Count == ResidentEventCapacity)
+        {
+            _residentEvents.RemoveAt(0);
+        }
+
+        _residentEvents.Add(added);
+        return added;
+    }
+
+    /// <summary>Writes the residents' settlement state: the reached era, then the resident components.</summary>
+    internal void WriteResidentState(StateWriter writer)
+    {
+        writer.WriteInt32(ReachedEra.Value);
+        Residents.WriteState(writer);
     }
 
     /// <summary>

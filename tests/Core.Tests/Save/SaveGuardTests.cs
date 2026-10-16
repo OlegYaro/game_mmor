@@ -23,7 +23,7 @@ public sealed class SaveGuardTests
         ["SimulationState.NextCommandSequence"] = ["CommandQueueDto.nextSequence"],
         ["SimulationState.PendingCommands"] = ["CommandQueueDto.pending"],
         ["SimulationState.Difficulty"] = ["GameDto.difficulty"],
-        ["SimulationState.World"] = ["SaveBodyDto.game", "SaveBodyDto.fog", "SaveBodyDto.tiles"],
+        ["SimulationState.World"] = ["SaveBodyDto.game", "SaveBodyDto.fog", "SaveBodyDto.tiles", "SaveBodyDto.settlement"],
         ["WorldState.MapSize"] = ["GameDto.mapSize"],
         ["WorldState.GeneratorVersion"] = ["SaveHeader.worldGenVersion"],
         ["WorldState.MapHash"] = ["GameDto.mapHash"],
@@ -37,6 +37,17 @@ public sealed class SaveGuardTests
         ["WorldState.Movers"] = ["ComponentsDto.mover"],
         ["WorldState.Tiles"] = ["SaveBodyDto.tiles"],
         ["WorldState.Buildings"] = ["ComponentsDto.building"],
+        ["WorldState.Residents"] = ["ComponentsDto.resident"],
+        ["WorldState.ReachedEra"] = ["SettlementDto.reachedEra"],
+        ["ComponentEntry<Resident>.Entity"] = ["ResidentEntryDto"],
+        ["ComponentEntry<Resident>.Value"] = ["ResidentEntryDto"],
+        ["Resident.Name"] = ["ResidentEntryDto.name"],
+        ["Resident.Profession"] = ["ResidentEntryDto.profession"],
+        ["Resident.Skills"] = ["ResidentEntryDto.skills"],
+        ["SkillSet.Bits"] = ["ResidentEntryDto.skills"],
+        ["Resident.Home"] = ["ResidentEntryDto.homeIndex", "ResidentEntryDto.homeGeneration"],
+        ["Resident.State"] = ["ResidentEntryDto.state"],
+        ["Resident.Job"] = ["ResidentEntryDto.job"],
         ["ComponentEntry<Building>.Entity"] = ["BuildingEntryDto"],
         ["ComponentEntry<Building>.Value"] = ["BuildingEntryDto"],
         ["Building.Def"] = ["BuildingEntryDto.building"],
@@ -70,7 +81,7 @@ public sealed class SaveGuardTests
         ["Inventory.Equipment"] = ["InventoryEntryDto.equipmentSize", "InventoryEntryDto.equipment"],
         ["ItemSlot.Item"] = ["ItemSlotDto.item"],
         ["ItemSlot.Count"] = ["ItemSlotDto.count"],
-        ["DefId.Value"] = ["ItemSlotDto.item", "BuildingEntryDto.building"],
+        ["DefId.Value"] = ["ItemSlotDto.item", "BuildingEntryDto.building", "ResidentEntryDto.profession", "SettlementDto.reachedEra"],
         ["ComponentEntry<Mover>.Entity"] = ["MoverEntryDto"],
         ["ComponentEntry<Mover>.Value"] = ["MoverEntryDto"],
         ["Mover.Goal"] = ["MoverEntryDto.goal"],
@@ -101,14 +112,15 @@ public sealed class SaveGuardTests
         [
             "PositionEntryDto.index", "RevealerEntryDto.index", "HeroEntryDto.index", "InventoryEntryDto.index", "MoverEntryDto.index",
             "BuildingEntryDto.index", "OccupancyChunkDto.ownerIndices", "DestroyEntityCommandDto.index", "CancelBuildingCommandDto.index",
-            "UpgradeBuildingCommandDto.index", "MoveBuildingCommandDto.index", "DemolishBuildingCommandDto.index",
+            "UpgradeBuildingCommandDto.index", "MoveBuildingCommandDto.index", "DemolishBuildingCommandDto.index", "ResidentEntryDto.index",
+            "ResidentEntryDto.homeIndex",
         ],
         ["EntityId.Generation"] =
         [
             "PositionEntryDto.generation", "RevealerEntryDto.generation", "HeroEntryDto.generation", "InventoryEntryDto.generation",
             "MoverEntryDto.generation", "BuildingEntryDto.generation", "OccupancyChunkDto.ownerGenerations", "DestroyEntityCommandDto.generation",
             "CancelBuildingCommandDto.generation", "UpgradeBuildingCommandDto.generation", "MoveBuildingCommandDto.generation",
-            "DemolishBuildingCommandDto.generation",
+            "DemolishBuildingCommandDto.generation", "ResidentEntryDto.generation", "ResidentEntryDto.homeGeneration",
         ],
         ["Position.X"] = ["PositionEntryDto.x", "SpawnMarkerCommandDto.x"],
         ["Position.Y"] = ["PositionEntryDto.y", "SpawnMarkerCommandDto.y"],
@@ -147,6 +159,8 @@ public sealed class SaveGuardTests
         ["MoveBuildingCommand.Rotation"] = ["MoveBuildingCommandDto.rotation"],
         ["DemolishBuildingCommand.Kind"] = ["CommandDto.kind"],
         ["DemolishBuildingCommand.Building"] = ["DemolishBuildingCommandDto"],
+        ["SpawnResidentCommand.Kind"] = ["CommandDto.kind"],
+        ["SpawnResidentCommand.Profession"] = ["SpawnResidentCommandDto.profession"],
     };
 
     // State members deliberately not saved.
@@ -255,6 +269,8 @@ public sealed class SaveGuardTests
             new UpgradeBuildingCommand(new Core.Entities.EntityId(6, 1)),
             new MoveBuildingCommand(new Core.Entities.EntityId(7, 3), 20, 21, 1),
             new DemolishBuildingCommand(new Core.Entities.EntityId(8, 1)),
+            new SpawnResidentCommand("blacksmith"),
+            new SpawnResidentCommand(),
         ];
 
         foreach (ISimCommand command in commands)

@@ -46,7 +46,7 @@ internal static class AgentMovement
 
     /// <summary>
     /// Movement system body: every walker advances along its path, in ascending entity order. The hero's rules handle
-    /// heroes (sprint, stamina); any other walker walks at the hero's step pace.
+    /// heroes (sprint, stamina), the residents' rules residents; any other walker walks at the hero's step pace.
     /// </summary>
     public static void Update(Simulation sim)
     {
@@ -65,6 +65,10 @@ internal static class AgentMovement
             if (world.Heroes.Has(entity))
             {
                 HeroRules.Walk(sim, world, heroBalance, entity, ref movers[i]);
+            }
+            else if (world.Residents.Has(entity))
+            {
+                Residents.ResidentRules.Walk(sim, world, entity, ref movers[i]);
             }
             else if (movers[i].IsMoving && sim.Positions.Has(entity))
             {
