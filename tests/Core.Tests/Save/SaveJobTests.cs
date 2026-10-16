@@ -84,7 +84,7 @@ public sealed class SaveJobTests
         Assert.Equal(sim.World!.Residents.Count, components["job"]!.AsArray().Count);
         Assert.Equal(
             ["index", "generation", "kind", "phase", "buildingIndex", "buildingGeneration", "targetTile", "storageIndex", "storageGeneration", "goalTile",
-                "workLeft", "carryItem", "carryCount", "nextThinkTick"],
+                "workLeft", "carryItem", "carryCount", "nextThinkTick", "idleLooks"],
             components["job"]![0]!.AsObject().Select(p => p.Key));
         JsonObject lumberjack = components["job"]!.AsArray().Single(j => (string?)j!["kind"] == "chop")!.AsObject();
         Assert.Equal(("to_storage", "wood", sim.Content.Economy.HaulCapacity), ((string?)lumberjack["phase"], (string?)lumberjack["carryItem"], (int)lumberjack["carryCount"]!));
@@ -121,6 +121,8 @@ public sealed class SaveJobTests
     [InlineData("leave day in the future")]
     [InlineData("load above the haul capacity")]
     [InlineData("idle but working")]
+    [InlineData("idle looks with a job")]
+    [InlineData("idle looks out of range")]
     [InlineData("storage that is not one")]
     [InlineData("unknown job kind")]
     [InlineData("unknown phase")]
@@ -182,6 +184,8 @@ public sealed class SaveJobTests
             case "leave day in the future": settlement["lastLeaveDay"] = 9; break;
             case "load above the haul capacity": chop["carryCount"] = 21; break;
             case "idle but working": idle["phase"] = "working"; break;
+            case "idle looks with a job": chop["idleLooks"] = 2; break;
+            case "idle looks out of range": idle["idleLooks"] = ResidentJob.MaxIdleLooks + 1; break;
             case "storage that is not one": chop["storageIndex"] = house["index"]!.DeepClone(); break;
             case "unknown job kind": chop["kind"] = "dance"; break;
             case "unknown phase": chop["phase"] = "napping"; break;

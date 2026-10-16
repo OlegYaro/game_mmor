@@ -219,4 +219,31 @@ public sealed class JobSelectionTests
             return sim;
         }
     }
+
+    [Fact]
+    [Trait("Req", "FR-NPC-06")]
+    [Trait("Req", "NFR-02")]
+    public void AResidentWithoutWorkLooksLessOftenUntilWorkTurnsUp()
+    {
+        (Simulation sim, _) = NewSettlement();
+        EntityId smith = Spawn(sim, "blacksmith"); // no job types: nothing to find
+        EconomyBalanceDef economy = sim.Content.Economy;
+        var waits = new List<(int Looks, long Wait)>();
+        while (waits.Count < 9)
+        {
+            int looks = JobOf(sim, smith).IdleLooks;
+            StepUntil(sim, () => JobOf(sim, smith).IdleLooks != looks, limit: 5000);
+            waits.Add((JobOf(sim, smith).IdleLooks, JobOf(sim, smith).NextThinkTick - sim.Tick));
+        }
+
+        // Each look that finds nothing doubles the wait, up to the cap.
+        Assert.Equal([.. Enumerable.Range(waits[0].Looks, 9)], waits.Select(w => w.Looks));
+        Assert.All(waits, w => Assert.Equal(Math.Min((long)economy.ThinkIntervalTicks << (w.Looks - 1), economy.IdleThinkMaxIntervalTicks), w.Wait));
+        Assert.Equal(economy.IdleThinkMaxIntervalTicks, waits[^1].Wait);
+
+        // Work turns up: at the next look it takes the job and the count starts over.
+        SetPriorities(sim, smith, (JobKind.Chop, 1));
+        StepUntil(sim, () => JobOf(sim, smith).Kind == JobKind.Chop, limit: economy.IdleThinkMaxIntervalTicks + 1);
+        Assert.Equal(0, JobOf(sim, smith).IdleLooks);
+    }
 }

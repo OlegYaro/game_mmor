@@ -53,26 +53,24 @@ public sealed class JobWorkTests
     [Fact]
     [Trait("Req", "FR-NPC-06")]
     [Trait("Req", "FR-ECO-01")]
-    public void WithoutAStorageTheLoadStaysWithTheResidentUntilOneIsBuilt()
+    public void WithoutAStorageNobodyGathersUntilOneIsBuilt()
     {
+        // No storage takes wood: the lumberjack does not chop at all (the load would only block it, see the next test).
         (Simulation sim, _) = NewSettlement(storage: false);
         EntityId lumberjack = Spawn(sim, "lumberjack");
+        SetPriorities(sim, lumberjack, (JobKind.Chop, 1));
         int capacity = sim.Content.Economy.HaulCapacity;
-
-        StepUntil(sim, () => JobOf(sim, lumberjack).Kind == JobKind.None && JobOf(sim, lumberjack).IsCarrying);
-        Assert.Equal(capacity, JobOf(sim, lumberjack).CarryCount);
-        Assert.Empty(sim.World!.Reservations.Reservations);
         sim.Step(500);
-        Assert.Equal(capacity, JobOf(sim, lumberjack).CarryCount); // it waits and takes no other job
-        Assert.Equal(capacity, TakenFromNodes(sim, ResourceKind.Tree));
+        Assert.Equal(JobKind.None, JobOf(sim, lumberjack).Kind);
+        Assert.False(JobOf(sim, lumberjack).IsCarrying);
+        Assert.Equal(0, TakenFromNodes(sim, ResourceKind.Tree));
+        Assert.Empty(sim.World!.Reservations.Reservations);
 
         EntityId storage = Build(sim, "storage");
-        StepUntil(sim, () => JobOf(sim, lumberjack).Kind == JobKind.Haul); // the delivery is a haul job of its own load
-        Assert.Equal(JobPhase.ToStorage, JobOf(sim, lumberjack).Phase);
-        Assert.Equal(EntityId.None, JobOf(sim, lumberjack).Building);
+        StepUntil(sim, () => JobOf(sim, lumberjack).Phase == JobPhase.ToStorage);
+        Assert.Equal(capacity, JobOf(sim, lumberjack).CarryCount);
         StepUntil(sim, () => Stored(sim, storage, "wood") > 0);
         Assert.Equal(capacity, Stored(sim, storage, "wood"));
-        Assert.Equal(JobKind.Chop, JobOf(sim, lumberjack).Kind); // and back to work
         sim.Step(1000);
         Assert.Equal(TakenFromNodes(sim, ResourceKind.Tree), Stored(sim, storage, "wood") + Carried(sim, "wood"));
     }
@@ -82,9 +80,11 @@ public sealed class JobWorkTests
     public void AFullStorageOrAFilterThatRefusesTheItemKeepsTheLoadWithTheResident()
     {
         (Simulation sim, EntityId storage) = NewSettlement();
-        Fill(sim, storage, "stone", 50 * 19);
-        Fill(sim, storage, "berries", 100); // the last stack: no room for wood
         EntityId lumberjack = Spawn(sim, "lumberjack");
+        SetPriorities(sim, lumberjack, (JobKind.Chop, 1));
+        StepUntil(sim, () => JobOf(sim, lumberjack).Phase == JobPhase.Working);
+        Fill(sim, storage, "stone", 50 * 19);
+        Fill(sim, storage, "berries", 100); // the last stack, filled while it chops: no room for wood
         StepUntil(sim, () => JobOf(sim, lumberjack).Kind == JobKind.None && JobOf(sim, lumberjack).IsCarrying);
         Assert.Equal(0, Storages.RoomFor(sim, storage, Item(sim, "wood")));
 
@@ -101,12 +101,16 @@ public sealed class JobWorkTests
         Assert.Equal(0, Stored(sim, storage, "wood"));
         Assert.True(JobOf(sim, lumberjack).IsCarrying);
 
-        // Everything allowed again: the filter component goes away and the wood goes in.
+        // Everything allowed again: the filter component goes away and the wood goes in; the delivery is a haul job of the
+        // resident's own load, and then it chops again.
         sim.Enqueue(new SetStorageFilterCommand(storage, ItemCategories.AllMask));
         sim.Step();
         Assert.False(sim.World.StorageFilters.Has(storage));
+        StepUntil(sim, () => JobOf(sim, lumberjack).Kind == JobKind.Haul);
+        Assert.Equal((JobPhase.ToStorage, EntityId.None), (JobOf(sim, lumberjack).Phase, JobOf(sim, lumberjack).Building));
         StepUntil(sim, () => Stored(sim, storage, "wood") > 0);
         Assert.Equal(sim.Content.Economy.HaulCapacity, Stored(sim, storage, "wood"));
+        StepUntil(sim, () => JobOf(sim, lumberjack).Kind == JobKind.Chop);
     }
 
     [Fact]

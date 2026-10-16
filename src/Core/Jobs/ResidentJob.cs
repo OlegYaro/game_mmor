@@ -14,7 +14,7 @@ namespace Core.Jobs;
 /// walks to its node (<see cref="JobPhase.ToTarget"/>), works action after action while the load fits
 /// (<see cref="JobPhase.Working"/>), then carries the load to a storage (<see cref="JobPhase.ToStorage"/>).
 /// <see cref="JobKind.Farm"/> walks to its field and works one cycle. <see cref="JobKind.Plant"/> walks to a free tile
-/// near the forest (<see cref="TargetTile"/>), works <see cref="RegrowthBalanceDef.PlantActionTicks"/> and leaves a
+/// next to a stump (<see cref="TargetTile"/>), works <see cref="RegrowthBalanceDef.PlantActionTicks"/> and leaves a
 /// sapling there. <see cref="JobKind.Haul"/> walks to a building,
 /// takes its output and carries it to a storage; without a building it only carries the resident's own load.</para>
 /// <para>The load stays with the resident when a job ends without handing it in (no storage, cancelled): the
@@ -30,9 +30,11 @@ namespace Core.Jobs;
 /// <param name="CarryItem">The carried item; default when it carries nothing.</param>
 /// <param name="CarryCount">How many it carries, 0 to <see cref="EconomyBalanceDef.HaulCapacity"/>.</param>
 /// <param name="NextThinkTick">
-/// First tick at which an idle resident looks for a job again (<see cref="EconomyBalanceDef.ThinkIntervalTicks"/> after
-/// a look that found nothing; at once after a job ends).
+/// First tick at which an idle resident looks for a job again (at once after a job ends; after a look that found nothing
+/// <see cref="EconomyBalanceDef.ThinkIntervalTicks"/>, doubling with every further such look up to
+/// <see cref="EconomyBalanceDef.IdleThinkMaxIntervalTicks"/>).
 /// </param>
+/// <param name="IdleLooks">Looks in a row that found nothing (0 while it has a job): it sets the wait before the next look.</param>
 public readonly record struct ResidentJob(
     JobKind Kind,
     JobPhase Phase,
@@ -43,8 +45,12 @@ public readonly record struct ResidentJob(
     int WorkLeft,
     DefId CarryItem,
     int CarryCount,
-    long NextThinkTick) : IComponent
+    long NextThinkTick,
+    int IdleLooks = 0) : IComponent
 {
+    /// <summary>Most <see cref="IdleLooks"/> counted (the wait has long reached its cap by then).</summary>
+    public const int MaxIdleLooks = 30;
+
     /// <summary>No job, nothing carried, thinking from <paramref name="tick"/> on.</summary>
     public static ResidentJob Idle(long tick) => new(JobKind.None, JobPhase.None, EntityId.None, -1, EntityId.None, -1, 0, default, 0, tick);
 
@@ -68,5 +74,6 @@ public readonly record struct ResidentJob(
         writer.WriteInt32(CarryItem.Value);
         writer.WriteInt32(CarryCount);
         writer.WriteInt64(NextThinkTick);
+        writer.WriteInt32(IdleLooks);
     }
 }

@@ -29,8 +29,10 @@ namespace Core.Content;
 /// <param name="ArrivalEraPoints">Chance points per era, in era order; one entry per era.</param>
 /// <param name="ArrivalChanceCapPermille">Largest arrival chance, in thousandths.</param>
 /// <param name="HaulCapacity">Items a carrier moves in one trip.</param>
+/// <param name="StorageStacksPerItem">Stacks of one item a storage holds at most, so that one good cannot fill it and leave no room for food and the tax.</param>
 /// <param name="JobRetryCooldownTicks">Ticks a failed job stays banned for the resident.</param>
 /// <param name="ThinkIntervalTicks">Ticks between two decisions of an idle resident.</param>
+/// <param name="IdleThinkMaxIntervalTicks">Longest wait between two looks of a resident that keeps finding no work: the wait doubles from <paramref name="ThinkIntervalTicks"/> after every look that found nothing, up to this.</param>
 /// <param name="SkillSpeedPermillePerPoint">Work speed gain per skill point, in thousandths.</param>
 /// <param name="InitialSkillMax">A newcomer starts with each skill between 0 and this value.</param>
 /// <param name="JobSearchMarginTiles">Tiles beyond the territory border where residents still look for resource nodes to work.</param>
@@ -56,8 +58,10 @@ public sealed record EconomyBalanceDef(
     [property: Description("Arrival chance points per era, in era order; one entry per era, each 0..100 (provisional).")] IReadOnlyList<int> ArrivalEraPoints,
     [property: Range(0, 1000)] [property: Description("Largest arrival chance, in thousandths (provisional).")] int ArrivalChanceCapPermille,
     [property: Range(1, 1000)] [property: Description("Items a carrier moves in one trip (provisional).")] int HaulCapacity,
+    [property: Range(1, 1000)] [property: Description("Stacks of one item a storage holds at most, so that one good cannot fill it (provisional).")] int StorageStacksPerItem,
     [property: Range(0, 1000000)] [property: Description("Ticks a failed job stays banned for the resident (provisional).")] int JobRetryCooldownTicks,
     [property: Range(1, 1000)] [property: Description("Ticks between two decisions of an idle resident (provisional).")] int ThinkIntervalTicks,
+    [property: Range(1, 1000000)] [property: Description("Longest wait between two looks of a resident that keeps finding no work; the wait doubles from thinkIntervalTicks after every look that found nothing (provisional).")] int IdleThinkMaxIntervalTicks,
     [property: Range(0, 100)] [property: Description("Work speed gain per skill point, in thousandths (provisional).")] int SkillSpeedPermillePerPoint,
     [property: Range(0, 20)] [property: Description("A newcomer starts with each skill between 0 and this value (provisional).")] int InitialSkillMax,
     [property: Range(0, 64)] [property: Description("Tiles beyond the territory border where residents still look for resource nodes to work (provisional).")] int JobSearchMarginTiles,
@@ -83,6 +87,11 @@ public sealed record EconomyBalanceDef(
         if (AutoAssignPattern.Count == 0)
         {
             yield return ("autoAssignPattern", "Needs at least one profession.");
+        }
+
+        if (IdleThinkMaxIntervalTicks < ThinkIntervalTicks)
+        {
+            yield return ("idleThinkMaxIntervalTicks", "idleThinkMaxIntervalTicks must not be below thinkIntervalTicks.");
         }
     }
 }

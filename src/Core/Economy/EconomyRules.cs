@@ -198,6 +198,7 @@ internal static class EconomyRules
                 ref Inventory stock = ref world.Inventories.Get(owners[i]);
                 long wanted = (missing + food.FoodValue - 1) / food.FoodValue;
                 stock = stock.Remove(item, (int)Math.Min(wanted, stock.Count(item)), out int eaten);
+                world.Ledger.Add(LedgerFlow.Eaten, item, eaten);
                 missing -= (long)eaten * food.FoodValue;
             }
         }
@@ -244,6 +245,7 @@ internal static class EconomyRules
             ? id
             : throw new InvalidOperationException($"The tax item '{FoodSupply.TaxItem}' is not in the content.");
         int added = Storages.DeliverToStorages(sim, item, gold);
+        world.Ledger.Add(LedgerFlow.Taxed, item, added);
         world.AddEconomyEvent(sim.Tick, EconomyEventKind.Tax, FoodSupply.TaxItem, added, gold - added, 0);
         Log(sim, added == gold ? LogLevel.Info : LogLevel.Warning, $"Tax: {added} {FoodSupply.TaxItem} stored{(added == gold ? string.Empty : $", {gold - added} lost (no room)")}");
     }

@@ -142,7 +142,7 @@ internal static class SaveMapper
         ResidentJob j = entry.Value;
         return new JobEntryDto(entry.Entity.Index, entry.Entity.Generation, NameOf(JobKinds.Names, (int)j.Kind, "job kind"),
             NameOf(JobKinds.PhaseNames, (int)j.Phase, "job phase"), j.Building.Index, j.Building.Generation, j.TargetTile, j.Storage.Index,
-            j.Storage.Generation, j.GoalTile, j.WorkLeft, ItemName(content, j.CarryItem), j.CarryCount, j.NextThinkTick);
+            j.Storage.Generation, j.GoalTile, j.WorkLeft, ItemName(content, j.CarryItem), j.CarryCount, j.NextThinkTick, j.IdleLooks);
     }
 
     // An item id, or the empty string for none.
@@ -318,7 +318,7 @@ internal static class SaveMapper
         return new ComponentEntry<ResidentJob>(new EntityId(dto.Index, dto.Generation), new ResidentJob(
             (JobKind)ValueOf(JobKinds.Names, dto.Kind, "job kind"), (JobPhase)ValueOf(JobKinds.PhaseNames, dto.Phase, "job phase"),
             new EntityId(dto.BuildingIndex, dto.BuildingGeneration), dto.TargetTile, new EntityId(dto.StorageIndex, dto.StorageGeneration),
-            dto.GoalTile, dto.WorkLeft, ToItem(dto.CarryItem, content), dto.CarryCount, dto.NextThinkTick));
+            dto.GoalTile, dto.WorkLeft, ToItem(dto.CarryItem, content), dto.CarryCount, dto.NextThinkTick, dto.IdleLooks));
     }
 
     private static ComponentEntry<WorkOutput> ToWorkOutput(WorkOutputEntryDto? dto)

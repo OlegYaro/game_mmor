@@ -285,7 +285,8 @@ public sealed class SaveGoldenTests
 
         // Jobs: the lumberjack works its tree with a half load, the farmer works the field; their targets are reserved.
         Assert.True(SimTestData.Real.TryGetId("wood", out DefId wood));
-        Assert.Equal(new ResidentJob(JobKind.None, JobPhase.None, EntityId.None, -1, EntityId.None, -1, 0, default, 0, V4Frozen.SmithThinks), world.Jobs.Get(residents[0]));
+        Assert.Equal(new ResidentJob(JobKind.None, JobPhase.None, EntityId.None, -1, EntityId.None, -1, 0, default, 0, V4Frozen.SmithThinks, V4Frozen.SmithIdleLooks),
+            world.Jobs.Get(residents[0])); // the smith has nothing to do: it looks less and less often
         Assert.Equal(new ResidentJob(JobKind.Chop, JobPhase.Working, EntityId.None, V4Frozen.Tree, EntityId.None, V4Frozen.Tree, V4Frozen.ChopLeft, wood, 10,
             V4Frozen.LumberjackThought), world.Jobs.Get(residents[1]));
         Assert.Equal(new ResidentJob(JobKind.Farm, JobPhase.Working, field, -1, EntityId.None, V4Frozen.FieldTile, V4Frozen.FarmLeft, default, 0,
@@ -328,8 +329,9 @@ public sealed class SaveGoldenTests
 
     // Frozen together with save_v4.sav (values read once from the generated file, never from today's code). The sample
     // was made again on 16.10.2026 when jobs, reservations, field outputs, storage filters and the food state joined
-    // format v4 before its release, and once more the same day for flora and walk counters (ADR 0007); the values of the
-    // second making stayed the same, only the flora and walk ones are new.
+    // format v4 before its release, and twice more the same day: for flora and walk counters, and for the idle looks of
+    // the job (ADR 0007). Only the flora and walk values and the smith's next look (now after 8 looks that found nothing)
+    // are new; the rest stayed the same.
     private static class V4Frozen
     {
         public const long Tick = 2253;             // day 0, 06:00 + 3 ticks: the first morning brought the newcomer
@@ -344,7 +346,8 @@ public sealed class SaveGoldenTests
         public const int FieldTile = 1891;         // tile (35, 29), the field's nearest tile
         public const int FarmLeft = 14750;
         public const long FarmerThought = 1917;
-        public const long SmithThinks = 2262;
+        public const long SmithThinks = 2412;
+        public const int SmithIdleLooks = 8;
         public const int FieldOutput = 24;
         public const int StoredWood = 141;
         public const int WalkedTiles = 41;

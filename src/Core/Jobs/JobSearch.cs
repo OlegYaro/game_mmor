@@ -41,7 +41,7 @@ internal static class JobSearch
         int maxY = Math.Min(size - 1, territory.CenterY + radius);
         int maxRing = Math.Max(Math.Max(x - minX, maxX - x), Math.Max(y - minY, maxY - y));
         ReadOnlySpan<ResourceKind> kinds = world.Map.ResourceKinds;
-        bool anyFlora = world.Tiles.FloraTiles > 0;
+        bool grownTrees = kind == ResourceKind.Tree && world.Tiles.FloraTiles > 0;
         for (int ring = 0; ring <= maxRing; ring++)
         {
             // Row by row, left to right: the first hit of a ring has the lowest index.
@@ -63,7 +63,7 @@ internal static class JobSearch
 
                     checkedTiles++;
                     int index = (ty * size) + tx;
-                    if ((kinds[index] == kind || (anyFlora && world.Tiles.GetFlora(tx, ty) != FloraState.None)) && area.Contains(tx, ty)
+                    if ((kinds[index] == kind || (grownTrees && world.Tiles.GetFlora(tx, ty) == FloraState.Tree)) && area.Contains(tx, ty)
                         && world.Tiles.GetEffectiveResource(tx, ty) == kind && world.Tiles.GetEffectiveAmount(tx, ty) > 0
                         && !world.Reservations.IsReserved(ReservationTarget.OfTile(index))
                         && !world.Reservations.IsBanned(holder, ReservationTarget.OfTile(index), sim.Tick)
@@ -81,57 +81,49 @@ internal static class JobSearch
     /// <summary>
     /// The nearest tile where <paramref name="holder"/> can plant a sapling (FR-WORLD-04): inside the territory disc, a
     /// free tile (<see cref="Tiles.TileChanges.CanPlant"/>) that is passable, not reserved, not banned for the holder and
-    /// approachable from the holder's connectivity component; near the forest, that is with a living tree or a stump
-    /// within <paramref name="forestRadius"/> (saplings do not count, so planting never spreads from fresh saplings);
-    /// and with no building on the eight tiles around it, so building entrances and plots next to buildings stay free.
-    /// Rings by Chebyshev distance from (<paramref name="x"/>, <paramref name="y"/>), inside a ring the lowest tile index.
-    /// -1 when there is none.
+    /// approachable from the holder's connectivity component; next to a stump, so a lumberjack replants the clearings
+    /// it cut (decision of M3a wave 3: planting "near the forest" anywhere let idle lumberjacks turn hundreds of free tiles
+    /// a day into forest in the bot simulation, while next to stumps it is bounded by the felled trees, which grow back
+    /// themselves); and with no building on the eight tiles around it, so building entrances and plots next to buildings
+    /// stay free. The nearest by Chebyshev distance from (<paramref name="x"/>, <paramref name="y"/>), ties to the lowest
+    /// tile index. -1 when there is none.
     /// </summary>
-    /// <param name="checkedTiles">Incremented by every tile looked at, the forest look-around included.</param>
-    public static int FindPlantTile(Simulation sim, GameWorld world, EntityId holder, int x, int y, Territory territory, int forestRadius,
-        int component, ref int checkedTiles)
+    /// <param name="checkedTiles">Incremented by every tile looked at.</param>
+    public static int FindPlantTile(Simulation sim, GameWorld world, EntityId holder, int x, int y, Territory territory, int component,
+        ref int checkedTiles)
     {
-        int radius = territory.Radius;
-        int size = world.Size;
-        int minX = Math.Max(0, territory.CenterX - radius);
-        int maxX = Math.Min(size - 1, territory.CenterX + radius);
-        int minY = Math.Max(0, territory.CenterY - radius);
-        int maxY = Math.Min(size - 1, territory.CenterY + radius);
-        int maxRing = Math.Max(Math.Max(x - minX, maxX - x), Math.Max(y - minY, maxY - y));
+        // Every candidate is next to a stump, so the stumps (few) are walked instead of the territory's rings; the pick is
+        // the same: the nearest ring around (x, y), then the lowest tile index.
+        var stumps = new List<int>();
+        world.Tiles.CollectFlora(FloraState.Stump, stumps);
         PassabilityGrid grid = world.Pathfinder.Grid;
-        for (int ring = 0; ring <= maxRing; ring++)
+        int best = -1;
+        int bestRing = int.MaxValue;
+        foreach (int stump in stumps)
         {
-            for (int ty = y - ring; ty <= y + ring; ty++)
+            for (int d = 0; d < PassabilityGrid.DirectionCount; d++)
             {
-                if (ty < minY || ty > maxY)
+                int tx = grid.XOf(stump) + PassabilityGrid.DirectionX(d);
+                int ty = grid.YOf(stump) + PassabilityGrid.DirectionY(d);
+                checkedTiles++;
+                int ring = AgentMovement.Distance(tx, ty, x, y);
+                int index = grid.Contains(tx, ty) ? grid.Index(tx, ty) : -1;
+                if (index < 0 || ring > bestRing || (ring == bestRing && index >= best))
                 {
                     continue;
                 }
 
-                bool edgeRow = ty == y - ring || ty == y + ring;
-                int step = edgeRow || ring == 0 ? 1 : 2 * ring;
-                for (int tx = x - ring; tx <= x + ring; tx += step)
+                if (territory.Contains(tx, ty) && world.Tiles.CanPlant(tx, ty) && grid.IsPassable(tx, ty)
+                    && !world.Reservations.IsReserved(ReservationTarget.OfTile(index))
+                    && !world.Reservations.IsBanned(holder, ReservationTarget.OfTile(index), sim.Tick)
+                    && CanApproach(world.Pathfinder, component, tx, ty) && !NextToBuilding(world, tx, ty))
                 {
-                    if (tx < minX || tx > maxX)
-                    {
-                        continue;
-                    }
-
-                    checkedTiles++;
-                    int index = (ty * size) + tx;
-                    if (territory.Contains(tx, ty) && world.Tiles.CanPlant(tx, ty) && grid.IsPassable(tx, ty)
-                        && !world.Reservations.IsReserved(ReservationTarget.OfTile(index))
-                        && !world.Reservations.IsBanned(holder, ReservationTarget.OfTile(index), sim.Tick)
-                        && CanApproach(world.Pathfinder, component, tx, ty) && !NextToBuilding(world, tx, ty)
-                        && IsNearForest(world, tx, ty, forestRadius, ref checkedTiles))
-                    {
-                        return index;
-                    }
+                    (best, bestRing) = (index, ring);
                 }
             }
         }
 
-        return -1;
+        return best;
     }
 
     /// <summary>
@@ -160,25 +152,6 @@ internal static class JobSearch
         }
 
         return best;
-    }
-
-    // A living tree or a stump within `radius` (Chebyshev) of the tile.
-    private static bool IsNearForest(GameWorld world, int x, int y, int radius, ref int checkedTiles)
-    {
-        int size = world.Size;
-        for (int ny = Math.Max(0, y - radius); ny <= Math.Min(size - 1, y + radius); ny++)
-        {
-            for (int nx = Math.Max(0, x - radius); nx <= Math.Min(size - 1, x + radius); nx++)
-            {
-                checkedTiles++;
-                if (world.Tiles.GetEffectiveResource(nx, ny) == ResourceKind.Tree || world.Tiles.GetFlora(nx, ny) == FloraState.Stump)
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     // A building occupies one of the eight tiles around the tile.

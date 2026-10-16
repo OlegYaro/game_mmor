@@ -141,7 +141,7 @@ internal static class BuildingRules
             returned.Add(new ItemAmountDef(Construction.LevelOf(sim.Content, building).Work!.Item, output.Count));
         }
 
-        returned.AddRange(Construction.Refund(def, 1, building.Level, sim.Content.Construction.DemolishRefundPermille));
+        returned.AddRange(Refund(sim, Construction.Refund(def, 1, building.Level, sim.Content.Construction.DemolishRefundPermille)));
         Remove(sim, world, entity, building, def);
         Residents.ResidentRules.Evict(sim, entity);
         IReadOnlyList<ItemAmountDef> lost = Deliver(sim, returned);
@@ -170,11 +170,11 @@ internal static class BuildingRules
                 break;
             case BuildingState.Constructing:
                 Remove(sim, world, entity, building, def);
-                lost = Deliver(sim, Construction.Refund(def, building.Level, building.Level, permille));
+                lost = Deliver(sim, Refund(sim, Construction.Refund(def, building.Level, building.Level, permille)));
                 break;
             case BuildingState.Upgrading:
                 world.Buildings.Get(entity) = building with { Level = building.Level - 1, State = BuildingState.Active, TicksLeft = 0 };
-                lost = Deliver(sim, Construction.Refund(def, building.Level, building.Level, permille));
+                lost = Deliver(sim, Refund(sim, Construction.Refund(def, building.Level, building.Level, permille)));
                 break;
             case BuildingState.Moving:
                 (int width, int height) = Construction.FootprintOf(def, building.Rotation);
@@ -375,6 +375,7 @@ internal static class BuildingRules
         foreach (ItemAmountDef entry in cost)
         {
             sim.Content.TryGetId(entry.Item, out DefId item);
+            world.Ledger.Add(LedgerFlow.Spent, item, entry.Count);
             int left = entry.Count;
             if (hero != EntityId.None && world.Inventories.Has(hero))
             {
@@ -402,8 +403,20 @@ internal static class BuildingRules
         }
     }
 
+    // Counts a refund in the ledger (items that come back into the economy) and returns it.
+    private static IReadOnlyList<ItemAmountDef> Refund(Simulation sim, IReadOnlyList<ItemAmountDef> refund)
+    {
+        foreach (ItemAmountDef entry in refund)
+        {
+            sim.Content.TryGetId(entry.Item, out DefId item);
+            sim.World!.Ledger.Add(LedgerFlow.Refunded, item, entry.Count);
+        }
+
+        return refund;
+    }
+
     // Puts items into the available storages that take them (entity order, filters respected), then the hero's backpack;
-    // returns what did not fit (E6), one entry per item in first-appearance order.
+    // returns what did not fit (E6), one entry per item in first-appearance order. What does not fit is lost (ledger).
     private static List<ItemAmountDef> Deliver(Simulation sim, IReadOnlyList<ItemAmountDef> items)
     {
         GameWorld world = sim.World!;
@@ -423,6 +436,7 @@ internal static class BuildingRules
 
             if (left > 0)
             {
+                world.Ledger.Add(LedgerFlow.Lost, item, left);
                 int index = lost.FindIndex(l => string.Equals(l.Item, entry.Item, StringComparison.Ordinal));
                 if (index < 0)
                 {

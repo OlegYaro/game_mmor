@@ -10,7 +10,9 @@ namespace Core.Economy;
 /// <summary>
 /// Read-only storage rules (FR-ECO-01): which storage takes an item (available, filter), how much room it has for a
 /// load counting the loads already on their way (<see cref="ReservationLayer.Storage"/> reservations), and the nearest
-/// storage with room. A storage's stock is its <see cref="Inventory"/>.
+/// storage with room. A storage's stock is its <see cref="Inventory"/>. One item fills at most
+/// <see cref="EconomyBalanceDef.StorageStacksPerItem"/> stacks of a storage, so wood and stone cannot crowd food and the
+/// tax out of the only storage (decision of M3a wave 3, found by the bot simulation).
 /// </summary>
 public static class Storages
 {
@@ -38,6 +40,7 @@ public static class Storages
 
     /// <summary>
     /// How many more <paramref name="item"/> <paramref name="storage"/> can take once every load on its way has arrived:
+    /// free room in its stacks, at most up to <see cref="EconomyBalanceDef.StorageStacksPerItem"/> full stacks of the item;
     /// 0 when it does not take the item (<see cref="Accepts"/>).
     /// </summary>
     public static int RoomFor(Simulation sim, EntityId storage, DefId item)
@@ -54,7 +57,8 @@ public static class Storages
             stock = stock.Add(incoming.Item, incoming.Amount, sim.Content.Get<ItemDef>(incoming.Item).StackSize, out _);
         }
 
-        return stock.SpaceFor(item, sim.Content.Get<ItemDef>(item).StackSize);
+        int stackSize = sim.Content.Get<ItemDef>(item).StackSize;
+        return Math.Max(0, Math.Min(stock.SpaceFor(item, stackSize), ItemCap(sim, stackSize) - stock.Count(item)));
     }
 
     /// <summary>
@@ -121,7 +125,10 @@ public static class Storages
         return (dx * dx) + (dy * dy);
     }
 
-    /// <summary>Puts up to <paramref name="count"/> <paramref name="item"/> into <paramref name="storage"/> if it accepts them; returns how many went in.</summary>
+    /// <summary>
+    /// Puts up to <paramref name="count"/> <paramref name="item"/> into <paramref name="storage"/> if it accepts them, no
+    /// more than its stacks and the per-item cap hold; returns how many went in.
+    /// </summary>
     internal static int Deposit(Simulation sim, EntityId storage, DefId item, int count)
     {
         if (count <= 0 || !Accepts(sim, storage, item))
@@ -130,9 +137,19 @@ public static class Storages
         }
 
         ref Inventory stock = ref sim.World!.Inventories.Get(storage);
-        stock = stock.Add(item, count, sim.Content.Get<ItemDef>(item).StackSize, out int added);
+        int stackSize = sim.Content.Get<ItemDef>(item).StackSize;
+        int fits = Math.Min(count, ItemCap(sim, stackSize) - stock.Count(item));
+        if (fits <= 0)
+        {
+            return 0;
+        }
+
+        stock = stock.Add(item, fits, stackSize, out int added);
         return added;
     }
+
+    // Most items of one kind a storage holds: StorageStacksPerItem full stacks.
+    private static int ItemCap(Simulation sim, int stackSize) => (int)Math.Min(int.MaxValue, (long)sim.Content.Economy.StorageStacksPerItem * stackSize);
 
     /// <summary>
     /// Puts up to <paramref name="count"/> <paramref name="item"/> into the storages that accept it, in entity order;

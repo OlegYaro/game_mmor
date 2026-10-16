@@ -149,6 +149,7 @@ internal static class JobRules
         if (job.IsCarrying)
         {
             lost = job.CarryCount - Storages.DeliverToStorages(sim, job.CarryItem, job.CarryCount);
+            world.Ledger.Add(Economy.LedgerFlow.Lost, job.CarryItem, lost);
         }
 
         job = ResidentJob.Idle(sim.Tick);
@@ -315,9 +316,12 @@ internal static class JobRules
         if (job.Kind == JobKind.Farm)
         {
             WorkDef work = WorkOf(sim, world, job.Building);
-            int stackSize = sim.Content.Get<ItemDef>(ItemId(sim.Content, work.Item)).StackSize;
+            DefId harvest = ItemId(sim.Content, work.Item);
+            int stackSize = sim.Content.Get<ItemDef>(harvest).StackSize;
             ref WorkOutput output = ref world.WorkOutputs.Get(job.Building);
-            output = new WorkOutput(output.Count + Math.Min(work.Yield, stackSize - output.Count));
+            int harvested = Math.Min(work.Yield, stackSize - output.Count);
+            output = new WorkOutput(output.Count + harvested);
+            world.Ledger.Add(Economy.LedgerFlow.Harvested, harvest, harvested);
             End(sim, world, entity, ref job, "the cycle is done");
             return;
         }
@@ -329,6 +333,7 @@ internal static class JobRules
         int y = grid.YOf(job.TargetTile);
         int taken = world.Tiles.TakeResource(x, y, Math.Min(def.YieldPerAction, capacity - job.CarryCount));
         job = job with { CarryItem = ItemId(sim.Content, def.Item), CarryCount = job.CarryCount + taken, WorkLeft = 0 };
+        world.Ledger.Add(Economy.LedgerFlow.Gathered, job.CarryItem, taken);
         if (taken > 0 && job.CarryCount < capacity && world.Tiles.GetEffectiveAmount(x, y) > 0)
         {
             job = job with { WorkLeft = def.TicksPerAction * JobBoard.BaseSpeedPermille };
@@ -367,6 +372,7 @@ internal static class JobRules
 
         if (started)
         {
+            job = job with { IdleLooks = 0 };
             if (sim.Log.IsEnabled(LogLevel.Debug))
             {
                 Log(sim, LogLevel.Debug, $"{entity} takes {JobKinds.NameOf(job.Kind)}: {DescribeTarget(job)}");
@@ -375,7 +381,13 @@ internal static class JobRules
             return;
         }
 
-        job = job with { NextThinkTick = sim.Tick + sim.Content.Economy.ThinkIntervalTicks };
+        // Nothing found: the wait before the next look doubles with every such look, up to the cap (decision of M3a wave
+        // 3: dozens of residents without work re-scanning the whole territory every few ticks cost the bot simulation most
+        // of its time).
+        EconomyBalanceDef economy = sim.Content.Economy;
+        int looks = Math.Min(job.IdleLooks + 1, ResidentJob.MaxIdleLooks);
+        long wait = Math.Min((long)economy.ThinkIntervalTicks << (looks - 1), economy.IdleThinkMaxIntervalTicks);
+        job = job with { NextThinkTick = sim.Tick + wait, IdleLooks = looks };
         Park(sim, world, entity);
     }
 
@@ -424,7 +436,10 @@ internal static class JobRules
 
     private static bool TryStartGather(Simulation sim, GameWorld world, EntityId entity, JobKind kind, Spot at, ref ResidentJob job, ref int checkedTiles)
     {
-        if (Construction.GetTerritory(sim) is not { } territory)
+        // Nothing is gathered that no storage could take: the load would stay with the resident and block it (decision of
+        // M3a wave 3, found by the bot simulation).
+        if (Construction.GetTerritory(sim) is not { } territory
+            || Storages.FindNearest(sim, at.X, at.Y, ItemId(sim.Content, GatherDefOf(sim, kind).Item), entity, out _) == EntityId.None)
         {
             return false;
         }
@@ -453,7 +468,7 @@ internal static class JobRules
         return true;
     }
 
-    // Planting (FR-WORLD-04): a free tile near the forest inside the territory, reserved like a node.
+    // Planting (FR-WORLD-04): a free tile next to a stump inside the territory, reserved like a node.
     private static bool TryStartPlant(Simulation sim, GameWorld world, EntityId entity, Spot at, ref ResidentJob job, ref int checkedTiles)
     {
         if (Construction.GetTerritory(sim) is not { } territory)
@@ -461,7 +476,7 @@ internal static class JobRules
             return false;
         }
 
-        int tile = JobSearch.FindPlantTile(sim, world, entity, at.X, at.Y, territory, sim.Content.Regrowth.NearTreeRadius, at.Component, ref checkedTiles);
+        int tile = JobSearch.FindPlantTile(sim, world, entity, at.X, at.Y, territory, at.Component, ref checkedTiles);
         if (tile < 0)
         {
             return false;
@@ -886,8 +901,9 @@ internal static class JobRules
             _ => false,
         };
         bool leavingOk = resident.State != ResidentState.Leaving || (job.Kind == JobKind.None && job.CarryCount == 0);
+        bool looksOk = job.IdleLooks >= 0 && job.IdleLooks <= ResidentJob.MaxIdleLooks && (job.Kind == JobKind.None || job.IdleLooks == 0);
         return Enum.IsDefined(job.Kind) && Enum.IsDefined(job.Phase) && carryOk && storageOk && workOk && goalOk && shapeOk && leavingOk
-            && job.NextThinkTick >= 0;
+            && looksOk && job.NextThinkTick >= 0;
     }
 
     private static int HeldAmount(GameWorld world, EntityId holder, ReservationTarget target)

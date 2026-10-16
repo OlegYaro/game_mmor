@@ -1,4 +1,5 @@
 using Core.Content;
+using Core.Economy;
 using Core.Entities;
 using Core.Fog;
 using Core.Heroes;
@@ -69,6 +70,7 @@ internal static class HeroRules
             {
                 (DefId item, int stackSize) = ItemOf(sim.Content, start.Item);
                 inventory = inventory.Add(item, start.Count, stackSize, out int added);
+                world.Ledger.Add(LedgerFlow.Given, item, added);
                 if (added < start.Count)
                 {
                     sim.Log.Write(sim.Tick, LogLevel.Warning, LogCategory, "Start item {item}: only {added} of {count} fit in the backpack",
@@ -247,6 +249,7 @@ internal static class HeroRules
         (DefId id, int stackSize) = ItemOf(sim.Content, item);
         ref Inventory inventory = ref world.Inventories.Get(entity);
         inventory = inventory.Add(id, count, stackSize, out int added);
+        world.Ledger.Add(LedgerFlow.Given, id, added);
         sim.Log.Write(sim.Tick, added == count ? LogLevel.Info : LogLevel.Warning, LogCategory, "Gave {added} of {count} {item}",
             LogField.Of("added", added), LogField.Of("count", count), LogField.Of("item", item));
     }
@@ -355,6 +358,7 @@ internal static class HeroRules
 
         int taken = world.Tiles.TakeResource(x, y, Math.Min(def.YieldPerAction, space));
         inventory = inventory.Add(item, taken, stackSize, out _);
+        world.Ledger.Add(LedgerFlow.Gathered, item, taken);
         hero = hero with { ActionTicks = 0 };
         if (sim.Log.IsEnabled(LogLevel.Debug))
         {

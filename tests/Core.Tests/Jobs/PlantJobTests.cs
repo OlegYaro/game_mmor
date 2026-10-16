@@ -12,12 +12,21 @@ namespace Core.Tests.Jobs;
 
 /// <summary>
 /// The planting job (FR-WORLD-04, FR-NPC-06, FR-NPC-07): a lumberjack with nothing to chop plants a sapling on a free
-/// tile near the forest inside the territory, the tile is reserved for it, a tile taken on the way ends the job, the
-/// lumberjack chops trees that grew from saplings, and a save in the middle of the planting continues identically.
+/// tile next to a stump inside the territory, the tile is reserved for it, without stumps nothing is planted, a tile
+/// taken on the way ends the job, the lumberjack chops trees that grew from saplings, and a save in the middle of the
+/// planting continues identically.
 /// </summary>
 [Collection(Core.Tests.Buildings.BuildingTestWorld.Collection)]
 public sealed class PlantJobTests
 {
+    // A stump: the tree nearest to the hero (next to the settlement) is felled straight in the tile layer.
+    private static (int X, int Y) Fell(Simulation sim)
+    {
+        (int x, int y) = Heroes.HeroTestWorld.NearestNode(sim, ResourceKind.Tree);
+        Assert.True(sim.World!.Tiles.TakeResource(x, y, int.MaxValue) > 0);
+        return (x, y);
+    }
+
     // A lumberjack that only plants (chopping would come first otherwise: chop ranks above plant in a tier).
     private static EntityId Planter(Simulation sim)
     {
@@ -34,23 +43,25 @@ public sealed class PlantJobTests
     [Trait("Req", "FR-WORLD-04")]
     [Trait("Req", "FR-NPC-06")]
     [Trait("Req", "FR-NPC-07")]
-    public void ALumberjackPlantsASaplingOnAFreeReservedTileNearTheForest()
+    public void ALumberjackPlantsASaplingOnAFreeReservedTileNextToAStump()
     {
         (Simulation sim, _) = NewSettlement();
         GameWorld world = sim.World!;
         EntityId lumberjack = Planter(sim);
+        sim.Step(100);
+        Assert.Equal(JobKind.None, JobOf(sim, lumberjack).Kind); // no stump yet (its first tree still stands): nothing to replant
+
+        Fell(sim);
         StepUntil(sim, () => JobOf(sim, lumberjack).Kind == JobKind.Plant);
 
         ResidentJob job = JobOf(sim, lumberjack);
         (int x, int y) = TileOf(sim, job.TargetTile);
         Territory territory = Construction.GetTerritory(sim)!.Value;
-        int radius = sim.Content.Regrowth.NearTreeRadius;
         Assert.Equal((JobPhase.ToTarget, EntityId.None, EntityId.None, 0), (job.Phase, job.Building, job.Storage, job.CarryCount));
         Assert.True(world.Tiles.CanPlant(x, y));
         Assert.True(territory.Contains(x, y));
         Assert.Contains(world.Reservations.HeldBy(lumberjack), r => r.Target == ReservationTarget.OfTile(job.TargetTile));
-        Assert.Contains(Around(x, y, radius), t => world.Map.Terrain.Contains(t.X, t.Y)
-            && (world.Tiles.GetEffectiveResource(t.X, t.Y) == ResourceKind.Tree || world.Tiles.GetFlora(t.X, t.Y) == FloraState.Stump));
+        Assert.Contains(Around(x, y, 1), t => world.Map.Terrain.Contains(t.X, t.Y) && world.Tiles.GetFlora(t.X, t.Y) == FloraState.Stump);
         Assert.DoesNotContain(Around(x, y, 1), t => world.Map.Terrain.Contains(t.X, t.Y) && world.Tiles.IsOccupied(t.X, t.Y));
 
         // It walks there, works the planting ticks and leaves a sapling; the reservation ends with the job.
@@ -73,6 +84,7 @@ public sealed class PlantJobTests
     {
         (Simulation sim, _) = NewSettlement();
         GameWorld world = sim.World!;
+        Fell(sim);
         EntityId first = Planter(sim);
         EntityId second = Planter(sim);
         StepUntil(sim, () => JobOf(sim, first).Kind == JobKind.Plant && JobOf(sim, second).Kind == JobKind.Plant);
@@ -119,6 +131,7 @@ public sealed class PlantJobTests
     public void ASaveInTheMiddleOfPlantingContinuesLikeTheUninterruptedGame()
     {
         (Simulation sim, _) = NewSettlement();
+        Fell(sim);
         EntityId lumberjack = Planter(sim);
         Spawn(sim, "carrier");
         StepUntil(sim, () => JobOf(sim, lumberjack).Phase == JobPhase.Working && JobOf(sim, lumberjack).Kind == JobKind.Plant);

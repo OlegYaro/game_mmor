@@ -77,17 +77,29 @@ public sealed class StorageTests
         DefId wood = Item(sim, "wood");
         DefId stone = Item(sim, "stone");
         int stacks = sim.World!.Inventories.Get(storage).Backpack.Count;
-        Assert.Equal(stacks * 100, Storages.RoomFor(sim, storage, wood));
+        int perItem = sim.Content.Economy.StorageStacksPerItem;
+        Assert.True(perItem < stacks);
+        Assert.Equal(perItem * 100, Storages.RoomFor(sim, storage, wood)); // one item never takes the whole storage
 
         Fill(sim, storage, "wood", 150);
         ReservationTarget room = ReservationTarget.OfBuilding(ReservationLayer.Storage, storage);
         Assert.True(sim.World.Reservations.TryReserveAll(new EntityId(40, 1), [new ReservationRequest(room, stone, 60, 1000)]));
 
-        // 150 wood fill two stacks (50 room in the second); 60 stone on the way take two more.
-        Assert.Equal(((stacks - 4) * 100) + 50, Storages.RoomFor(sim, storage, wood));
-        Assert.Equal(((stacks - 4) * 50) + 40, Storages.RoomFor(sim, storage, stone));
+        // 150 wood fill two stacks; 60 stone on the way take two more. Each item is capped at its stacks per item.
+        Assert.Equal((perItem * 100) - 150, Storages.RoomFor(sim, storage, wood));
+        Assert.Equal((perItem * 50) - 60, Storages.RoomFor(sim, storage, stone));
         Assert.Equal(storage, Storages.FindNearest(sim, 0, 0, wood, EntityId.None, out int found));
         Assert.Equal(Storages.RoomFor(sim, storage, wood), found);
+
+        // With other goods in all but one stack, the free stacks limit the room: 50 in the second wood stack, 100 in the free one.
+        Fill(sim, storage, "berries", (stacks - 5) * 100);
+        Assert.Equal(150, Storages.RoomFor(sim, storage, wood));
+
+        // A deposit (which does not wait for the loads on their way) stops at the cap as well: what does not fit stays out.
+        Assert.Equal((perItem * 100) - 150, Storages.Deposit(sim, storage, wood, 1000));
+        Assert.Equal(perItem * 100, Stored(sim, storage, "wood"));
+        Assert.Equal(0, Storages.Deposit(sim, storage, wood, 1));
+        Assert.Equal(0, Storages.RoomFor(sim, storage, wood));
 
         // A banned storage is skipped; a storage that is not built has no room.
         sim.World.Reservations.Ban(new EntityId(41, 1), room, sim.Tick + 100);

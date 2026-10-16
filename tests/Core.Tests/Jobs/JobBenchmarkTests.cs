@@ -19,6 +19,9 @@ public sealed class JobBenchmarkTests(ITestOutputHelper output)
     private const int Ticks = 3000;
     private const double MaxAverageMilliseconds = 8.0;
 
+    private static readonly Lazy<Core.Content.ContentCatalog> _roomy = new(() => Residents.ResidentTestWorld.WithEconomy(json =>
+        json.Replace("\"storageStacksPerItem\": 4", "\"storageStacksPerItem\": 20", StringComparison.Ordinal)));
+
     [Fact]
     [Trait("Req", "NFR-01")]
     [Trait("Req", "NFR-02")]
@@ -26,7 +29,8 @@ public sealed class JobBenchmarkTests(ITestOutputHelper output)
     [Trait("Category", "Benchmark")]
     public void TheResidentLimitAtWorkOnA1024MapStaysInsideTheTickBudget()
     {
-        Simulation sim = Simulation.CreateNewGame(SimTestData.Real, new NewGameOptions(1, 1024));
+        // The storages' per-item cap is lifted: the benchmark measures the cost of the work, not when the storages fill up.
+        Simulation sim = Simulation.CreateNewGame(_roomy.Value, new NewGameOptions(1, 1024));
         sim.Enqueue(new RevealAllCommand());
         sim.Step();
         Build(sim, "campfire");

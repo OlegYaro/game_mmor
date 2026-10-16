@@ -98,7 +98,7 @@ public sealed class GameWorld
     private readonly List<EconomyEvent> _economyEvents = [];
     private Pathfinder? _pathfinder;
 
-    internal GameWorld(WorldMap map, ulong mapHash, EntityWorld entities, DefId firstEra, RoadsBalanceDef roads)
+    internal GameWorld(WorldMap map, ulong mapHash, EntityWorld entities, DefId firstEra, RoadsBalanceDef roads, int contentCount)
     {
         Map = map;
         MapHash = mapHash;
@@ -115,6 +115,7 @@ public sealed class GameWorld
         LastLeaveDay = NoLeaveDay;
         Fog = new FogOfWar(map.Size);
         Tiles = new TileChanges(map, roads);
+        Ledger = new EconomyLedger(contentCount);
     }
 
     /// <summary>The generated map (immutable).</summary>
@@ -180,6 +181,12 @@ public sealed class GameWorld
 
     /// <summary>Sequence of the latest economy event; 0 before the first.</summary>
     public long LastEconomyEventSequence { get; private set; }
+
+    /// <summary>
+    /// Cumulative item flows (gathered, harvested, taxed, given, refunded, eaten, spent, lost) since this simulation object
+    /// was created. Presentation only: not part of the state, not saved (zero after a load), not hashed.
+    /// </summary>
+    public EconomyLedger Ledger { get; }
 
     /// <summary>
     /// The highest era (<see cref="EraDef"/>) the player's settlement has reached. The era grows with the population but

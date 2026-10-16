@@ -311,6 +311,7 @@ public sealed record WorkPriorityDto(string Job, int Priority);
 /// <param name="CarryItem">Item id of the load; empty when carrying nothing.</param>
 /// <param name="CarryCount">Items carried.</param>
 /// <param name="NextThinkTick">First tick at which an idle resident looks for work again.</param>
+/// <param name="IdleLooks">Looks in a row that found no work (0 with a job); the wait before the next look doubles with each.</param>
 public sealed record JobEntryDto(
     int Index,
     int Generation,
@@ -325,7 +326,8 @@ public sealed record JobEntryDto(
     int WorkLeft,
     string CarryItem,
     int CarryCount,
-    long NextThinkTick);
+    long NextThinkTick,
+    int IdleLooks);
 
 /// <summary>Items waiting in the output of a building where residents work (a field).</summary>
 /// <param name="Index">Owner slot index.</param>

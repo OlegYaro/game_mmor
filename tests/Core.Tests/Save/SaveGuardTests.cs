@@ -58,6 +58,7 @@ public sealed class SaveGuardTests
         ["ResidentJob.TargetTile"] = ["JobEntryDto.targetTile"],
         ["ResidentJob.Storage"] = ["JobEntryDto.storageIndex", "JobEntryDto.storageGeneration"],
         ["ResidentJob.GoalTile"] = ["JobEntryDto.goalTile"],
+        ["ResidentJob.IdleLooks"] = ["JobEntryDto.idleLooks"],
         ["ResidentJob.WorkLeft"] = ["JobEntryDto.workLeft"],
         ["ResidentJob.CarryItem"] = ["JobEntryDto.carryItem"],
         ["ResidentJob.CarryCount"] = ["JobEntryDto.carryCount"],

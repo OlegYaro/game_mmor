@@ -161,7 +161,7 @@ public sealed class Simulation : IStateHashable
         Difficulty = difficulty;
         if (map is not null)
         {
-            World = new GameWorld(map, mapHash, Entities, ResidentRules.FirstEra(content), content.Roads);
+            World = new GameWorld(map, mapHash, Entities, ResidentRules.FirstEra(content), content.Roads, content.Count);
         }
 
         _systems = systems.ToArray();

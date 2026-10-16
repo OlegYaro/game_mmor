@@ -54,6 +54,27 @@ public sealed partial class TileChanges
         GetEffectiveResource(x, y) == ResourceKind.None && GetFlora(x, y) == FloraState.None && !IsOccupied(x, y)
         && !_map.Terrain.IsWater(x, y) && !_map.Terrain.IsRiver(x, y);
 
+    /// <summary>Adds the index (<c>y * Size + x</c>) of every tile whose flora is <paramref name="state"/> to <paramref name="tiles"/>, in chunk order.</summary>
+    internal void CollectFlora(FloraState state, List<int> tiles)
+    {
+        for (int chunkIndex = 0; chunkIndex < _flora.ChunkCount && _flora.Count > 0; chunkIndex++)
+        {
+            if (_flora[chunkIndex] is not { } chunk)
+            {
+                continue;
+            }
+
+            for (int local = 0; local < TilesPerChunk; local++)
+            {
+                if (IsSet(chunk.Mask, local) && chunk.States[local] == (byte)state)
+                {
+                    (int x, int y) = TileOf(chunkIndex, local);
+                    tiles.Add((y * Size) + x);
+                }
+            }
+        }
+    }
+
     /// <summary>Plants a sapling on tile (<paramref name="x"/>, <paramref name="y"/>) at <see cref="Tick"/>; false (and no change) when <see cref="CanPlant"/> is false.</summary>
     internal bool Plant(int x, int y)
     {
